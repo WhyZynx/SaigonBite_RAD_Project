@@ -52,7 +52,6 @@ form.addEventListener('submit', event => {
   if (valid) createSession('/api/auth/login', {email, password}, $('sign-in'), 'Signing in…');
 });
 
-$('demo-preview').addEventListener('click', () => createSession('/api/auth/demo', null, $('demo-preview'), 'Opening demo…'));
 $('toggle-password').addEventListener('click', event => {
   const password = $('password');
   const visible = password.type === 'password';

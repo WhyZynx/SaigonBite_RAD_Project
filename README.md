@@ -24,7 +24,7 @@ The shared SaigonBite login currently uses these temporary mock accounts:
 | Kitchen Staff | `kitchen@saigonbite.local` | `KitchenDemo2026!` |
 | Admin | `admin@saigonbite.local` | `AdminDemo2026!` |
 
-The backend maps credentials to roles and destinations. The browser does not select a role. **Demo Preview** creates a Kitchen Staff demo session and is labeled in the Kitchen Portal. Customer and Admin sign-ins currently land on explicit temporary placeholders because their interface files are empty; TV1/TV3 files are not changed.
+The backend maps credentials to roles and destinations; the browser does not select a role. Successful sign-in routes `CUSTOMER` to the temporary Customer placeholder, `KITCHEN_STAFF` to the Kitchen Portal, and `ADMIN` to the temporary Admin placeholder. Customer/Admin interface files are not changed. The separate demo-session endpoint remains available for development, but is not exposed as a button on the shared Login page.
 
 Override credentials with `SAIGONBITE_CUSTOMER_EMAIL`, `SAIGONBITE_CUSTOMER_PASSWORD`, `SAIGONBITE_DEMO_EMAIL`, `SAIGONBITE_DEMO_PASSWORD`, `SAIGONBITE_ADMIN_EMAIL`, and `SAIGONBITE_ADMIN_PASSWORD` before starting Uvicorn. Credentials are checked by FastAPI and are not embedded in frontend JavaScript.
 

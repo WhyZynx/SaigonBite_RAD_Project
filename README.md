@@ -20,9 +20,9 @@ The shared SaigonBite login currently uses these temporary mock accounts:
 
 | Role | Email | Password |
 |---|---|---|
-| Customer | `customer@saigonbite.local` | `CustomerDemo2026!` |
-| Kitchen Staff | `kitchen@saigonbite.local` | `KitchenDemo2026!` |
-| Admin | `admin@saigonbite.local` | `AdminDemo2026!` |
+| Customer | `customer@saigonbite.com` | `password123` |
+| Kitchen Staff | `kitchen@saigonbite.com` | `password123` |
+| Admin | `admin@saigonbite.com` | `password123` |
 
 The backend maps credentials to roles and destinations; the browser does not select a role. Successful sign-in routes `CUSTOMER` to the temporary Customer placeholder, `KITCHEN_STAFF` to the Kitchen Portal, and `ADMIN` to the temporary Admin placeholder. Customer/Admin interface files are not changed. The separate demo-session endpoint remains available for development, but is not exposed as a button on the shared Login page.
 

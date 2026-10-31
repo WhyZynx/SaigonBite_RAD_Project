@@ -14,18 +14,18 @@ ROLE_HOME = {
 }
 MOCK_ACCOUNTS = (
     {
-        "email": os.getenv("SAIGONBITE_CUSTOMER_EMAIL", "customer@saigonbite.local").strip().lower(),
-        "password": os.getenv("SAIGONBITE_CUSTOMER_PASSWORD", "CustomerDemo2026!"),
+        "email": os.getenv("SAIGONBITE_CUSTOMER_EMAIL", "customer@saigonbite.com").strip().lower(),
+        "password": os.getenv("SAIGONBITE_CUSTOMER_PASSWORD", "password123"),
         "role": "CUSTOMER",
     },
     {
-        "email": os.getenv("SAIGONBITE_DEMO_EMAIL", "kitchen@saigonbite.local").strip().lower(),
-        "password": os.getenv("SAIGONBITE_DEMO_PASSWORD", "KitchenDemo2026!"),
+        "email": os.getenv("SAIGONBITE_DEMO_EMAIL", "kitchen@saigonbite.com").strip().lower(),
+        "password": os.getenv("SAIGONBITE_DEMO_PASSWORD", "password123"),
         "role": "KITCHEN_STAFF",
     },
     {
-        "email": os.getenv("SAIGONBITE_ADMIN_EMAIL", "admin@saigonbite.local").strip().lower(),
-        "password": os.getenv("SAIGONBITE_ADMIN_PASSWORD", "AdminDemo2026!"),
+        "email": os.getenv("SAIGONBITE_ADMIN_EMAIL", "admin@saigonbite.com").strip().lower(),
+        "password": os.getenv("SAIGONBITE_ADMIN_PASSWORD", "password123"),
         "role": "ADMIN",
     },
 )

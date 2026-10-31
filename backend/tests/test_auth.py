@@ -77,3 +77,16 @@ def test_mock_role_routing_is_server_determined():
             assert placeholder.status_code == 200
             assert 'not integrated yet' in placeholder.text
             assert client.get('/api/kitchen/orders?hub_id=1').status_code == 403
+
+
+def test_local_development_demo_credentials_sign_in_with_expected_roles():
+    client = TestClient(app)
+    expected_roles = {
+        'kitchen@saigonbite.com': 'KITCHEN_STAFF',
+        'admin@saigonbite.com': 'ADMIN',
+        'customer@saigonbite.com': 'CUSTOMER',
+    }
+    for email, role in expected_roles.items():
+        response = client.post('/api/auth/login', json={'email': email, 'password': 'password123'})
+        assert response.status_code == 200
+        assert response.json()['role'] == role

@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 client = TestClient(app)
+client.post('/api/auth/demo')
 
 
 def test_list_filter_and_frontend():

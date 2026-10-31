@@ -1,0 +1,48 @@
+const API = '/api';
+const labels = {PENDING:'Incoming Orders', CONFIRMED:'Confirmed Orders', PREPARING:'Preparing Orders', READY:'Ready for Pickup'};
+let activeStatus = 'PENDING', orders = [], selectedId = null, detail = null, newestFirst = true;
+const $ = (id) => document.getElementById(id);
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = value => new Intl.NumberFormat('vi-VN').format(value) + ' ₫';
+const dateText = value => new Date(value).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+const ago = value => { const m=Math.max(0,Math.floor((Date.now()-new Date(value))/60000)); return m<1?'Just now':m<60?`${m} min ago`:`${Math.floor(m/60)} hr ago`; };
+function announce(message, error=false){ const box=$('alert'); box.textContent=message; box.className=`alert-message ${error?'alert-error':'alert-success'}`; box.hidden=false; window.clearTimeout(announce.timer); announce.timer=window.setTimeout(()=>box.hidden=true,5000); }
+async function request(url, options={}){ const response=await fetch(url,{headers:{'Content-Type':'application/json'},...options}); let body={}; try{body=await response.json()}catch{} if(!response.ok) throw new Error(body.detail || `Request failed (${response.status})`); return body; }
+async function loadOrders(keepSelection=true){
+  $('order-list').innerHTML='<div class="loading"><span class="spinner-border spinner-border-sm"></span> Loading kitchen orders…</div>';
+  try {
+    const [all,pending,confirmed,preparing,ready] = await Promise.all(['','PENDING','CONFIRMED','PREPARING','READY'].map(s=>request(`/api/kitchen/orders?hub_id=1${s?`&status=${s}`:''}`)));
+    orders=all; $('stat-pending').textContent=pending.length; $('stat-confirmed').textContent=confirmed.length; $('stat-preparing').textContent=preparing.length; $('stat-ready').textContent=ready.length; $('pending-count').textContent=pending.length;
+    if (!keepSelection || !orders.some(o=>o.id===selectedId && o.status===activeStatus)) { selectedId=null; detail=null; }
+    renderQueue();
+    if(selectedId){ await selectOrder(selectedId,false); } else renderDetail();
+  } catch(e){ $('order-list').innerHTML=`<div class="empty-list">Could not load orders.<br><small>${esc(e.message)}</small><br><button class="btn-refresh mt-2" onclick="loadOrders()">Try again</button></div>`; }
+}
+function renderQueue(){
+  document.querySelectorAll('.nav-link').forEach(btn=>btn.classList.toggle('active',btn.dataset.view===activeStatus));
+  $('page-title').textContent=labels[activeStatus]; $('crumb-title').textContent=labels[activeStatus]; $('queue-heading').textContent=labels[activeStatus].replace('Orders','orders').replace('Incoming orders','Incoming orders'); $('page-subtitle').textContent=({PENDING:'Review and respond to new customer orders.',CONFIRMED:'Orders accepted and waiting to be prepared.',PREPARING:'Track orders currently being prepared.',READY:'Orders completed and waiting for pickup.'})[activeStatus];
+  $('queue-count').textContent=`${orders.filter(o=>o.status===activeStatus).length} ${activeStatus.toLowerCase()} order${orders.filter(o=>o.status===activeStatus).length===1?'':'s'}`;
+  let list=orders.filter(o=>o.status===activeStatus); if(!newestFirst) list=list.slice().reverse();
+  $('queue-footer-count').textContent=`Showing ${list.length} order${list.length===1?'':'s'}`;
+  if(!list.length){$('order-list').innerHTML=`<div class="empty-list">No ${activeStatus.toLowerCase()} orders right now.</div>`;return;}
+  $('order-list').innerHTML=list.map(o=>`<article class="order-card ${o.id===selectedId?'selected':''}" data-id="${o.id}"><div class="order-top"><span class="order-id">#SB-${o.id}</span><span class="order-age">${esc(ago(o.created_at))}</span></div><div class="order-customer">Customer #${o.customer_id} <span class="badge-status status-${o.status}">${o.status==='READY'?'READY FOR PICKUP':o.status}</span></div><div class="order-bottom"><span class="item-preview">${esc(o._preview || 'View order details')}</span><span class="order-total">${money(o.total)}</span></div></article>`).join('');
+  $('order-list').querySelectorAll('.order-card').forEach(card=>card.addEventListener('click',()=>selectOrder(Number(card.dataset.id))));
+}
+async function selectOrder(id, redraw=true){ selectedId=id; if(redraw) renderQueue(); $('detail-panel').innerHTML='<div class="loading"><span class="spinner-border spinner-border-sm"></span> Loading order details…</div>'; try{detail=await request(`/api/orders/${id}`); renderDetail();}catch(e){detail=null; $('detail-panel').innerHTML=`<div class="empty-list">Could not load order details.<br>${esc(e.message)}</div>`;} }
+function renderDetail(){
+ const o=detail; if(!o){$('detail-panel').innerHTML='<div class="detail-empty"><div class="empty-icon">☷</div><h3>Select an order</h3><p>Choose an order from the queue to review its details and take action.</p></div>';return;}
+ const initial=String(o.customer_id).padStart(2,'0');
+ const items=o.items.map(i=>`<tr><td>${esc(i.name)}<small>${i.quantity} × ${money(i.unit_price)}</small></td><td>${money(i.line_total)}</td></tr>`).join('');
+ const action=o.status==='PENDING'?`<div class="detail-actions"><button class="action-btn reject-btn" id="reject-action">Reject order</button><button class="action-btn accept-btn" id="accept-action">✓ &nbsp; Accept order</button></div>`:o.status==='CONFIRMED'?`<div class="detail-actions"><button class="action-btn primary-btn" id="prepare-action">Start preparing &nbsp; →</button></div>`:o.status==='PREPARING'?`<div class="detail-actions"><button class="action-btn accept-btn" id="ready-action">✓ &nbsp; Mark ready</button></div>`:'';
+ const rejection=o.rejection_reason?`<div class="section-label">REJECTION REASON</div><p class="history-note">${esc(o.rejection_reason)}</p>`:'';
+ $('detail-panel').innerHTML=`<div class="detail-head"><div><h2>Order #SB-${o.id}</h2><p>Placed ${dateText(o.created_at)}</p></div><span class="badge-status status-${o.status}">${o.status==='READY'?'READY FOR PICKUP':o.status}</span></div><div class="customer-block"><div class="customer-avatar">${initial}</div><div><strong>Customer #${o.customer_id}</strong><small>${esc(o.delivery_address)}</small></div></div><div class="section-label">ORDER ITEMS <span style="font-weight:400">(${o.items.reduce((n,i)=>n+i.quantity,0)} items)</span></div><table class="items-table"><tbody>${items}</tbody></table><div class="totals"><div><span>Subtotal</span><span>${money(o.subtotal)}</span></div><div><span>Delivery fee</span><span>${money(o.delivery_fee)}</span></div>${o.discount?`<div><span>Discount</span><span>− ${money(o.discount)}</span></div>`:''}<div class="total-line"><span>Total</span><span>${money(o.total)}</span></div></div><div class="detail-meta"><div><small>PAYMENT</small><strong>${esc(o.payment_method)} · ${esc(o.payment_status)}</strong></div><div><small>DELIVERY DISTANCE</small><strong>${o.delivery_distance_km} km</strong></div></div>${rejection}${action}<div class="history"><div class="section-label" style="margin-top:0">ORDER HISTORY</div>${o.status_history.map(h=>`<div class="history-row"><span class="history-dot"></span><span>${esc(h.status==='READY'?'Ready for Pickup':h.status)}</span><span style="margin-left:auto;color:#a1aab4">${dateText(h.changed_at)}</span>${h.note?`<span class="history-note">· ${esc(h.note)}</span>`:''}</div>`).join('')}</div>`;
+ $('accept-action')?.addEventListener('click',()=>mutate(`/api/kitchen/orders/${o.id}/decision`,{decision:'CONFIRM'},'Order confirmed successfully.'));
+ $('reject-action')?.addEventListener('click',()=>{ $('reject-order-id').textContent=`Order #SB-${o.id}`; $('reject-reason').value=''; $('reason-error').hidden=true; bootstrap.Modal.getOrCreateInstance($('rejectModal')).show(); });
+ $('prepare-action')?.addEventListener('click',()=>mutate(`/api/kitchen/orders/${o.id}/status`,{status:'PREPARING'},'Preparation started.'));
+ $('ready-action')?.addEventListener('click',()=>mutate(`/api/kitchen/orders/${o.id}/status`,{status:'READY'},'Order marked ready for pickup.'));
+}
+async function mutate(url,payload,message){try{await request(url,{method:'PATCH',body:JSON.stringify(payload)}); announce(message); if(payload.status) activeStatus=payload.status==='PREPARING'?'PREPARING':'READY'; else if(payload.decision==='CONFIRM') activeStatus='CONFIRMED'; else activeStatus='PENDING'; await loadOrders(false);}catch(e){announce(e.message,true);}}
+$('submit-reject').addEventListener('click',async()=>{const reason=$('reject-reason').value.trim();if(!reason){$('reason-error').hidden=false;$('reject-reason').focus();return;}try{await request(`/api/kitchen/orders/${selectedId}/decision`,{method:'PATCH',body:JSON.stringify({decision:'REJECT',reason})});bootstrap.Modal.getInstance($('rejectModal')).hide();activeStatus='PENDING';await loadOrders(false);announce('Order rejected. Rejection reason was recorded.');}catch(e){$('reason-error').textContent=e.message;$('reason-error').hidden=false;}});
+document.querySelectorAll('.nav-link').forEach(btn=>btn.addEventListener('click',()=>{document.querySelector('.nav-link.active')?.classList.remove('active');btn.classList.add('active');activeStatus=btn.dataset.view;selectedId=null;detail=null;renderQueue();renderDetail();}));
+$('refresh').addEventListener('click',()=>loadOrders()); $('sort-btn').addEventListener('click',()=>{newestFirst=!newestFirst;$('sort-btn').innerHTML=newestFirst?'↕ <span>Newest first</span>':'↕ <span>Oldest first</span>';renderQueue();});
+$('today').textContent=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); loadOrders(false);

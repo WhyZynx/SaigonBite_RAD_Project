@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SaigonBite | Kitchen</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/style.css" rel="stylesheet">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">S</span><span>Saigon<span class="brand-light">Bite</span><small>KITCHEN PORTAL</small></span></div>
+    <div class="nav-caption">WORKSPACE</div>
+    <button class="nav-link active" data-view="PENDING"><span>▦</span> Incoming Orders <b id="pending-count">0</b></button>
+    <button class="nav-link" data-view="CONFIRMED"><span>✓</span> Confirmed Orders</button>
+    <button class="nav-link" data-view="PREPARING"><span>◷</span> Preparing</button>
+    <button class="nav-link" data-view="READY"><span>▣</span> Ready for Pickup</button>
+    <div class="sidebar-bottom"><div class="hub-dot"></div><div><small>ACTIVE KITCHEN</small><strong>Saigon Central</strong></div><span class="chevron">⌄</span></div>
+    <div class="profile"><div class="avatar">TN</div><div><strong>Thanh Nguyen</strong><small>Kitchen Staff</small></div><span class="chevron">⋯</span></div>
+  </aside>
+  <main class="main-area">
+    <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <b id="crumb-title">Incoming Orders</b></div><div class="top-actions"><span class="live"><i></i> Live updates</span><button class="icon-btn" aria-label="Notifications">♧<em></em></button><div class="top-avatar">TN</div></div></header>
+    <section class="content">
+      <div class="page-heading"><div><div class="eyebrow">SAIGON CENTRAL KITCHEN</div><h1 id="page-title">Incoming Orders</h1><p id="page-subtitle">Review and respond to new customer orders.</p></div><div class="heading-right"><div class="today"><span>▦</span><div><small>TODAY</small><strong id="today"></strong></div></div><button class="btn-refresh" id="refresh">↻ <span>Refresh</span></button></div></div>
+      <div class="stats-row"><div class="stat-card"><span class="stat-icon amber">▤</span><div><small>Pending orders</small><strong id="stat-pending">0</strong></div><span class="stat-note">Needs attention</span></div><div class="stat-card"><span class="stat-icon blue">✓</span><div><small>Confirmed</small><strong id="stat-confirmed">0</strong></div><span class="stat-note">In queue</span></div><div class="stat-card"><span class="stat-icon purple">◷</span><div><small>Preparing</small><strong id="stat-preparing">0</strong></div><span class="stat-note">In progress</span></div><div class="stat-card"><span class="stat-icon green">▣</span><div><small>Ready for pickup</small><strong id="stat-ready">0</strong></div><span class="stat-note">Awaiting rider</span></div></div>
+      <div id="alert" class="alert-message" role="status" hidden></div>
+      <div class="workspace-grid"><section class="queue-panel"><div class="panel-header"><div><h2 id="queue-heading">Incoming orders</h2><p id="queue-count">Loading orders…</p></div><button class="filter-btn" id="sort-btn">↕ <span>Newest first</span></button></div><div id="order-list" class="order-list"><div class="loading"><span class="spinner-border spinner-border-sm"></span> Loading kitchen orders…</div></div><div class="queue-footer"><span id="queue-footer-count"></span><span>Updated just now</span></div></section>
+        <section class="detail-panel" id="detail-panel"><div class="detail-empty"><div class="empty-icon">☷</div><h3>Select an order</h3><p>Choose an order from the queue to review its details and take action.</p></div></section>
+      </div>
+      <footer class="page-footer"><span>© 2026 SaigonBite Kitchen Portal</span><span><i></i> All systems operational</span></footer>
+    </section>
+  </main>
+  <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><div class="modal-symbol">!</div><button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><h3>Reject this order?</h3><p>Please provide a reason for rejecting <strong id="reject-order-id">Order</strong>. This will be shared with the customer.</p><label for="reject-reason">Rejection reason <span>*</span></label><textarea id="reject-reason" class="form-control" rows="3" placeholder="e.g. An ingredient is unavailable"></textarea><div class="validation" id="reason-error" hidden>A rejection reason is required.</div></div><div class="modal-footer"><button class="btn-cancel" data-bs-dismiss="modal">Keep order</button><button class="btn-reject-confirm" id="submit-reject">Reject order <span>→</span></button></div></div></div></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script src="/app.js"></script>
+</body></html>

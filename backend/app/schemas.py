@@ -33,6 +33,31 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=256)
 
 
+class CreateOrderItem(BaseModel):
+    menu_item_id: int = Field(gt=0)
+    quantity: int = Field(gt=0, le=50)
+
+
+class CreateOrderRequest(BaseModel):
+    customer_id: int = Field(gt=0)
+    hub_id: int = Field(gt=0)
+    items: list[CreateOrderItem] = Field(min_length=1)
+    delivery_address: str = Field(min_length=5, max_length=500)
+    delivery_distance_km: float = Field(ge=0)
+    voucher_code: str | None = None
+    payment_method: str = Field(pattern="^(COD|MOMO)$")
+
+
+class CreateOrderResponse(BaseModel):
+    id: int
+    status: OrderStatus
+    subtotal: int
+    delivery_fee: int
+    surcharge: int
+    discount: int
+    total: int
+
+
 class StatusHistoryEntry(BaseModel):
     status: OrderStatus
     changed_at: datetime

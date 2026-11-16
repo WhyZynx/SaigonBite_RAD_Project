@@ -18,13 +18,16 @@ from app.auth import (
 )
 from app.repositories.mock_orders import orders
 from app.routers.kitchen import router as kitchen_router
+from app.routers.customer import router as customer_router
 from app.schemas import LoginRequest, OrderDetail
 
 app = FastAPI(title="SaigonBite Kitchen API", version="0.1.0")
 app.include_router(kitchen_router)
+app.include_router(customer_router)
 
 project_dir = Path(__file__).resolve().parents[2]
 frontend_dir = project_dir / "frontend" / "kitchen"
+customer_frontend_dir = project_dir / "frontend" / "customer"
 cookie_secure = os.getenv("SAIGONBITE_COOKIE_SECURE", "0") == "1"
 
 
@@ -32,7 +35,7 @@ cookie_secure = os.getenv("SAIGONBITE_COOKIE_SECURE", "0") == "1"
 async def protect_kitchen(request: Request, call_next):
     path = request.url.path
     role_for_path = None
-    if path in {"/kitchen", "/style.css", "/app.js"} or path.startswith("/kitchen/") or path == "/api/kitchen" or path.startswith("/api/kitchen/") or path.startswith("/api/orders/"):
+    if path in {"/kitchen", "/style.css", "/app.js"} or path.startswith("/kitchen/") or path == "/api/kitchen" or path.startswith("/api/kitchen/"):
         role_for_path = "KITCHEN_STAFF"
     elif path.rstrip("/") == "/customer":
         role_for_path = "CUSTOMER"
@@ -127,9 +130,17 @@ def logout(request: Request, response: Response):
 @app.get("/customer/", include_in_schema=False)
 @app.get("/customer", include_in_schema=False)
 def customer_placeholder(request: Request):
-    session = get_session(request.cookies.get(SESSION_COOKIE))
-    email = escape(session["email"])
-    return HTMLResponse(temporary_role_placeholder_content("CUSTOMER", email))
+    return FileResponse(customer_frontend_dir / "index.html")
+
+
+@app.get("/customer/style.css", include_in_schema=False)
+def customer_css():
+    return FileResponse(customer_frontend_dir / "style.css", media_type="text/css")
+
+
+@app.get("/customer/app.js", include_in_schema=False)
+def customer_javascript():
+    return FileResponse(customer_frontend_dir / "app.js", media_type="text/javascript")
 
 
 @app.get("/admin/", include_in_schema=False)
@@ -146,8 +157,18 @@ def temporary_role_placeholder_content(role: str, email: str) -> str:
 
 
 @app.get("/api/orders/{order_id}", response_model=OrderDetail, tags=["Orders"])
-def get_order_detail(order_id: int):
+def get_order_detail(order_id: int, request: Request):
     """TEMPORARY mock-compatible implementation; replace with TV1 order service."""
+    session = get_session(request.cookies.get(SESSION_COOKIE))
+    if not session:
+        return JSONResponse(status_code=401, content={"detail": "Authentication required"})
+    if session["role"] not in {"CUSTOMER", "KITCHEN_STAFF"}:
+        return JSONResponse(status_code=403, content={"detail": "This account role cannot access this resource"})
+    if session["role"] == "CUSTOMER":
+        order = orders.get(order_id)
+        if order["customer_id"] != 1:
+            return JSONResponse(status_code=404, content={"detail": "Order not found"})
+        return order
     return orders.get(order_id)
 
 

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173d32">
+  <title>Order Food | SaigonBite</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/customer/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#home" aria-label="SaigonBite home">
+        <span class="brand-mark" data-icon="chef"></span><strong>SaigonBite</strong><small data-i18n="tagline">GOOD FOOD, CLOSE BY</small>
+      </a>
+      <nav class="side-nav" aria-label="Main navigation">
+        <a href="#home" data-view="home"><span data-icon="home"></span><span class="nav-label" data-i18n="home">Home</span></a>
+        <a href="#order" class="active" data-view="order"><span data-icon="utensils"></span><span class="nav-label" data-i18n="order_food">Order Food</span></a>
+        <a href="#orders" data-view="orders"><span data-icon="receipt"></span><span class="nav-label" data-i18n="my_orders">My Orders</span></a>
+        <a href="#vouchers" data-view="vouchers"><span data-icon="ticket"></span><span class="nav-label" data-i18n="vouchers">Vouchers</span></a>
+        <a href="#profile" data-view="profile"><span data-icon="user"></span><span class="nav-label" data-i18n="profile">Profile</span></a>
+      </nav>
+      <div class="sidebar-footer"><p data-i18n="footer_tagline">Freshly made.<br>Happily delivered.</p><small>© 2026 SaigonBite</small></div>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar"><span class="mobile-brand">SaigonBite</span><div class="topbar-actions"><span class="user-greeting"><span>Hello,</span> <strong id="customer-name">Customer</strong></span><button class="logout-button" id="logout"><span data-icon="logout"></span><span>Log out</span></button></div></header>
+      <div id="notice" class="alert d-none" role="alert"></div>
+      <section id="view-order" class="view">
+        <div id="hub-screen">
+          <div class="page-heading"><span class="eyebrow" data-i18n="nearby_label">NEARBY RESTAURANTS</span><h1 data-i18n="hero_title">What are you craving today?</h1><p data-i18n="hero_subtitle">Choose a nearby restaurant and explore its menu.</p></div>
+          <label class="search-box"><span data-icon="search"></span><input id="hub-search" type="search" data-i18n-placeholder="search_placeholder" placeholder="Search restaurants..." aria-label="Search restaurants"><small data-i18n="search_hint">Search by name or location</small></label>
+          <div class="section-label"><span data-i18n="restaurants">NEARBY RESTAURANTS</span><span id="hub-count">Loading...</span></div>
+          <div class="demo-note"><span data-icon="info"></span><span data-i18n-html="restaurant_data_note">Real restaurant locations based on <a href="https://international.tdtu.edu.vn/en/support/surrounding" target="_blank" rel="noreferrer">TDTU information</a>. Menus, prices and delivery availability are demo data.</span></div>
+          <div id="hub-list" class="hub-list"></div>
+        </div>
+
+        <div id="menu-screen" class="d-none">
+          <div class="menu-heading"><button class="btn btn-outline-light back-button" id="back-hubs" aria-label="Quay lại"><span data-icon="arrow-left"></span></button><div><h1 id="selected-hub-name"></h1><p id="selected-hub-meta"></p></div></div>
+          <div class="demo-note menu-demo-note"><span data-icon="info"></span><span data-i18n="menu_demo_note">Sample menu and prices for this demo. They may differ from the restaurant's current menu.</span></div>
+          <div class="category-tabs" id="category-tabs"></div>
+          <div id="menu-grid" class="menu-grid"></div>
+          <div class="cart-strip"><div><strong data-i18n="your_cart">Your cart</strong><span id="cart-count">0 items</span></div><strong id="cart-total">₫0</strong><button class="btn btn-brand" id="view-cart"><span data-i18n="view_cart">View cart</span><span data-icon="arrow-right"></span></button></div>
+        </div>
+
+        <div id="cart-screen" class="d-none">
+          <div class="page-heading with-back"><button class="btn btn-outline-light back-button" id="back-menu" aria-label="Back to menu"><span data-icon="arrow-left"></span></button><div><h1 data-i18n="your_cart">Your Cart</h1><p data-i18n="cart_subtitle">Review your items before placing the order.</p></div></div>
+          <div class="cart-layout"><div><div id="cart-hub" class="cart-hub"></div><div id="cart-lines" class="cart-lines"></div></div><aside class="summary-card"><h2 data-i18n="order_summary">Order Summary</h2><div class="summary-row"><span data-i18n="subtotal">Subtotal</span><strong id="cart-subtotal">₫0</strong></div><div class="summary-row total-row"><span data-i18n="total">Total</span><strong id="cart-grand-total">₫0</strong></div><small data-i18n="delivery_fee_not_included">Delivery fee is not included.</small><button class="btn btn-brand w-100 mt-3" id="proceed-checkout"><span data-i18n="continue_checkout">Continue to Checkout</span> <span data-icon="arrow-right"></span></button></aside></div>
+        </div>
+
+        <div id="checkout-screen" class="d-none">
+          <div class="page-heading with-back"><button class="btn btn-outline-light back-button" id="back-cart" aria-label="Back to cart"><span data-icon="arrow-left"></span></button><div><h1 data-i18n="checkout_title">Checkout</h1><p data-i18n="checkout_subtitle">A few details and your restaurant will get cooking.</p></div></div>
+          <div class="checkout-layout"><form id="checkout-form" class="checkout-form">
+            <section class="form-card"><h2><span>01</span> <span data-i18n="delivery_information">Delivery Information</span></h2><label class="form-label" for="address" data-i18n="delivery_address">Delivery address</label><input class="form-control" id="address" required minlength="5" data-i18n-placeholder="address_placeholder" placeholder="Street, building, apartment..."><div class="row g-3 mt-0"><div class="col-md-6"><label class="form-label" for="recipient" data-i18n="recipient_name">Recipient name</label><input class="form-control" id="recipient" required data-i18n-placeholder="name_placeholder" placeholder="Your name"></div><div class="col-md-6"><label class="form-label" for="phone" data-i18n="phone_number">Phone number</label><input class="form-control" id="phone" required inputmode="tel" placeholder="0901 234 567"></div></div><label class="form-label mt-3" for="note" data-i18n="note_optional">Note (optional)</label><input class="form-control" id="note" data-i18n-placeholder="note_placeholder" placeholder="For example: call when you arrive"></section>
+            <section class="form-card"><h2><span>02</span> <span data-i18n="voucher">Voucher</span></h2><div class="input-group"><input class="form-control" id="voucher" data-i18n-placeholder="voucher_placeholder" placeholder="Enter voucher code"><button class="btn btn-outline-brand" type="button" id="apply-voucher" data-i18n="apply">Apply</button></div><small class="form-hint" data-i18n="voucher_unavailable">Voucher validation is not connected yet.</small></section>
+            <section class="form-card"><h2><span>03</span> <span data-i18n="payment_method">Payment Method</span></h2><label class="payment-option"><input type="radio" name="payment" value="MOMO" checked><span>Momo</span></label><label class="payment-option"><input type="radio" name="payment" value="COD"><span data-i18n="cod">Cash on Delivery (COD)</span></label></section>
+          </form><aside class="summary-card checkout-summary"><h2 data-i18n="order_summary">Order Summary</h2><p id="checkout-hub-name"></p><div class="summary-row"><span data-i18n="subtotal">Subtotal</span><strong id="checkout-subtotal">₫0</strong></div><div class="summary-row"><span data-i18n="delivery_fee">Delivery fee</span><strong data-i18n="not_calculated">Not calculated</strong></div><div class="summary-row"><span data-i18n="discount">Discount</span><strong>−₫0</strong></div><div class="summary-row total-row"><span data-i18n="total">Total</span><strong id="checkout-total">₫0</strong></div><small data-i18n="delivery_fee_note">Delivery fee is not included in this demo.</small><button class="btn btn-brand w-100 mt-3" id="place-order" type="submit" form="checkout-form"><span data-i18n="place_order">Place Order</span> <span data-icon="arrow-right"></span></button></aside></div>
+        </div>
+
+        <div id="success-screen" class="d-none success-screen"><div class="success-icon" data-icon="check"></div><span class="eyebrow" data-i18n="order_success_eyebrow">ORDER PLACED SUCCESSFULLY</span><h1 data-i18n="order_success_title">Your order is on its way!</h1><p><span data-i18n="order_number">Order number</span> <strong id="success-order-id"></strong></p><p class="muted" data-i18n="order_success_message">The restaurant will confirm and prepare your order.</p><div class="success-card"><div><span data-i18n="restaurant">Restaurant</span><strong id="success-hub"></strong></div><div><span data-i18n="order_total">Order total</span><strong id="success-total"></strong></div><div><span data-i18n="status">Status</span><strong class="status-pill">PENDING</strong></div><small data-i18n="order_status_message">Your order status will update when the restaurant confirms.</small></div><div class="success-actions"><button class="btn btn-outline-brand" id="order-again"><span data-icon="refresh"></span> <span data-i18n="order_again">Order Again</span></button><button class="btn btn-brand" id="track-order"><span data-i18n="track_order">Track Order</span> <span data-icon="arrow-right"></span></button></div></div>
+      </section>
+      <section id="view-orders" class="view d-none">
+        <div id="orders-list-screen">
+          <div class="page-heading"><span class="eyebrow">ORDER HISTORY</span><h1>My Orders</h1><p>Your next bite, and every bite before it.</p></div>
+          <div id="orders-error" class="alert alert-warning d-none" role="status"></div>
+          <div class="orders-featured d-none" id="featured-order"></div>
+          <div class="orders-toolbar"><div class="order-filters" role="group" aria-label="Filter orders"><button class="active" data-order-filter="ALL">All</button><button data-order-filter="PENDING">Pending</button><button data-order-filter="PREPARING">Preparing</button><button data-order-filter="DELIVERING">Delivering</button><button data-order-filter="COMPLETED">Completed</button></div><span id="order-count"></span></div>
+          <div class="order-table-wrap"><table class="order-table"><thead><tr><th>Order ID</th><th>Hub</th><th>Order date</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody id="orders-table-body"></tbody></table></div>
+          <div id="orders-empty" class="empty-state d-none">No orders found yet. Your orders will appear here.</div>
+        </div>
+        <div id="order-detail-screen" class="d-none"></div>
+        <div id="order-track-screen" class="d-none"></div>
+        <div id="order-history-screen" class="d-none"></div>
+      </section>
+      <section id="view-home" class="view d-none">
+        <div class="page-heading home-welcome"><span class="eyebrow">WELCOME BACK</span><h1>Good food, close by.</h1><p id="home-customer-name">Customer</p></div>
+        <div class="home-actions"><button class="home-action-card" data-open-view="order"><span class="home-action-icon" data-icon="utensils"></span><span><strong>Order food</strong></span><span class="home-action-arrow" data-icon="arrow-right"></span></button><button class="home-action-card" data-open-view="orders"><span class="home-action-icon" data-icon="receipt"></span><span><strong>My orders</strong></span><span class="home-action-arrow" data-icon="arrow-right"></span></button></div>
+        <div class="home-stats" id="home-stats"><article><span>Total orders</span><strong id="home-order-count">—</strong></article><article><span>In progress</span><strong id="home-active-count">—</strong></article><article><span>Restaurants nearby</span><strong id="home-hub-count">—</strong></article></div>
+        <div class="home-section-heading"><div><h2>Recent orders</h2></div><button class="text-link" data-open-view="orders">View all <span data-icon="arrow-right"></span></button></div>
+        <div id="home-recent-orders" class="home-recent-orders"><div class="home-empty-card">Your recent orders will show here.</div></div>
+        <div class="home-section-heading"><div><h2>Restaurants nearby</h2></div><button class="text-link" data-open-view="order">Browse all <span data-icon="arrow-right"></span></button></div>
+        <div id="home-restaurants" class="home-restaurants"></div>
+      </section>
+      <section id="view-vouchers" class="view d-none">
+        <div class="page-heading"><h1>Vouchers</h1></div>
+        <section class="voucher-intro"><div class="voucher-intro-icon" data-icon="ticket"></div><div><h2>Offers coming soon</h2><p>Voucher offers will appear here when available.</p></div><span class="voucher-sparkle">✳</span></section>
+        <div class="voucher-howto"><div><span class="step-number">01</span><h2>Choose a meal</h2><p>Pick dishes from a nearby restaurant.</p></div><div><span class="step-number">02</span><h2>Apply a voucher</h2><p>Enter an eligible code at checkout.</p></div><div><span class="step-number">03</span><h2>Enjoy your order</h2><p>Your discount appears in the order total.</p></div></div>
+        <button class="btn btn-brand" data-open-view="order">Explore restaurants <span data-icon="arrow-right"></span></button>
+      </section>
+      <section id="view-profile" class="view d-none">
+        <div class="page-heading"><h1>Profile</h1></div>
+        <div class="profile-layout"><section class="profile-card"><div class="profile-identity"><div class="profile-avatar" data-icon="user"></div><div><span class="eyebrow">CUSTOMER ACCOUNT</span><h2 id="profile-customer-name">Customer</h2><p id="profile-customer-email">—</p></div></div><div class="profile-fields"><div><span>Full name</span><strong id="profile-name-field">Customer</strong></div><div><span>Email address</span><strong id="profile-email-field">—</strong></div><div><span>Account type</span><strong>Customer</strong></div><div><span>Account status</span><strong class="account-status"><i></i> Signed in</strong></div></div><p class="profile-note"><span data-icon="info"></span>Profile editing is not available yet.</p></section><aside class="profile-side-card"><span class="eyebrow">ACCOUNT SECURITY</span><h2>Keep your account safe</h2><p>Sign out when you are using a shared or public device.</p><button class="btn btn-outline-brand" data-logout><span data-icon="logout"></span> Log out</button></aside></div>
+      </section>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/customer/app.js" defer></script>
+</body>
+</html>

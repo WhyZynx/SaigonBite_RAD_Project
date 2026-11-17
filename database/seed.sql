@@ -45,16 +45,15 @@ INSERT INTO orders (
     delivery_address, delivery_distance_km, payment_method, payment_status,
     subtotal, delivery_fee, surcharge, discount, total, created_at
 ) VALUES
-(101, 1, 1, 1, 'DELIVERED', '45 Le Loi, District 1, HCMC', 2.4, 'ONLINE', 'PAID', 175000, 15000, 0, 35000, 155000, '2026-11-01 11:15:00'),
+(101, 1, 1, 1, 'DELIVERED', '45 Le Loi, District 1, HCMC', 2.4, 'COD', 'PAID', 175000, 15000, 0, 35000, 155000, '2026-11-01 11:15:00'),
 (102, 2, 2, NULL, 'DELIVERED', '112 Cach Mang Thang 8, District 3, HCMC', 3.1, 'COD', 'PAID', 130000, 18000, 0, 0, 148000, '2026-11-03 12:05:00'),
-(103, 3, 1, 2, 'DELIVERED', '72 Dong Khoi, District 1, HCMC', 1.8, 'ONLINE', 'PAID', 150000, 12000, 0, 25000, 137000, '2026-11-07 18:30:00'),
-(104, 4, 3, 3, 'DELIVERED', '105 Nguyen Thi Thap, District 7, HCMC', 4.2, 'ONLINE', 'PAID', 138000, 20000, 0, 13800, 144200, '2026-11-10 19:10:00'),
+(103, 3, 1, 2, 'DELIVERED', '72 Dong Khoi, District 1, HCMC', 1.8, 'COD', 'PAID', 150000, 12000, 0, 25000, 137000, '2026-11-07 18:30:00'),
+(104, 4, 3, 3, 'DELIVERED', '105 Nguyen Thi Thap, District 7, HCMC', 4.2, 'COD', 'PAID', 138000, 20000, 0, 13800, 144200, '2026-11-10 19:10:00'),
 (105, 1, 1, NULL, 'REJECTED', '90 Pasteur, District 1, HCMC', 2.0, 'COD', 'UNPAID', 50000, 15000, 0, 0, 65000, '2026-11-12 12:40:00'),
 (106, 1, 1, 3, 'PENDING', '22 Hai Ba Trung, District 1, HCMC', 2.7, 'COD', 'UNPAID', 120000, 15000, 0, 12000, 123000, '2026-11-15 11:30:00'),
-(107, 2, 1, NULL, 'CONFIRMED', '18 Ly Tu Trong, District 1, HCMC', 1.5, 'ONLINE', 'PAID', 110000, 12000, 0, 0, 122000, '2026-11-15 11:35:00'),
-(108, 3, 1, NULL, 'PREPARING', '35 Mac Thi Buoi, District 1, HCMC', 1.9, 'ONLINE', 'PAID', 95000, 12000, 0, 0, 107000, '2026-11-15 11:40:00'),
+(107, 2, 1, NULL, 'CONFIRMED', '18 Ly Tu Trong, District 1, HCMC', 1.5, 'COD', 'UNPAID', 110000, 12000, 0, 0, 122000, '2026-11-15 11:35:00'),
+(108, 3, 1, NULL, 'PREPARING', '35 Mac Thi Buoi, District 1, HCMC', 1.9, 'COD', 'UNPAID', 95000, 12000, 0, 0, 107000, '2026-11-15 11:40:00'),
 (109, 4, 2, NULL, 'READY', '60 Tran Quoc Thao, District 3, HCMC', 2.2, 'COD', 'UNPAID', 95000, 15000, 0, 0, 110000, '2026-11-15 11:45:00');
-
 -- 7. Seed Order Items
 INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price) VALUES
 (101, 1, 2, 55000),

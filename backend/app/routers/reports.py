@@ -2,7 +2,7 @@ from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..repositories import report_repository
+from app.repositories import report_repository
 
 router = APIRouter(prefix="/api/reports", tags=["Manager Reports"])
 

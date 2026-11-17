@@ -10,9 +10,9 @@ class Customer(Base):
     customer_id = Column(Integer, primary_key=True, autoincrement=True)
     customer_type = Column(String(20), nullable=False)
     name = Column(String(100), nullable=False)
-    email = Column(String(255), unique=True, nullable=True)
+    email = Column(String(100), nullable=True)
     phone = Column(String(20), nullable=True)
-    passport_number = Column(String(50), nullable=True)
+    passport_number = Column(String(30), nullable=True)
 
     orders = relationship("Order", back_populates="customer")
 
@@ -80,7 +80,7 @@ class Order(Base):
     status = Column(String(30), default="PENDING", nullable=False)
     delivery_address = Column(String(255), nullable=False)
     delivery_distance_km = Column(Float, nullable=False)
-    payment_method = Column(String(20), nullable=False)
+    payment_method = Column(String(20), default="COD", nullable=False)
     payment_status = Column(String(20), default="UNPAID", nullable=False)
     subtotal = Column(Integer, nullable=False)
     delivery_fee = Column(Integer, default=0, nullable=False)

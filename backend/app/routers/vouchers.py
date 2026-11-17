@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Voucher
-from ..repositories import voucher_repository
+from app.repositories import voucher_repository
 
 router = APIRouter(prefix="/api/vouchers", tags=["Admin Vouchers"])
 

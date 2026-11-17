@@ -45,7 +45,7 @@ class CreateOrderRequest(BaseModel):
     delivery_address: str = Field(min_length=5, max_length=500)
     delivery_distance_km: float = Field(ge=0)
     voucher_code: str | None = None
-    payment_method: str = Field(pattern="^(COD|MOMO)$")
+    payment_method: str = Field(default="COD", pattern="^COD$")
 
 
 class CreateOrderResponse(BaseModel):

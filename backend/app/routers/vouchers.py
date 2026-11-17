@@ -1,6 +1,9 @@
 from datetime import date
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+from ..database import get_db
+from ..models import Voucher
 
 router = APIRouter(prefix="/api/vouchers", tags=["Admin Vouchers"])
 
@@ -17,7 +20,8 @@ def _format_display_date(d: date) -> str:
 class VoucherCreate(BaseModel):
     code: str = Field(..., min_length=2, max_length=32)
     hub: str = Field(default="All hubs", max_length=64)
-    discount: str = Field(..., min_length=1, max_length=32)
+    discount_type: str = Field(..., pattern="^(PERCENT|FIXED)$")
+    discount_value: int = Field(..., gt=0)
     min_order: int = Field(..., ge=0)
     start_date: date
     end_date: date
@@ -33,113 +37,46 @@ class VoucherOut(BaseModel):
     valid_to: str
     status: str
 
-
-_VOUCHERS_STORE: list[dict] = [
-    {
-        "id": 1,
-        "code": "BITEWELCOME",
-        "hub": "All hubs",
-        "discount": "20%",
-        "min_order": "150,000 VND",
-        "valid_from": "01 Nov 2026 –",
-        "valid_to": "31 Dec 2026",
-        "status": "ACTIVE",
-    },
-    {
-        "id": 2,
-        "code": "SAIGON50K",
-        "hub": "All hubs",
-        "discount": "50,000 VND",
-        "min_order": "250,000 VND",
-        "valid_from": "01 Nov 2026 –",
-        "valid_to": "30 Nov 2026",
-        "status": "ACTIVE",
-    },
-    {
-        "id": 3,
-        "code": "FREESHIPD1",
-        "hub": "Bite Hub D1",
-        "discount": "25,000 VND",
-        "min_order": "100,000 VND",
-        "valid_from": "10 Nov 2026 –",
-        "valid_to": "30 Nov 2026",
-        "status": "ACTIVE",
-    },
-    {
-        "id": 4,
-        "code": "D7LUNCH",
-        "hub": "Bite Hub D7",
-        "discount": "15%",
-        "min_order": "120,000 VND",
-        "valid_from": "01 Nov 2026 –",
-        "valid_to": "30 Nov 2026",
-        "status": "ACTIVE",
-    },
-    {
-        "id": 5,
-        "code": "THUDUC30",
-        "hub": "Bite Hub Thu Duc",
-        "discount": "30,000 VND",
-        "min_order": "180,000 VND",
-        "valid_from": "01 Nov 2026 –",
-        "valid_to": "31 Dec 2026",
-        "status": "ACTIVE",
-    },
-    {
-        "id": 6,
-        "code": "TET2026",
-        "hub": "All hubs",
-        "discount": "50,000 VND",
-        "min_order": "200,000 VND",
-        "valid_from": "01 Feb 2026 –",
-        "valid_to": "28 Feb 2026",
-        "status": "EXPIRED",
-    },
-    {
-        "id": 7,
-        "code": "SUMMERBITE",
-        "hub": "All hubs",
-        "discount": "10%",
-        "min_order": "100,000 VND",
-        "valid_from": "01 Jun 2026 –",
-        "valid_to": "31 Aug 2026",
-        "status": "ARCHIVED",
-    },
-    {
-        "id": 8,
-        "code": "D1WEEKEND",
-        "hub": "Bite Hub D1",
-        "discount": "20%",
-        "min_order": "150,000 VND",
-        "valid_from": "01 Aug 2026 –",
-        "valid_to": "31 Aug 2026",
-        "status": "ARCHIVED",
-    },
-]
+    class Config:
+        from_attributes = True
 
 
 @router.get("", response_model=list[VoucherOut])
 def list_vouchers(
     status_filter: str | None = Query(default=None, alias="status"),
     search: str | None = Query(default=None),
+    db: Session = Depends(get_db),
 ):
-    results = _VOUCHERS_STORE
+    query = db.query(Voucher)
+
     if status_filter and status_filter.upper() != "ALL":
         target_status = status_filter.strip().upper()
-        results = [v for v in results if v["status"] == target_status]
+        query = query.filter(Voucher.status == target_status)
 
     if search and search.strip():
-        kw = search.strip().lower()
-        results = [
-            v for v in results
-            if kw in v["code"].lower() or kw in v["hub"].lower()
-        ]
+        kw = f"%{search.strip().lower()}%"
+        query = query.filter(Voucher.code.ilike(kw))
+
+    vouchers = query.all()
+    results = []
+    for v in vouchers:
+        discount_str = f"{v.discount_value}%" if v.discount_type == "PERCENT" else f"{v.discount_value:,} VND"
+        results.append({
+            "id": v.voucher_id,
+            "code": v.code,
+            "hub": "All hubs",
+            "discount": discount_str,
+            "min_order": f"{v.min_order:,} VND",
+            "valid_from": f"{_format_display_date(v.start_date.date())} –" if v.start_date else "",
+            "valid_to": _format_display_date(v.end_date.date()) if v.end_date else "",
+            "status": v.status,
+        })
 
     return results
 
 
 @router.post("", response_model=VoucherOut, status_code=status.HTTP_201_CREATED)
-def create_voucher(payload: VoucherCreate):
+def create_voucher(payload: VoucherCreate, db: Session = Depends(get_db)):
     normalized_code = payload.code.strip().upper()
     if not normalized_code:
         raise HTTPException(status_code=400, detail="Voucher code is required.")
@@ -150,38 +87,63 @@ def create_voucher(payload: VoucherCreate):
             detail="Valid until date cannot be earlier than valid from date.",
         )
 
-    if any(v["code"] == normalized_code for v in _VOUCHERS_STORE):
+    existing = db.query(Voucher).filter(Voucher.code == normalized_code).first()
+    if existing:
         raise HTTPException(
             status_code=409,
             detail=f"Voucher code '{normalized_code}' already exists.",
         )
 
-    next_id = max((v["id"] for v in _VOUCHERS_STORE), default=0) + 1
-    new_voucher = {
-        "id": next_id,
-        "code": normalized_code,
+    new_voucher = Voucher(
+        code=normalized_code,
+        discount_type=payload.discount_type,
+        discount_value=payload.discount_value,
+        min_order=payload.min_order,
+        start_date=payload.start_date,
+        end_date=payload.end_date,
+        status="ACTIVE",
+    )
+    db.add(new_voucher)
+    db.commit()
+    db.refresh(new_voucher)
+
+    discount_str = f"{new_voucher.discount_value}%" if new_voucher.discount_type == "PERCENT" else f"{new_voucher.discount_value:,} VND"
+    return {
+        "id": new_voucher.voucher_id,
+        "code": new_voucher.code,
         "hub": payload.hub.strip() or "All hubs",
-        "discount": payload.discount.strip(),
-        "min_order": f"{payload.min_order:,} VND",
-        "valid_from": f"{_format_display_date(payload.start_date)} –",
-        "valid_to": _format_display_date(payload.end_date),
-        "status": "ACTIVE",
+        "discount": discount_str,
+        "min_order": f"{new_voucher.min_order:,} VND",
+        "valid_from": f"{_format_display_date(new_voucher.start_date.date())} –",
+        "valid_to": _format_display_date(new_voucher.end_date.date()),
+        "status": new_voucher.status,
     }
-    _VOUCHERS_STORE.insert(0, new_voucher)
-    return new_voucher
 
 
 @router.patch("/{voucher_id}/archive", response_model=VoucherOut)
-def archive_voucher(voucher_id: int):
-    voucher = next((v for v in _VOUCHERS_STORE if v["id"] == voucher_id), None)
+def archive_voucher(voucher_id: int, db: Session = Depends(get_db)):
+    voucher = db.query(Voucher).filter(Voucher.voucher_id == voucher_id).first()
     if not voucher:
         raise HTTPException(status_code=404, detail="Voucher not found.")
 
-    if voucher["status"] != "ACTIVE":
+    if voucher.status != "ACTIVE":
         raise HTTPException(
             status_code=400,
             detail="Only ACTIVE vouchers can be archived.",
         )
 
-    voucher["status"] = "ARCHIVED"
-    return voucher
+    voucher.status = "ARCHIVED"
+    db.commit()
+    db.refresh(voucher)
+
+    discount_str = f"{voucher.discount_value}%" if voucher.discount_type == "PERCENT" else f"{voucher.discount_value:,} VND"
+    return {
+        "id": voucher.voucher_id,
+        "code": voucher.code,
+        "hub": "All hubs",
+        "discount": discount_str,
+        "min_order": f"{voucher.min_order:,} VND",
+        "valid_from": f"{_format_display_date(voucher.start_date.date())} –" if voucher.start_date else "",
+        "valid_to": _format_display_date(voucher.end_date.date()) if voucher.end_date else "",
+        "status": voucher.status,
+    }

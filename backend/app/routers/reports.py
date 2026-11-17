@@ -1,5 +1,9 @@
-from datetime import date
-from fastapi import APIRouter, HTTPException, Query
+from datetime import date, datetime
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+from ..database import get_db
+from ..models import Delivery, Hub, Order
 
 router = APIRouter(prefix="/api/reports", tags=["Manager Reports"])
 
@@ -16,32 +20,58 @@ def _validate_dates(start_date: date, end_date: date) -> None:
 def get_sales_report(
     start_date: date = Query(default=date(2026, 11, 1)),
     end_date: date = Query(default=date(2026, 11, 15)),
+    db: Session = Depends(get_db),
 ):
     _validate_dates(start_date, end_date)
-    rows = [
-        {"label": "01", "date": "01 Nov 2026", "orders": 192, "revenue": 24000000, "chartVal": 24.0, "delivery": "24 mins"},
-        {"label": "02", "date": "02 Nov 2026", "orders": 208, "revenue": 26000000, "chartVal": 26.0, "delivery": "23 mins"},
-        {"label": "03", "date": "03 Nov 2026", "orders": 224, "revenue": 28000000, "chartVal": 28.0, "delivery": "25 mins"},
-        {"label": "04", "date": "04 Nov 2026", "orders": 240, "revenue": 30000000, "chartVal": 30.0, "delivery": "24 mins"},
-        {"label": "05", "date": "05 Nov 2026", "orders": 280, "revenue": 35000000, "chartVal": 35.0, "delivery": "24 mins"},
-        {"label": "06", "date": "06 Nov 2026", "orders": 336, "revenue": 42000000, "chartVal": 42.0, "delivery": "26 mins"},
-        {"label": "07", "date": "07 Nov 2026", "orders": 304, "revenue": 38000000, "chartVal": 38.0, "delivery": "25 mins"},
-        {"label": "08", "date": "08 Nov 2026", "orders": 176, "revenue": 22000000, "chartVal": 22.0, "delivery": "22 mins"},
-        {"label": "09", "date": "09 Nov 2026", "orders": 200, "revenue": 25000000, "chartVal": 25.0, "delivery": "23 mins"},
-        {"label": "10", "date": "10 Nov 2026", "orders": 216, "revenue": 27000000, "chartVal": 27.0, "delivery": "24 mins"},
-        {"label": "11", "date": "11 Nov 2026", "orders": 232, "revenue": 29000000, "chartVal": 29.0, "delivery": "24 mins"},
-        {"label": "12", "date": "12 Nov 2026", "orders": 248, "revenue": 31000000, "chartVal": 31.0, "delivery": "25 mins"},
-        {"label": "13", "date": "13 Nov 2026", "orders": 208, "revenue": 26000000, "chartVal": 26.0, "delivery": "23 mins"},
-        {"label": "14", "date": "14 Nov 2026", "orders": 192, "revenue": 24000000, "chartVal": 24.0, "delivery": "24 mins"},
-        {"label": "15", "date": "15 Nov 2026", "orders": 164, "revenue": 21500000, "chartVal": 21.5, "delivery": "23 mins"},
-    ]
+    start_dt = datetime.combine(start_date, datetime.min.time())
+    end_dt = datetime.combine(end_date, datetime.max.time())
+
+    orders = db.query(Order).filter(Order.created_at.between(start_dt, end_dt)).all()
+
+    total_revenue = sum(o.total for o in orders if o.status == "DELIVERED")
+    total_orders = len(orders)
+
+    # Tính thời gian giao hàng trung bình từ bảng deliveries
+    deliveries = db.query(Delivery).join(Order).filter(
+        Order.created_at.between(start_dt, end_dt),
+        Delivery.delivered_at.isnot(None),
+        Delivery.pickup_at.isnot(None),
+    ).all()
+
+    avg_minutes = 24
+    if deliveries:
+        durations = [(d.delivered_at - d.pickup_at).total_seconds() / 60 for d in deliveries]
+        avg_minutes = int(sum(durations) / len(durations))
+
+    # Gom nhóm theo ngày để tạo rows cho biểu đồ/bảng
+    daily_data = {}
+    for o in orders:
+        day_key = o.created_at.strftime("%Y-%m-%d")
+        if day_key not in daily_data:
+            daily_data[day_key] = {"orders": 0, "revenue": 0}
+        daily_data[day_key]["orders"] += 1
+        if o.status == "DELIVERED":
+            daily_data[day_key]["revenue"] += o.total
+
+    rows = []
+    for d_str, stats in sorted(daily_data.items()):
+        dt = datetime.strptime(d_str, "%Y-%m-%d")
+        rows.append({
+            "label": dt.strftime("%d"),
+            "date": dt.strftime("%d %b %Y"),
+            "orders": stats["orders"],
+            "revenue": stats["revenue"],
+            "chartVal": float(stats["revenue"] / 1000000),
+            "delivery": f"{avg_minutes} mins",
+        })
+
     return {
         "kpis": [
-            {"label": "Total Revenue", "value": "428,500,000 VND"},
-            {"label": "Total Orders", "value": "3,420"},
-            {"label": "Avg. Delivery Time", "value": "24 mins"},
+            {"label": "Total Revenue", "value": f"{total_revenue:,} VND"},
+            {"label": "Total Orders", "value": f"{total_orders:,}"},
+            {"label": "Avg. Delivery Time", "value": f"{avg_minutes} mins"},
         ],
-        "totalSummary": "Total: 428,500,000 VND · 3,420 orders",
+        "totalSummary": f"Total: {total_revenue:,} VND · {total_orders:,} orders",
         "rows": rows,
     }
 
@@ -50,21 +80,49 @@ def get_sales_report(
 def get_hub_workload_report(
     start_date: date = Query(default=date(2026, 11, 1)),
     end_date: date = Query(default=date(2026, 11, 15)),
+    db: Session = Depends(get_db),
 ):
     _validate_dates(start_date, end_date)
+    start_dt = datetime.combine(start_date, datetime.min.time())
+    end_dt = datetime.combine(end_date, datetime.max.time())
+
+    hubs = db.query(Hub).all()
+    total_hub_orders = 0
+    completed_orders = 0
+    rows = []
+
+    for h in hubs:
+        hub_orders = db.query(Order).filter(
+            Order.hub_id == h.hub_id,
+            Order.created_at.between(start_dt, end_dt),
+        ).all()
+        
+        count_all = len(hub_orders)
+        count_completed = sum(1 for o in hub_orders if o.status == "DELIVERED")
+        count_active = count_all - count_completed
+
+        total_hub_orders += count_all
+        completed_orders += count_completed
+
+        rows.append({
+            "label": f"Hub {h.hub_id}",
+            "col1": h.name,
+            "col2": f"{count_all:,}",
+            "col3": f"{count_completed:,}",
+            "col4": f"{count_active:,}",
+            "chartVal": count_all,
+        })
+
+    completion_rate = (completed_orders / total_hub_orders * 100) if total_hub_orders > 0 else 0
+
     return {
         "kpis": [
-            {"label": "Total Hub Orders", "value": "3,420"},
-            {"label": "Completed Orders", "value": "3,318"},
+            {"label": "Total Hub Orders", "value": f"{total_hub_orders:,}"},
+            {"label": "Completed Orders", "value": f"{completed_orders:,}"},
             {"label": "Avg. Prep Time", "value": "11 mins"},
         ],
-        "totalSummary": "Total: 3,420 orders · 97.0% completion rate",
-        "rows": [
-            {"label": "D1", "col1": "District 1 Central Hub", "col2": "1,120", "col3": "1,092", "col4": "28", "chartVal": 1120},
-            {"label": "D7", "col1": "District 7 Phu My Hung Hub", "col2": "890", "col3": "865", "col4": "25", "chartVal": 890},
-            {"label": "TD", "col1": "Thu Duc Campus Hub", "col2": "780", "col3": "754", "col4": "26", "chartVal": 780},
-            {"label": "BT", "col1": "Binh Thanh Hub", "col2": "630", "col3": "607", "col4": "23", "chartVal": 630},
-        ],
+        "totalSummary": f"Total: {total_hub_orders:,} orders · {completion_rate:.1f}% completion rate",
+        "rows": rows,
     }
 
 
@@ -72,23 +130,50 @@ def get_hub_workload_report(
 def get_delivery_report(
     start_date: date = Query(default=date(2026, 11, 1)),
     end_date: date = Query(default=date(2026, 11, 15)),
+    db: Session = Depends(get_db),
 ):
     _validate_dates(start_date, end_date)
+    start_dt = datetime.combine(start_date, datetime.min.time())
+    end_dt = datetime.combine(end_date, datetime.max.time())
+
+    deliveries = db.query(Delivery).join(Order).filter(
+        Order.created_at.between(start_dt, end_dt),
+    ).all()
+
+    total_deliveries = len(deliveries)
+    on_time_count = sum(1 for d in deliveries if d.outcome == "DELIVERED")
+    on_time_rate = (on_time_count / total_deliveries * 100) if total_deliveries > 0 else 0
+
+    # Gom nhóm theo ngày giao hàng
+    daily_deliv = {}
+    for d in deliveries:
+        if d.delivered_at:
+            day_key = d.delivered_at.strftime("%Y-%m-%d")
+            if day_key not in daily_deliv:
+                daily_deliv[day_key] = {"total": 0, "ontime": 0}
+            daily_deliv[day_key]["total"] += 1
+            if d.outcome == "DELIVERED":
+                daily_deliv[day_key]["ontime"] += 1
+
+    rows = []
+    for idx, (d_str, stats) in enumerate(sorted(daily_deliv.items()), start=1):
+        dt = datetime.strptime(d_str, "%Y-%m-%d")
+        rate = (stats["ontime"] / stats["total"] * 100) if stats["total"] > 0 else 0
+        rows.append({
+            "label": f"{idx:02d}",
+            "col1": dt.strftime("%d %b %Y"),
+            "col2": str(stats["total"]),
+            "col3": f"{stats['ontime']} ({rate:.1f}%)",
+            "col4": "24 mins",
+            "chartVal": round(rate, 1),
+        })
+
     return {
         "kpis": [
-            {"label": "Total Deliveries", "value": "3,318"},
-            {"label": "On-Time Rate", "value": "94.6%"},
+            {"label": "Total Deliveries", "value": f"{total_deliveries:,}"},
+            {"label": "On-Time Rate", "value": f"{on_time_rate:.1f}%"},
             {"label": "Avg. Delivery Time", "value": "24 mins"},
         ],
-        "totalSummary": "Total: 3,318 deliveries · 94.6% on-time",
-        "rows": [
-            {"label": "01", "col1": "01 Nov 2026", "col2": "188", "col3": "179 (95.2%)", "col4": "24 mins", "chartVal": 95.2},
-            {"label": "02", "col1": "02 Nov 2026", "col2": "204", "col3": "195 (95.6%)", "col4": "23 mins", "chartVal": 95.6},
-            {"label": "03", "col1": "03 Nov 2026", "col2": "218", "col3": "204 (93.6%)", "col4": "25 mins", "chartVal": 93.6},
-            {"label": "04", "col1": "04 Nov 2026", "col2": "234", "col3": "222 (94.9%)", "col4": "24 mins", "chartVal": 94.9},
-            {"label": "05", "col1": "05 Nov 2026", "col2": "272", "col3": "257 (94.5%)", "col4": "24 mins", "chartVal": 94.5},
-            {"label": "06", "col1": "06 Nov 2026", "col2": "326", "col3": "304 (93.3%)", "col4": "26 mins", "chartVal": 93.3},
-            {"label": "07", "col1": "07 Nov 2026", "col2": "295", "col3": "278 (94.2%)", "col4": "25 mins", "chartVal": 94.2},
-            {"label": "08", "col1": "08 Nov 2026", "col2": "172", "col3": "166 (96.5%)", "col4": "22 mins", "chartVal": 96.5},
-        ],
+        "totalSummary": f"Total: {total_deliveries:,} deliveries · {on_time_rate:.1f}% on-time",
+        "rows": rows,
     }

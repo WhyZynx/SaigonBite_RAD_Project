@@ -19,12 +19,14 @@ from app.repositories.mock_orders import orders
 from app.routers.kitchen import router as kitchen_router
 from app.routers.customer import router as customer_router
 from app.routers.reports import router as reports_router
+from app.routers.vouchers import router as vouchers_router
 from app.schemas import LoginRequest, OrderDetail
 
 app = FastAPI(title="SaigonBite Kitchen API", version="0.1.0")
 app.include_router(kitchen_router)
 app.include_router(customer_router)
 app.include_router(reports_router)
+app.include_router(vouchers_router)
 
 project_dir = Path(__file__).resolve().parents[2]
 
@@ -43,7 +45,7 @@ async def protect_kitchen(request: Request, call_next):
         role_for_path = "KITCHEN_STAFF"
     elif path.rstrip("/") == "/customer":
         role_for_path = "CUSTOMER"
-    elif path.rstrip("/") == "/admin" or path.startswith("/admin/"):
+    elif path.rstrip("/") == "/admin" or path.startswith("/admin/") or path == "/api/vouchers" or path.startswith("/api/vouchers/"):
         role_for_path = "ADMIN"
     elif (
         path.rstrip("/") == "/manager"

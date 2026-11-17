@@ -1,4 +1,3 @@
-// SaigonBite Admin Portal — Manage Vouchers
 const voucherTableBody = document.getElementById("voucherTableBody");
 const voucherCountSummary = document.getElementById("voucherCountSummary");
 const voucherSearchInput = document.getElementById("voucherSearchInput");
@@ -12,97 +11,7 @@ const createVoucherForm = document.getElementById("createVoucherForm");
 
 let currentFilter = "ALL";
 let searchQuery = "";
-
-const vouchers = [
-    {
-        id: 1,
-        code: "BITEWELCOME",
-        hub: "All hubs",
-        discount: "20%",
-        minOrder: "150,000 VND",
-        validFrom: "01 Nov 2026 –",
-        validTo: "31 Dec 2026",
-        status: "ACTIVE"
-    },
-    {
-        id: 2,
-        code: "SAIGON50K",
-        hub: "All hubs",
-        discount: "50,000 VND",
-        minOrder: "250,000 VND",
-        validFrom: "01 Nov 2026 –",
-        validTo: "30 Nov 2026",
-        status: "ACTIVE"
-    },
-    {
-        id: 3,
-        code: "FREESHIPD1",
-        hub: "Bite Hub D1",
-        discount: "25,000 VND",
-        minOrder: "100,000 VND",
-        validFrom: "10 Nov 2026 –",
-        validTo: "30 Nov 2026",
-        status: "ACTIVE"
-    },
-    {
-        id: 4,
-        code: "D7LUNCH",
-        hub: "Bite Hub D7",
-        discount: "15%",
-        minOrder: "120,000 VND",
-        validFrom: "01 Nov 2026 –",
-        validTo: "30 Nov 2026",
-        status: "ACTIVE"
-    },
-    {
-        id: 5,
-        code: "THUDUC30",
-        hub: "Bite Hub Thu Duc",
-        discount: "30,000 VND",
-        minOrder: "180,000 VND",
-        validFrom: "01 Nov 2026 –",
-        validTo: "31 Dec 2026",
-        status: "ACTIVE"
-    },
-    {
-        id: 6,
-        code: "TET2026",
-        hub: "All hubs",
-        discount: "50,000 VND",
-        minOrder: "200,000 VND",
-        validFrom: "01 Feb 2026 –",
-        validTo: "28 Feb 2026",
-        status: "EXPIRED"
-    },
-    {
-        id: 7,
-        code: "SUMMERBITE",
-        hub: "All hubs",
-        discount: "10%",
-        minOrder: "100,000 VND",
-        validFrom: "01 Jun 2026 –",
-        validTo: "31 Aug 2026",
-        status: "ARCHIVED"
-    },
-    {
-        id: 8,
-        code: "D1WEEKEND",
-        hub: "Bite Hub D1",
-        discount: "20%",
-        minOrder: "150,000 VND",
-        validFrom: "01 Aug 2026 –",
-        validTo: "31 Aug 2026",
-        status: "ARCHIVED"
-    }
-];
-
-function formatDisplayDate(isoStr) {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const d = new Date(isoStr + "T00:00:00");
-    if (Number.isNaN(d.getTime())) return isoStr;
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
+let vouchers = [];
 
 function renderVouchers() {
     const filtered = vouchers.filter(v => {
@@ -135,11 +44,11 @@ function renderVouchers() {
                         </div>
                     </td>
                     <td class="discount-cell">${v.discount}</td>
-                    <td>${v.minOrder}</td>
+                    <td>${v.min_order}</td>
                     <td>
                         <div class="period-cell">
-                            <span>${v.validFrom}</span>
-                            <span>${v.validTo}</span>
+                            <span>${v.valid_from}</span>
+                            <span>${v.valid_to}</span>
                         </div>
                     </td>
                     <td>
@@ -163,6 +72,17 @@ function renderVouchers() {
     voucherCountSummary.textContent = `Showing 1–${filtered.length} of ${filtered.length} vouchers`;
 }
 
+async function loadVouchers() {
+    try {
+        const response = await fetch("/api/vouchers", { credentials: "same-origin" });
+        if (!response.ok) return;
+        vouchers = await response.json();
+        renderVouchers();
+    } catch (error) {
+        console.error("Failed to load vouchers:", error);
+    }
+}
+
 statusTabs.addEventListener("click", event => {
     const btn = event.target.closest(".tab-pill");
     if (!btn) return;
@@ -177,14 +97,29 @@ voucherSearchInput.addEventListener("input", event => {
     renderVouchers();
 });
 
-voucherTableBody.addEventListener("click", event => {
+voucherTableBody.addEventListener("click", async event => {
     const btn = event.target.closest(".archive-btn.enabled");
     if (!btn) return;
     const id = Number(btn.getAttribute("data-id"));
-    const target = vouchers.find(v => v.id === id);
-    if (target) {
-        target.status = "ARCHIVED";
+
+    try {
+        const response = await fetch(`/api/vouchers/${id}/archive`, {
+            method: "PATCH",
+            credentials: "same-origin"
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            alert(err.detail || "Unable to archive voucher.");
+            return;
+        }
+        const updated = await response.json();
+        const index = vouchers.findIndex(v => v.id === id);
+        if (index !== -1) {
+            vouchers[index] = updated;
+        }
         renderVouchers();
+    } catch (error) {
+        console.error("Archive failed:", error);
     }
 });
 
@@ -206,30 +141,35 @@ createVoucherModal.addEventListener("click", event => {
     }
 });
 
-createVoucherForm.addEventListener("submit", event => {
+createVoucherForm.addEventListener("submit", async event => {
     event.preventDefault();
-    const code = document.getElementById("newCode").value.trim().toUpperCase();
-    const hub = document.getElementById("newHub").value;
-    const discount = document.getElementById("newDiscount").value.trim();
-    const minOrderNum = Number(document.getElementById("newMinOrder").value || 0);
-    const startDate = document.getElementById("newStartDate").value;
-    const endDate = document.getElementById("newEndDate").value;
+    const payload = {
+        code: document.getElementById("newCode").value.trim().toUpperCase(),
+        hub: document.getElementById("newHub").value,
+        discount: document.getElementById("newDiscount").value.trim(),
+        min_order: Number(document.getElementById("newMinOrder").value || 0),
+        start_date: document.getElementById("newStartDate").value,
+        end_date: document.getElementById("newEndDate").value
+    };
 
-    if (!code || !discount) return;
-
-    vouchers.unshift({
-        id: Date.now(),
-        code,
-        hub,
-        discount,
-        minOrder: `${minOrderNum.toLocaleString("en-US")} VND`,
-        validFrom: `${formatDisplayDate(startDate)} –`,
-        validTo: formatDisplayDate(endDate),
-        status: "ACTIVE"
-    });
-
-    closeCreateModal();
-    renderVouchers();
+    try {
+        const response = await fetch("/api/vouchers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            alert(data.detail || "Unable to create voucher.");
+            return;
+        }
+        vouchers.unshift(data);
+        closeCreateModal();
+        renderVouchers();
+    } catch (error) {
+        console.error("Create voucher failed:", error);
+    }
 });
 
 document.querySelectorAll(".nav-item").forEach(item => {
@@ -251,4 +191,4 @@ document.getElementById("logoutButton").addEventListener("click", async () => {
     }
 });
 
-renderVouchers();
+loadVouchers();

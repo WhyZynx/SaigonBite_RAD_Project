@@ -1,18 +1,17 @@
 # SaigonBite Authentication Proposal (Temporary Mock)
 
-**Status:** Implementation proposal for team review. This file is separate from `API_CONTRACT.md`; the existing order API contract is unchanged.
+**Status:** Implementation proposal for team review. This file documents the active 4-role local authentication and route protection layer (`CUSTOMER`, `KITCHEN_STAFF`, `ADMIN`, `MANAGER`) and is separate from `API_CONTRACT.md`.
 
 ## Mock roles and routing
 
-The backend currently maps configured mock credentials to one of `CUSTOMER`, `KITCHEN_STAFF`, or `ADMIN`. The submitted login request contains only `email` and `password`; any client-supplied role is ignored. The server returns the authenticated role and its fixed destination:
+The backend currently maps configured mock credentials to one of `CUSTOMER`, `KITCHEN_STAFF`, `ADMIN`, or `MANAGER`. The submitted login request contains only `email` and `password`; any client-supplied role is ignored. The server returns the authenticated role and its fixed destination:
 
-| Role | Destination |
-|---|---|
-| `CUSTOMER` | `/customer/` |
-| `KITCHEN_STAFF` | `/kitchen/` |
-| `ADMIN` | `/admin/` |
-
-Customer and Admin destinations currently return explicit temporary placeholders because their interface files are empty. They do not modify TV1/TV3 code.
+| Role | Destination | Interface Status |
+|---|---|---|
+| `CUSTOMER` | `/customer/` | Temporary Customer placeholder |
+| `KITCHEN_STAFF` | `/kitchen/` | Kitchen Portal |
+| `ADMIN` | `/admin/` | Admin Portal (Manage Vouchers) |
+| `MANAGER` | `/manager/` | Manager Portal (Management Reports) |
 
 ## Proposed authentication endpoints
 
@@ -23,13 +22,13 @@ These routes are implemented for the local demo and need team approval before be
 Request:
 
 ```json
-{"email":"kitchen@saigonbite.local","password":"KitchenDemo2026!"}
+{"email":"admin@saigonbite.com","password":"password123"}
 ```
 
 Success response:
 
 ```json
-{"email":"kitchen@saigonbite.local","role":"KITCHEN_STAFF","demo":false,"redirect_url":"/kitchen/"}
+{"email":"admin@saigonbite.com","role":"ADMIN","demo":false,"redirect_url":"/admin/"}
 ```
 
 Invalid credentials return HTTP 401. The server chooses the role from its account mapping; a `role` property sent by the browser has no effect.
@@ -50,8 +49,12 @@ Invalidates the server-side session and expires the session cookie.
 
 - A random session ID is stored in the browser's `HttpOnly`, `SameSite=Lax` cookie named `saigonbite_session`.
 - Session records are held in process memory for up to eight hours and are lost on restart.
-- Kitchen UI assets, Kitchen APIs, and the shared order detail route require a `KITCHEN_STAFF` session. Missing sessions return HTTP 401 for APIs; a different role receives HTTP 403 for APIs. A wrong-role page request redirects to that user's own role destination.
-- Customer/Admin placeholder routes require their matching session role.
+- Protected routes enforce strict role separation:
+  - `KITCHEN_STAFF`: `/kitchen`, `/kitchen/`, `/style.css`, `/app.js`, and `/api/kitchen/*`
+  - `CUSTOMER`: `/customer` and `/customer/`
+  - `ADMIN`: `/admin`, `/admin/`, and `/api/vouchers/*`
+  - `MANAGER`: `/manager`, `/manager/`, and `/api/reports/*`
+- Missing sessions return HTTP 401 for APIs (or `303` redirect to `/` for UI pages); a different role receives HTTP 403 for APIs (or `303` redirect to that user's own role destination for UI pages).
 - `SAIGONBITE_COOKIE_SECURE=1` enables the Secure cookie flag for HTTPS.
 
 ## Replacement before production

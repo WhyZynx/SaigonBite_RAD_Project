@@ -1,5 +1,4 @@
 import os
-from html import escape
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
@@ -26,8 +25,11 @@ app.include_router(kitchen_router)
 app.include_router(customer_router)
 
 project_dir = Path(__file__).resolve().parents[2]
+
 frontend_dir = project_dir / "frontend" / "kitchen"
 customer_frontend_dir = project_dir / "frontend" / "customer"
+admin_frontend_dir = project_dir / "frontend" / "admin"
+manager_frontend_dir = project_dir / "frontend" / "manager"
 cookie_secure = os.getenv("SAIGONBITE_COOKIE_SECURE", "0") == "1"
 
 
@@ -39,8 +41,10 @@ async def protect_kitchen(request: Request, call_next):
         role_for_path = "KITCHEN_STAFF"
     elif path.rstrip("/") == "/customer":
         role_for_path = "CUSTOMER"
-    elif path.rstrip("/") == "/admin":
+    elif path.rstrip("/") == "/admin" or path.startswith("/admin/"):
         role_for_path = "ADMIN"
+    elif path.rstrip("/") == "/manager" or path.startswith("/manager/"):
+        role_for_path = "MANAGER"
     protected = role_for_path is not None or path == "/api/auth/me"
     session = get_session(request.cookies.get(SESSION_COOKIE)) if protected else None
     if protected and not session:
@@ -52,7 +56,6 @@ async def protect_kitchen(request: Request, call_next):
             return RedirectResponse(url=role_home(session["role"]), status_code=303)
         return JSONResponse(status_code=403, content={"detail": "This account role cannot access this resource"})
     return await call_next(request)
-
 
 def set_session_cookie(response: Response, token: str) -> None:
     response.set_cookie(
@@ -145,15 +148,46 @@ def customer_javascript():
 
 @app.get("/admin/", include_in_schema=False)
 @app.get("/admin", include_in_schema=False)
-def admin_placeholder(request: Request):
-    session = get_session(request.cookies.get(SESSION_COOKIE))
-    email = escape(session["email"])
-    return HTMLResponse(temporary_role_placeholder_content("ADMIN", email))
+def admin_page():
+    return FileResponse(admin_frontend_dir / "index.html")
 
 
-def temporary_role_placeholder_content(role: str, email: str) -> str:
-    title = "Customer interface" if role == "CUSTOMER" else "Admin interface"
-    return f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title} | SaigonBite</title><style>body{{margin:0;min-height:100vh;display:grid;place-items:center;background:#fbf8f0;color:#263b31;font:16px Arial,sans-serif}}main{{max-width:520px;margin:24px;padding:38px;background:#fff;border:1px solid #e5ebe3;border-radius:12px;box-shadow:0 8px 30px #173d3212}}.brand{{color:#173d32;font-size:22px;font-weight:700}}.brand small{{display:block;margin-top:5px;color:#7c8b7f;font-size:10px;letter-spacing:1px}}h1{{margin:34px 0 10px;font-size:24px}}p{{color:#768379;line-height:1.6}}strong{{color:#405447}}button{{margin-top:16px;padding:12px 20px;border:0;border-radius:6px;background:#173d32;color:#fff;font-weight:700;cursor:pointer}}</style><main><div class="brand">SaigonBite<small>MANAGEMENT SYSTEM</small></div><h1>{title} is not integrated yet</h1><p>This temporary placeholder confirms that <strong>{email}</strong> signed in as <strong>{role}</strong>. The role-specific interface will appear here when its team module is integrated.</p><button id="logout">Sign Out</button></main><script>document.getElementById('logout').onclick=async()=>{{await fetch('/api/auth/logout',{{method:'POST'}});location.assign('/')}};</script></html>"""
+@app.get("/admin/style.css", include_in_schema=False)
+def admin_css():
+    return FileResponse(
+        admin_frontend_dir / "style.css",
+        media_type="text/css"
+    )
+
+
+@app.get("/admin/app.js", include_in_schema=False)
+def admin_javascript():
+    return FileResponse(
+        admin_frontend_dir / "app.js",
+        media_type="text/javascript"
+    )
+
+
+@app.get("/manager/", include_in_schema=False)
+@app.get("/manager", include_in_schema=False)
+def manager_page():
+    return FileResponse(manager_frontend_dir / "index.html")
+
+
+@app.get("/manager/style.css", include_in_schema=False)
+def manager_css():
+    return FileResponse(
+        manager_frontend_dir / "style.css",
+        media_type="text/css"
+    )
+
+
+@app.get("/manager/app.js", include_in_schema=False)
+def manager_javascript():
+    return FileResponse(
+        manager_frontend_dir / "app.js",
+        media_type="text/javascript"
+    )
 
 
 @app.get("/api/orders/{order_id}", response_model=OrderDetail, tags=["Orders"])

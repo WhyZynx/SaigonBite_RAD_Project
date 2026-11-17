@@ -4,176 +4,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaigonBite | Admin</title>
-
+    <title>SaigonBite | Manage Vouchers</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Patrick+Hand&display=swap"
-        rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/admin/style.css">
 </head>
 
 <body>
-    <div class="admin-layout">
-
-        <!-- Sidebar -->
+    <div class="portal-layout">
         <aside class="sidebar">
-            <div class="brand">
-                <span class="brand-name">SaigonBite</span>
-                <span class="brand-subtitle">MANAGEMENT SYSTEM</span>
+            <div class="brand-header">
+                <span class="brand-title">SaigonBite</span>
+                <span class="portal-label">ADMIN PORTAL</span>
             </div>
 
-            <div class="sidebar-divider"></div>
-
             <nav class="navigation">
-                <a href="#" class="nav-item">
-                    <span class="nav-icon">⌂</span>
-                    Overview
-                </a>
-
-                <a href="#" class="nav-item">
-                    <span class="nav-icon">▤</span>
-                    Orders
-                </a>
-
-                <a href="#" class="nav-item">
-                    <span class="nav-icon">⌖</span>
-                    Hubs
-                </a>
-
-                <a href="#" class="nav-item active" data-page="vouchers">
-                    <span class="nav-icon">%</span>
-                    Vouchers
-                </a>
+                <a href="#dashboard" class="nav-item" data-nav="dashboard">Dashboard</a>
+                <a href="#hubs-menu" class="nav-item" data-nav="hubs-menu">Hubs &amp; Menu</a>
+                <a href="#vouchers" class="nav-item active" data-nav="vouchers">Vouchers</a>
+                <a href="#users" class="nav-item" data-nav="users">Users</a>
             </nav>
 
-            <button class="logout-button" id="logoutButton">
-                ↪ Log Out
-            </button>
+            <div class="sidebar-footer">
+                <button class="logout-button" id="logoutButton" type="button">Log Out</button>
+            </div>
         </aside>
 
-        <!-- Main area -->
         <main class="main-area">
-
-            <header class="topbar">
-                <span class="topbar-title">Admin Workspace</span>
-                <span class="admin-label">Admin</span>
+            <header class="user-header">
+                <div class="user-info">
+                    <span class="user-name">Minh Nguyen</span>
+                    <span class="user-role">Admin</span>
+                </div>
+                <div class="user-avatar" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
             </header>
 
-            <!-- UC05: Manage Vouchers -->
             <section class="page-section" id="vouchersPage">
-
-                <div class="page-heading">
+                <div class="page-heading-row">
                     <div>
                         <h1>Manage Vouchers</h1>
-                        <p>Create, update and manage discount vouchers.</p>
+                        <p>Create and manage promotions across your SaigonBite hubs.</p>
                     </div>
-
-                    <button class="primary-button" id="createVoucherButton">
-                        + Create
-                    </button>
+                    <button class="primary-button" id="openCreateModalButton" type="button">+ Create New
+                        Voucher</button>
                 </div>
 
-                <!-- Voucher filters -->
-                <div class="voucher-toolbar">
-                    <div class="filter-tabs" id="voucherFilters">
-                        <button class="filter-tab active" data-filter="ALL">All</button>
-                        <button class="filter-tab" data-filter="ACTIVE">Active</button>
-                        <button class="filter-tab" data-filter="EXPIRED">Expired</button>
-                        <button class="filter-tab" data-filter="ARCHIVED">Archived</button>
+                <div class="filter-toolbar">
+                    <div class="status-tabs" id="statusTabs">
+                        <button type="button" class="tab-pill active" data-status="ALL">All</button>
+                        <button type="button" class="tab-pill" data-status="ACTIVE">ACTIVE</button>
+                        <button type="button" class="tab-pill" data-status="EXPIRED">EXPIRED</button>
+                        <button type="button" class="tab-pill" data-status="ARCHIVED">ARCHIVED</button>
                     </div>
-
-                    <input type="search" id="voucherSearch" class="search-input"
-                        placeholder="Search by voucher code...">
+                    <div class="search-box">
+                        <input type="text" id="voucherSearchInput" placeholder="Search by voucher code...">
+                    </div>
                 </div>
 
-                <!-- Voucher table -->
                 <div class="table-card">
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Code</th>
+                                    <th>Voucher Code</th>
                                     <th>Discount</th>
-                                    <th>Start date</th>
-                                    <th>End date</th>
+                                    <th>Minimum Order</th>
+                                    <th>Valid Period</th>
                                     <th>Status</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
-
-                            <tbody id="voucherTableBody">
-                                <!-- Rendered by app.js -->
-                            </tbody>
+                            <tbody id="voucherTableBody"></tbody>
                         </table>
                     </div>
 
                     <div class="table-footer">
-                        <span id="voucherCount">0 vouchers</span>
+                        <span class="pagination-summary" id="voucherCountSummary">Showing 1–8 of 8 vouchers</span>
+                        <div class="pagination-controls" id="paginationControls">
+                            <button type="button" class="page-btn" id="prevPageBtn" disabled>Previous</button>
+                            <button type="button" class="page-btn active" id="pageNumberBtn">1</button>
+                            <button type="button" class="page-btn" id="nextPageBtn" disabled>Next</button>
+                        </div>
                     </div>
                 </div>
+
+                <p class="timezone-note">All dates use Vietnam time (GMT+7).</p>
             </section>
         </main>
     </div>
 
-    <!-- Create / Edit Voucher Modal -->
-    <div class="modal-overlay hidden" id="voucherModal">
-        <div class="modal-card">
+    <!-- Modal Create New Voucher -->
+    <div class="modal-backdrop hidden" id="createVoucherModal">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="modal-header">
-                <div>
-                    <h2 id="modalTitle">Create Voucher</h2>
-                    <p>Enter the voucher information below.</p>
-                </div>
-
-                <button class="modal-close" id="closeVoucherModal" aria-label="Close">
-                    &times;
-                </button>
+                <h2 id="modalTitle">Create New Voucher</h2>
+                <button type="button" class="modal-close" id="closeModalButton" aria-label="Close">×</button>
             </div>
-
-            <form id="voucherForm">
-                <input type="hidden" id="voucherId">
-
-                <div class="form-field">
-                    <label for="voucherCode">Voucher Code</label>
-                    <input type="text" id="voucherCode" placeholder="e.g. WELCOME10" required>
-                </div>
-
-                <div class="form-row">
+            <form id="createVoucherForm" class="modal-form">
+                <div class="form-grid-2">
                     <div class="form-field">
-                        <label for="discountType">Discount Type</label>
-                        <select id="discountType" required>
-                            <option value="PERCENT">Percentage (%)</option>
-                            <option value="FIXED">Fixed amount (VND)</option>
+                        <label for="newCode">Voucher Code</label>
+                        <input type="text" id="newCode" placeholder="e.g. SAIGON25" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="newHub">Applicable Hub</label>
+                        <select id="newHub">
+                            <option value="All hubs">All hubs</option>
+                            <option value="Bite Hub D1">Bite Hub D1</option>
+                            <option value="Bite Hub D7">Bite Hub D7</option>
+                            <option value="Bite Hub Thu Duc">Bite Hub Thu Duc</option>
                         </select>
                     </div>
-
+                </div>
+                <div class="form-grid-2">
                     <div class="form-field">
-                        <label for="discountValue">Discount Value</label>
-                        <input type="number" id="discountValue" min="1" placeholder="20" required>
+                        <label for="newDiscount">Discount Value</label>
+                        <input type="text" id="newDiscount" placeholder="e.g. 20% or 30,000 VND" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="newMinOrder">Minimum Order (VND)</label>
+                        <input type="number" id="newMinOrder" value="150000" min="0" step="10000" required>
                     </div>
                 </div>
-
-                <div class="form-row">
+                <div class="form-grid-2">
                     <div class="form-field">
-                        <label for="voucherStartDate">Start Date</label>
-                        <input type="date" id="voucherStartDate" required>
+                        <label for="newStartDate">Valid From</label>
+                        <input type="date" id="newStartDate" value="2026-11-17" required>
                     </div>
-
                     <div class="form-field">
-                        <label for="voucherEndDate">End Date</label>
-                        <input type="date" id="voucherEndDate" required>
+                        <label for="newEndDate">Valid Until</label>
+                        <input type="date" id="newEndDate" value="2026-12-31" required>
                     </div>
                 </div>
-
                 <div class="modal-actions">
-                    <button type="button" class="secondary-button" id="cancelVoucherButton">
-                        Cancel
-                    </button>
-
-                    <button type="submit" class="primary-button" id="saveVoucherButton">
-                        Save Voucher
-                    </button>
+                    <button type="button" class="secondary-button" id="cancelModalButton">Cancel</button>
+                    <button type="submit" class="primary-button">Create Voucher</button>
                 </div>
             </form>
         </div>

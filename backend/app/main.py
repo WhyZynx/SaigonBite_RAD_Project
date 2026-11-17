@@ -18,11 +18,13 @@ from app.auth import (
 from app.repositories.mock_orders import orders
 from app.routers.kitchen import router as kitchen_router
 from app.routers.customer import router as customer_router
+from app.routers.reports import router as reports_router
 from app.schemas import LoginRequest, OrderDetail
 
 app = FastAPI(title="SaigonBite Kitchen API", version="0.1.0")
 app.include_router(kitchen_router)
 app.include_router(customer_router)
+app.include_router(reports_router)
 
 project_dir = Path(__file__).resolve().parents[2]
 
@@ -43,7 +45,12 @@ async def protect_kitchen(request: Request, call_next):
         role_for_path = "CUSTOMER"
     elif path.rstrip("/") == "/admin" or path.startswith("/admin/"):
         role_for_path = "ADMIN"
-    elif path.rstrip("/") == "/manager" or path.startswith("/manager/"):
+    elif (
+        path.rstrip("/") == "/manager"
+        or path.startswith("/manager/")
+        or path == "/api/reports"
+        or path.startswith("/api/reports/")
+    ):
         role_for_path = "MANAGER"
     protected = role_for_path is not None or path == "/api/auth/me"
     session = get_session(request.cookies.get(SESSION_COOKIE)) if protected else None
@@ -56,6 +63,7 @@ async def protect_kitchen(request: Request, call_next):
             return RedirectResponse(url=role_home(session["role"]), status_code=303)
         return JSONResponse(status_code=403, content={"detail": "This account role cannot access this resource"})
     return await call_next(request)
+
 
 def set_session_cookie(response: Response, token: str) -> None:
     response.set_cookie(
@@ -70,11 +78,15 @@ def set_session_cookie(response: Response, token: str) -> None:
 
 
 @app.get("/", include_in_schema=False)
-@app.get("/login", include_in_schema=False)
-def login_page(request: Request):
+def root_page(request: Request):
     session = get_session(request.cookies.get(SESSION_COOKIE))
     if session:
         return RedirectResponse(url=role_home(session["role"]), status_code=303)
+    return FileResponse(frontend_dir / "login.html")
+
+
+@app.get("/login", include_in_schema=False)
+def login_page():
     return FileResponse(frontend_dir / "login.html")
 
 

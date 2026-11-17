@@ -1,3 +1,43 @@
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# Local environment and secrets (.env.example stays tracked)
 .env
-.venv
-__pycache__
+.env.*
+!.env.example
+
+# Editor and IDE files
+.vscode/
+.idea/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+tmp/
+temp/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local database files and dumps
+*.db
+*.sqlite
+*.sqlite3
+*.sqlitedb
+*.mdb
+*.accdb
+*.dump
+*.bak

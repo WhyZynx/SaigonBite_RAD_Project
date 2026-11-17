@@ -2,9 +2,10 @@ import os
 from html import escape
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 
 from app.auth import (
     DEMO_EMAIL,
@@ -16,7 +17,8 @@ from app.auth import (
     get_session,
     role_home,
 )
-from app.repositories.mock_orders import orders
+from app.database import get_db
+from app.repositories.order import OrderRepository
 from app.routers.kitchen import router as kitchen_router
 from app.schemas import LoginRequest, OrderDetail
 
@@ -40,14 +42,17 @@ async def protect_kitchen(request: Request, call_next):
         role_for_path = "ADMIN"
     protected = role_for_path is not None or path == "/api/auth/me"
     session = get_session(request.cookies.get(SESSION_COOKIE)) if protected else None
-    if protected and not session:
-        if role_for_path and not path.startswith("/api/"):
-            return RedirectResponse(url="/", status_code=303)
+    if role_for_path is not None:
+        if session is None:
+            if not path.startswith("/api/"):
+                return RedirectResponse(url="/", status_code=303)
+            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
+        if session["role"] != role_for_path:
+            if not path.startswith("/api/"):
+                return RedirectResponse(url=role_home(session["role"]), status_code=303)
+            return JSONResponse(status_code=403, content={"detail": "This account role cannot access this resource"})
+    elif path == "/api/auth/me" and session is None:
         return JSONResponse(status_code=401, content={"detail": "Authentication required"})
-    if role_for_path and session["role"] != role_for_path:
-        if not path.startswith("/api/"):
-            return RedirectResponse(url=role_home(session["role"]), status_code=303)
-        return JSONResponse(status_code=403, content={"detail": "This account role cannot access this resource"})
     return await call_next(request)
 
 
@@ -114,6 +119,8 @@ def demo_preview(response: Response):
 @app.get("/api/auth/me", tags=["SaigonBite Authentication"])
 def current_user(request: Request):
     session = get_session(request.cookies.get(SESSION_COOKIE))
+    if session is None:
+        return JSONResponse(status_code=401, content={"detail": "Authentication required"})
     return {"email": session["email"], "role": session["role"], "demo": session["demo"], "redirect_url": role_home(session["role"])}
 
 
@@ -128,6 +135,8 @@ def logout(request: Request, response: Response):
 @app.get("/customer", include_in_schema=False)
 def customer_placeholder(request: Request):
     session = get_session(request.cookies.get(SESSION_COOKIE))
+    if session is None:
+        return RedirectResponse(url="/", status_code=303)
     email = escape(session["email"])
     return HTMLResponse(temporary_role_placeholder_content("CUSTOMER", email))
 
@@ -136,6 +145,8 @@ def customer_placeholder(request: Request):
 @app.get("/admin", include_in_schema=False)
 def admin_placeholder(request: Request):
     session = get_session(request.cookies.get(SESSION_COOKIE))
+    if session is None:
+        return RedirectResponse(url="/", status_code=303)
     email = escape(session["email"])
     return HTMLResponse(temporary_role_placeholder_content("ADMIN", email))
 
@@ -146,9 +157,53 @@ def temporary_role_placeholder_content(role: str, email: str) -> str:
 
 
 @app.get("/api/orders/{order_id}", response_model=OrderDetail, tags=["Orders"])
-def get_order_detail(order_id: int):
-    """TEMPORARY mock-compatible implementation; replace with TV1 order service."""
-    return orders.get(order_id)
+def get_order_detail(order_id: int, db: Session = Depends(get_db)):
+    """Shared order detail read used by Kitchen and other order workflows."""
+    order = OrderRepository(db).get_order(order_id)
+    history = sorted(order.status_history, key=lambda entry: (entry.changed_at, entry.history_id))
+    rejection = next(
+        (entry.reason for entry in reversed(history)
+         if entry.new_status == "REJECTED" and entry.reason),
+        None,
+    )
+    return {
+        "id": order.order_id,
+        "customer_id": order.customer_id,
+        "hub_id": order.hub_id,
+        "status": order.status,
+        "total": order.total,
+        "created_at": order.created_at,
+        "customer_name": order.customer.name,
+        "customer_phone": order.customer.phone,
+        "items": [
+            {
+                "menu_item_id": item.menu_item_id,
+                "name": item.menu_item.name,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "line_total": item.quantity * item.unit_price,
+            }
+            for item in order.order_items
+        ],
+        "delivery_address": order.delivery_address,
+        "delivery_distance_km": order.delivery_distance_km,
+        "voucher_code": order.voucher.code if order.voucher else None,
+        "payment_method": order.payment_method,
+        "payment_status": order.payment_status,
+        "subtotal": order.subtotal,
+        "delivery_fee": order.delivery_fee,
+        "surcharge": order.surcharge,
+        "discount": order.discount,
+        "rejection_reason": rejection,
+        "status_history": [
+            {
+                "status": entry.new_status,
+                "changed_at": entry.changed_at,
+                "note": entry.reason,
+            }
+            for entry in history
+        ],
+    }
 
 
 app.mount("/kitchen", StaticFiles(directory=frontend_dir.resolve(), html=True), name="kitchen-ui")

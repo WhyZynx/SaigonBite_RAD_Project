@@ -1,9 +1,8 @@
 from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import Delivery, Hub, Order
+from ..repositories import report_repository
 
 router = APIRouter(prefix="/api/reports", tags=["Manager Reports"])
 
@@ -26,24 +25,16 @@ def get_sales_report(
     start_dt = datetime.combine(start_date, datetime.min.time())
     end_dt = datetime.combine(end_date, datetime.max.time())
 
-    orders = db.query(Order).filter(Order.created_at.between(start_dt, end_dt)).all()
-
+    orders = report_repository.get_orders_in_range(db, start_dt, end_dt)
     total_revenue = sum(o.total for o in orders if o.status == "DELIVERED")
     total_orders = len(orders)
 
-    # Tính thời gian giao hàng trung bình từ bảng deliveries
-    deliveries = db.query(Delivery).join(Order).filter(
-        Order.created_at.between(start_dt, end_dt),
-        Delivery.delivered_at.isnot(None),
-        Delivery.pickup_at.isnot(None),
-    ).all()
-
+    deliveries = report_repository.get_completed_deliveries_in_range(db, start_dt, end_dt)
     avg_minutes = 24
     if deliveries:
         durations = [(d.delivered_at - d.pickup_at).total_seconds() / 60 for d in deliveries]
         avg_minutes = int(sum(durations) / len(durations))
 
-    # Gom nhóm theo ngày để tạo rows cho biểu đồ/bảng
     daily_data = {}
     for o in orders:
         day_key = o.created_at.strftime("%Y-%m-%d")
@@ -86,17 +77,13 @@ def get_hub_workload_report(
     start_dt = datetime.combine(start_date, datetime.min.time())
     end_dt = datetime.combine(end_date, datetime.max.time())
 
-    hubs = db.query(Hub).all()
+    hubs = report_repository.get_all_hubs(db)
     total_hub_orders = 0
     completed_orders = 0
     rows = []
 
     for h in hubs:
-        hub_orders = db.query(Order).filter(
-            Order.hub_id == h.hub_id,
-            Order.created_at.between(start_dt, end_dt),
-        ).all()
-        
+        hub_orders = report_repository.get_hub_orders_in_range(db, h.hub_id, start_dt, end_dt)
         count_all = len(hub_orders)
         count_completed = sum(1 for o in hub_orders if o.status == "DELIVERED")
         count_active = count_all - count_completed
@@ -136,15 +123,11 @@ def get_delivery_report(
     start_dt = datetime.combine(start_date, datetime.min.time())
     end_dt = datetime.combine(end_date, datetime.max.time())
 
-    deliveries = db.query(Delivery).join(Order).filter(
-        Order.created_at.between(start_dt, end_dt),
-    ).all()
-
+    deliveries = report_repository.get_deliveries_by_order_range(db, start_dt, end_dt)
     total_deliveries = len(deliveries)
     on_time_count = sum(1 for d in deliveries if d.outcome == "DELIVERED")
     on_time_rate = (on_time_count / total_deliveries * 100) if total_deliveries > 0 else 0
 
-    # Gom nhóm theo ngày giao hàng
     daily_deliv = {}
     for d in deliveries:
         if d.delivered_at:

@@ -2,7 +2,7 @@
 
 **Version:** 1.1 (Updated for TV3 Admin & Manager Implementation) | **Backend:** Python + FastAPI | **Database:** MySQL 8 | **Architecture:** MVC-inspired Layered Monolith + Repository Pattern
 
-> **Status:** UPDATED WITH TV3 IMPLEMENTATION (`feature/nhu-admin`). This unified specification consolidates the local setup guide, the 4-role session authentication layer (`CUSTOMER`, `KITCHEN_STAFF`, `ADMIN`, `MANAGER`), TV1/TV2 baseline contracts, and the implemented TV3 Admin Voucher (`/api/vouchers`) and Manager Report (`/api/reports/*`) endpoints.
+> **Status:** UPDATED WITH TV3 DATABASE INTEGRATION (`feature/nhu-admin`). This unified specification consolidates the local setup guide, the 4-role session authentication layer (`CUSTOMER`, `KITCHEN_STAFF`, `ADMIN`, `MANAGER`), TV1/TV2 baseline contracts, and the MySQL-backed TV3 Admin Voucher (`/api/vouchers`) and Manager Report (`/api/reports/*`) endpoints via SQLAlchemy ORM.
 
 ---
 
@@ -463,14 +463,14 @@ Requires an authenticated `MANAGER` session (`401` if unauthenticated, `403` for
 
 ### 9.2 Database Dependencies & Integration Rules
 
-- **TV3 Database:** `orders`, `order_items`, `order_status_history`, `menu_items`, `hubs`, `vouchers`, and supporting tables defined in `database/schema.sql`.
-- **Cross-Module Persistence:** Orders created by TV1 (`PENDING`) must appear in TV2 (`GET /api/kitchen/orders`) with the same ID; status updates by TV2 must reflect in TV1 (`GET /api/orders/{id}`); vouchers and reports managed by TV3 must query the shared MySQL database once in-memory stores (`mock_orders.py`, `_VOUCHERS_STORE`, and static report fixtures) are replaced by SQLAlchemy repositories.
+- **TV3 Database:** `orders`, `order_items`, `order_status_history`, `menu_items`, `hubs`, `vouchers`, `deliveries`, and supporting tables defined in `database/schema.sql`.
+- **Cross-Module Persistence:** Orders created by TV1 (`PENDING`) must appear in TV2 (`GET /api/kitchen/orders`) with the same ID; status updates by TV2 must reflect in TV1 (`GET /api/orders/{id}`). Vouchers and reports managed by TV3 are now directly bound to the shared MySQL 8 database (`SaigonBiteDB`) via SQLAlchemy ORM (replacing `_VOUCHERS_STORE` and static report fixtures), while `mock_orders.py` remains active until TV1/TV2 database repositories are merged.
 - **Transaction Boundary:** Every status transition must atomically persist both order status and `order_status_history` within a single transaction.
 
 ### 9.3 Team Approval Checklist
 
 - [x] **TV3:** Implemented Admin Voucher APIs (`/api/vouchers`) and Manager Report APIs (`/api/reports/*`) with role-protected routes and Figma-aligned portals.
-- [ ] **TV3:** Bind voucher and report endpoints to MySQL 8 SQL queries (`schema.sql` / `seed.sql`).
+- [x] **TV3:** Bound voucher and report endpoints to MySQL 8 SQLAlchemy ORM models (`schema.sql` / `seed.sql`).
 - [ ] **TV1:** Confirm `POST /api/orders` request/response, hub/menu fields, and UC02 history shape.
 - [ ] **TV2:** Confirm kitchen `decision`/`status` bodies and allowed transitions.
 - [ ] **All:** Confirm IDs, timestamps, VND representation, error format, and access-control policy before freezing v1.0.

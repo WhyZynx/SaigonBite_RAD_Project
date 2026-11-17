@@ -218,10 +218,9 @@ def get_order_detail(order_id: int, request: Request, db: Session = Depends(get_
     if not order:
         return JSONResponse(status_code=404, content={"detail": "Order not found"})
     
-    if session["role"] == "CUSTOMER" and order.customer_id != 1: # Hoặc logic phân quyền customer ID thực tế
+    if session["role"] == "CUSTOMER" and order.customer_id != 1:
         return JSONResponse(status_code=404, content={"detail": "Order not found"})
         
-    # Map dữ liệu từ ORM Model sang dạng trả về tương thích với schema
     items = [
         {
             "menu_item_id": item.menu_item_id,

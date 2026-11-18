@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SaigonBite | Kitchen Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/style.css" rel="stylesheet">
+</head>
+<body>
+  <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation">☰</button>
+  <div class="drawer-scrim" id="drawer-scrim"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="brand-mark">S</span><span>Saigon<span class="brand-light">Bite</span><small>KITCHEN MANAGEMENT</small></span></div>
+    <div class="nav-caption">ORDER WORKSPACE</div>
+    <nav class="nav-list">
+      <button class="nav-link active" data-view="PENDING"><span class="nav-icon">▣</span><span>Incoming Orders</span><b id="count-PENDING">0</b></button>
+      <button class="nav-link" data-view="CONFIRMED"><span class="nav-icon">✓</span><span>Confirmed Orders</span><b id="count-CONFIRMED">0</b></button>
+      <button class="nav-link" data-view="PREPARING"><span class="nav-icon">◷</span><span>Preparing Orders</span><b id="count-PREPARING">0</b></button>
+      <button class="nav-link" data-view="READY"><span class="nav-icon">▱</span><span>Ready for Pickup</span><b id="count-READY">0</b></button>
+      <button class="nav-link" data-view="REJECTED"><span class="nav-icon">×</span><span>Rejected</span><b id="count-REJECTED">0</b></button>
+    </nav>
+    <button class="logout-button" id="logout"><span>↪</span> Logout</button>
+  </aside>
+  <main class="main-area">
+    <header class="topbar"><div class="topbar-title">Kitchen Management <span>/</span> <b id="header-category">Incoming Orders</b></div><div class="staff"><span class="demo-access" id="demo-access" hidden>DEMO ACCESS</span><div class="staff-identity"><div class="staff-copy"><strong id="staff-name">Kitchen Staff</strong><small id="staff-role">Kitchen Staff</small></div><div class="staff-avatar" id="staff-avatar" aria-hidden="true">KS</div></div></div></header>
+    <div id="alert" class="alert-message" role="status" hidden></div>
+    <section class="workspace">
+      <section class="queue-column" id="queue-column">
+        <div class="queue-heading"><div><div class="eyebrow">SAIGON CENTRAL</div><h1 id="page-title">Incoming Orders</h1><p id="queue-count">Loading orders…</p></div><button class="refresh-button" id="refresh" aria-label="Refresh orders">↻</button></div>
+        <label class="search-box"><span>⌕</span><input id="search" type="search" placeholder="Search order or customer" autocomplete="off"><kbd>/</kbd></label>
+        <div class="queue-tools"><span>ORDERS <b id="visible-count">0</b></span><button id="sort-btn">Newest first⌄</button></div>
+        <div id="order-list" class="order-list"><div class="loading">Loading kitchen orders…</div></div>
+        <div class="queue-footer"><span id="queue-footer-count"></span><span>Kitchen hub · Central</span></div>
+      </section>
+      <section class="detail-column" id="detail-panel"><div class="detail-empty"><div class="empty-illustration">▤</div><h2>Select an order</h2><p>Choose an order from the queue to review its details.</p></div></section>
+    </section>
+  </main>
+  <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><div class="modal-symbol">!</div><button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><h3>Reject this order?</h3><p>Provide a reason for rejecting <strong id="reject-order-id">Order</strong>.</p><label for="reject-reason">Rejection reason <span>*</span></label><textarea id="reject-reason" class="form-control" rows="3" placeholder="e.g. An ingredient is unavailable"></textarea><div class="validation" id="reason-error" hidden>A rejection reason is required.</div></div><div class="modal-footer"><button class="btn-cancel" data-bs-dismiss="modal">Keep order</button><button class="btn-reject-confirm" id="submit-reject">Reject order <span>→</span></button></div></div></div></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script src="/app.js"></script>
+</body></html>

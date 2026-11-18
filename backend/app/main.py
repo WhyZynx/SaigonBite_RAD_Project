@@ -17,12 +17,11 @@ from app.auth import (
     role_home,
 )
 from app.database import get_db
-from app.models import Order
 from app.routers.kitchen import router as kitchen_router
 from app.routers.customer import router as customer_router
 from app.routers.reports import router as reports_router
 from app.routers.vouchers import router as vouchers_router
-from app.schemas import LoginRequest, OrderDetail
+from app.schemas import LoginRequest
 
 app = FastAPI(title="SaigonBite Kitchen API", version="0.1.0")
 app.include_router(kitchen_router)
@@ -206,61 +205,5 @@ def manager_javascript():
     )
 
 
-@app.get("/api/orders/{order_id}", tags=["Orders"])
-def get_order_detail(order_id: int, request: Request, db: Session = Depends(get_db)):
-    session = get_session(request.cookies.get(SESSION_COOKIE))
-    if not session:
-        return JSONResponse(status_code=401, content={"detail": "Authentication required"})
-    if session["role"] not in {"CUSTOMER", "KITCHEN_STAFF", "MANAGER", "ADMIN"}:
-        return JSONResponse(status_code=403, content={"detail": "This account role cannot access this resource"})
-    
-    order = db.query(Order).filter(Order.order_id == order_id).first()
-    if not order:
-        return JSONResponse(status_code=404, content={"detail": "Order not found"})
-    
-    if session["role"] == "CUSTOMER" and order.customer_id != 1:
-        return JSONResponse(status_code=404, content={"detail": "Order not found"})
-        
-    items = [
-        {
-            "menu_item_id": item.menu_item_id,
-            "name": item.menu_item.name if item.menu_item else "Item",
-            "quantity": item.quantity,
-            "unit_price": item.unit_price,
-            "line_total": item.quantity * item.unit_price
-        }
-        for item in order.order_items
-    ]
-    
-    history = [
-        {
-            "status": h.new_status,
-            "changed_at": h.changed_at,
-            "note": h.reason
-        }
-        for h in order.status_history
-    ]
-
-    return {
-        "id": order.order_id,
-        "customer_id": order.customer_id,
-        "hub_id": order.hub_id,
-        "status": order.status,
-        "total": order.total,
-        "created_at": order.created_at,
-        "items": items,
-        "delivery_address": order.delivery_address,
-        "delivery_distance_km": order.delivery_distance_km,
-        "voucher_code": order.voucher.code if order.voucher else None,
-        "payment_method": order.payment_method,
-        "payment_status": order.payment_status,
-        "subtotal": order.subtotal,
-        "delivery_fee": order.delivery_fee,
-        "surcharge": order.surcharge,
-        "discount": order.discount,
-        "rejection_reason": next((h.reason for h in order.status_history if h.new_status == "REJECTED"), None),
-        "status_history": history
-    }
-
-
 app.mount("/kitchen", StaticFiles(directory=frontend_dir.resolve(), html=True), name="kitchen-ui")
+app.mount("/img", StaticFiles(directory=(project_dir / "frontend" / "img").resolve()), name="food-images")

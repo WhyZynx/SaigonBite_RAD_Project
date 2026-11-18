@@ -19,7 +19,7 @@ from app.routers.kitchen import router as kitchen_router
 from app.routers.customer import router as customer_router
 from app.routers.reports import router as reports_router
 from app.routers.vouchers import router as vouchers_router
-from app.schemas import LoginRequest, OrderDetail
+from app.schemas import LoginRequest
 
 app = FastAPI(title="SaigonBite Kitchen API", version="0.1.0")
 app.include_router(kitchen_router)
@@ -147,7 +147,7 @@ def logout(request: Request, response: Response):
 
 @app.get("/customer/", include_in_schema=False)
 @app.get("/customer", include_in_schema=False)
-def customer_placeholder(request: Request):
+def customer_page(request: Request):
     return FileResponse(customer_frontend_dir / "index.html")
 
 

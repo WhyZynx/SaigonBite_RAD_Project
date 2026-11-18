@@ -1,8 +1,8 @@
 # SaigonBite — REST API Contract, Authentication & Local Setup Guide
 
-**Version:** 1.1 (Updated for TV3 Admin & Manager Implementation) | **Backend:** Python + FastAPI | **Database:** MySQL 8 | **Architecture:** MVC-inspired Layered Monolith + Repository Pattern
+**Version:** 1.2 (TV1 Customer, TV2 Kitchen, TV3 Admin/Manager integration) | **Backend:** Python + FastAPI | **Database:** MySQL 8 | **Architecture:** MVC-inspired Layered Monolith + Repository Pattern
 
-> **Status:** UPDATED WITH TV3 DATABASE INTEGRATION (`feature/nhu-admin`). This unified specification consolidates the local setup guide, the 4-role session authentication layer (`CUSTOMER`, `KITCHEN_STAFF`, `ADMIN`, `MANAGER`), TV1/TV2 baseline contracts, and the MySQL-backed TV3 Admin Voucher (`/api/vouchers`) and Manager Report (`/api/reports/*`) endpoints via SQLAlchemy ORM.
+> **Status:** Integrated on `integration/tv3-admin`. Customer order reads/writes, Kitchen order transitions, Admin vouchers, and Manager reports use SQLAlchemy repositories and the shared MySQL models. Authentication accounts and sessions remain local in-memory demo implementations.
 
 ---
 
@@ -33,6 +33,7 @@ python -m uvicorn app.main:app --reload --port 8000
 **Portal & API URLs:**
 
 - Shared Login: `http://localhost:8000/`
+- Customer Portal: `http://localhost:8000/customer/`
 - Kitchen Portal: `http://localhost:8000/kitchen/`
 - Admin Portal (Manage Vouchers): `http://localhost:8000/admin/`
 - Manager Portal (Management Reports): `http://localhost:8000/manager/`
@@ -46,12 +47,12 @@ python -m pytest -q
 
 ### 1.2 Temporary Shared Mock Accounts
 
-| Role | Email | Password | Destination |
-|---|---|---|---|
-| Customer | `customer@saigonbite.com` | `password123` | `/customer/` |
-| Kitchen Staff | `kitchen@saigonbite.com` | `password123` | `/kitchen/` |
-| Admin | `admin@saigonbite.com` | `password123` | `/admin/` |
-| Manager | `manager@saigonbite.com` | `password123` | `/manager/` |
+| Role | Email | Destination |
+|---|---|---|
+| Customer | configured locally | `/customer/` |
+| Kitchen Staff | configured locally | `/kitchen/` |
+| Admin | configured locally | `/admin/` |
+| Manager | configured locally | `/manager/` |
 
 Override default credentials via environment variables before starting Uvicorn: `SAIGONBITE_CUSTOMER_EMAIL`, `SAIGONBITE_CUSTOMER_PASSWORD`, `SAIGONBITE_DEMO_EMAIL`, `SAIGONBITE_DEMO_PASSWORD`, `SAIGONBITE_ADMIN_EMAIL`, `SAIGONBITE_ADMIN_PASSWORD`, `SAIGONBITE_MANAGER_EMAIL`, and `SAIGONBITE_MANAGER_PASSWORD`.
 
@@ -68,7 +69,7 @@ The backend maps configured mock credentials to one of `CUSTOMER`, `KITCHEN_STAF
 **Request:**
 
 ```json
-{"email": "admin@saigonbite.com", "password": "password123"}
+{"email": "<configured-account>", "password": "<configured-password>"}
 ```
 
 **Response 200:**
@@ -242,11 +243,11 @@ Required query: `hub_id`.
 }
 ```
 
-**Validation Rules:** Nonempty items, positive quantities, menu availability, hub acceptance/capacity, delivery eligibility, voucher validity, and server-side price calculation. Persist order, order items, and initial status history atomically.
+**Current implementation:** The endpoint verifies the demo customer identity, open hub, menu item availability, and optional active voucher; it calculates prices from database menu items and persists the order, items, and initial status history in one transaction. Delivery distance (3.5 km) and fee (15,000 VND) are fixed demo values; the submitted distance is not used. Hub capacity is not currently checked. Customer accounts map to demo customer ID 1.
 
 ### 5.4 `GET /api/orders/{id}`
 
-**Response 200:** Order detail shape (§4.2) including `status_history`. Returns `404` if not found.
+**Response 200:** Order detail shape (§4.2) including customer name/phone, items, and `status_history`. The endpoint is shared with Kitchen. Returns `404` if not found or if a Customer session requests an order outside the demo customer. The current database schema has no separate customer-note or per-item-options fields.
 
 ### 5.5 `GET /api/customers/{id}/orders`
 
@@ -325,7 +326,9 @@ Requires an authenticated `ADMIN` session (`401` if unauthenticated, `403` for n
 
 **Optional query parameters:**
 - `status`: `ALL` (default), `ACTIVE`, `EXPIRED`, or `ARCHIVED`
-- `search`: case-insensitive substring match against `code` or `hub`
+- `search`: case-insensitive substring match against `code`
+
+**Current schema limitation:** `hub` is a display-only request/response label. The shared `vouchers` table has no hub association, so the label is not persisted or enforced and vouchers currently apply without hub scoping.
 
 **Response 200:**
 
@@ -464,7 +467,7 @@ Requires an authenticated `MANAGER` session (`401` if unauthenticated, `403` for
 ### 9.2 Database Dependencies & Integration Rules
 
 - **TV3 Database:** `orders`, `order_items`, `order_status_history`, `menu_items`, `hubs`, `vouchers`, `deliveries`, and supporting tables defined in `database/schema.sql`.
-- **Cross-Module Persistence:** Orders created by TV1 (`PENDING`) must appear in TV2 (`GET /api/kitchen/orders`) with the same ID; status updates by TV2 must reflect in TV1 (`GET /api/orders/{id}`). Vouchers and reports managed by TV3 are now directly bound to the shared MySQL 8 database (`SaigonBiteDB`) via SQLAlchemy ORM (replacing `_VOUCHERS_STORE` and static report fixtures), while `mock_orders.py` remains active until TV1/TV2 database repositories are merged.
+- **Cross-Module Persistence:** Customer-created orders (`PENDING`) are stored in the shared database and appear in Kitchen with the same ID. Kitchen status changes and history are visible through the shared `/api/orders/{id}` detail endpoint. Voucher and report repositories also use the shared SQLAlchemy models. Customer distance/fee and Manager average-time figures still include fixed demo values as described above.
 - **Transaction Boundary:** Every status transition must atomically persist both order status and `order_status_history` within a single transaction.
 
 ### 9.3 Team Approval Checklist
@@ -473,4 +476,4 @@ Requires an authenticated `MANAGER` session (`401` if unauthenticated, `403` for
 - [x] **TV3:** Bound voucher and report endpoints to MySQL 8 SQLAlchemy ORM models (`schema.sql` / `seed.sql`).
 - [ ] **TV1:** Confirm `POST /api/orders` request/response, hub/menu fields, and UC02 history shape.
 - [ ] **TV2:** Confirm kitchen `decision`/`status` bodies and allowed transitions.
-- [ ] **All:** Confirm IDs, timestamps, VND representation, error format, and access-control policy before freezing v1.0.
+- [ ] **All:** Confirm IDs, timestamps, VND representation, error format, and access-control policy before freezing the shared contract.

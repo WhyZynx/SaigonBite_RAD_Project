@@ -308,7 +308,7 @@
       state.customerOrders = await api("/api/customers/1/orders");
       renderCustomerOrders();
     } catch (error) {
-      errorNode.textContent = `${error.message} Order history will appear when the customer order API is available.`;
+      errorNode.textContent = `${error.message} Please try loading your order history again.`;
       errorNode.classList.remove("d-none");
       $("#orders-table-body").innerHTML = "";
       $("#orders-empty").classList.remove("d-none");
@@ -330,7 +330,7 @@
       $$("[data-home-order]").forEach((button) => button.addEventListener("click", () => openOrder(Number(button.dataset.homeOrder), "detail")));
       $$("[data-home-hub]").forEach((button) => button.addEventListener("click", () => { showView("order"); selectHub(Number(button.dataset.homeHub)); }));
     } catch (error) {
-      $("#home-recent-orders").innerHTML = `<div class="home-empty-card">${escapeHtml(error.message)}<p>Recent orders will appear here when the customer API is available.</p></div>`;
+      $("#home-recent-orders").innerHTML = `<div class="home-empty-card">${escapeHtml(error.message)}<p>Please try loading recent orders again.</p></div>`;
     }
   }
 

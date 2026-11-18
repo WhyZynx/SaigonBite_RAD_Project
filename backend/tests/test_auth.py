@@ -126,13 +126,18 @@ def test_mock_role_routing_is_server_determined(client):
             'CUSTOMER': '/customer/',
             'KITCHEN_STAFF': '/kitchen/',
             'ADMIN': '/admin/',
+            'MANAGER': '/manager/',
         }[account['role']]
         assert client.get('/').status_code == 200
         if account['role'] in {'CUSTOMER', 'ADMIN'}:
             destination = response.json()['redirect_url']
-            placeholder = client.get(destination)
-            assert placeholder.status_code == 200
-            assert 'not integrated yet' in placeholder.text
+            portal = client.get(destination)
+            assert portal.status_code == 200
+            if account['role'] == 'CUSTOMER':
+                assert '<title>Order Food | SaigonBite</title>' in portal.text
+                assert client.get('/customer/app.js').status_code == 200
+            else:
+                assert 'ADMIN PORTAL' in portal.text
             assert client.get('/api/kitchen/orders?hub_id=1').status_code == 403
 
 

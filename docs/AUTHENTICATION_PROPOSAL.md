@@ -8,7 +8,7 @@ The backend currently maps configured mock credentials to one of `CUSTOMER`, `KI
 
 | Role | Destination | Interface Status |
 |---|---|---|
-| `CUSTOMER` | `/customer/` | Temporary Customer placeholder |
+| `CUSTOMER` | `/customer/` | Customer portal integrated; backend endpoints use shared SQLAlchemy models |
 | `KITCHEN_STAFF` | `/kitchen/` | Kitchen Portal |
 | `ADMIN` | `/admin/` | Admin Portal (Manage Vouchers) |
 | `MANAGER` | `/manager/` | Manager Portal (Management Reports) |
@@ -22,7 +22,7 @@ These routes are implemented for the local demo and need team approval before be
 Request:
 
 ```json
-{"email":"admin@saigonbite.com","password":"password123"}
+{"email":"<configured-account>","password":"<configured-password>"}
 ```
 
 Success response:

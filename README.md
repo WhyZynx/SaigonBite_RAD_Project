@@ -47,6 +47,15 @@ Authentication uses random server-side session IDs stored in process memory and 
 
 Proposed authentication endpoints, responses, and session behavior are documented in [docs/AUTHENTICATION_PROPOSAL.md](docs/AUTHENTICATION_PROPOSAL.md), and REST API specifications are documented in [docs/API_CONTRACT.md](docs/API_CONTRACT.md).
 
-Run tests from `backend` with `python -m pytest -q`.
+## Database configuration
 
-The order, voucher, and report repositories currently use temporary in-memory data and reset when the process restarts. Replace `app/repositories/mock_orders.py` and the in-memory stores in `app/routers/vouchers.py` and `app/routers/reports.py` with MySQL/SQLAlchemy repositories once the database schema and seed data are integrated; preserve the repository operations and API response schemas. `GET /api/orders/{id}` is a temporary mock-compatible implementation for TV1's shared detail contract and should be removed when TV1's order service is integrated.
+Copy `.env.example` to `.env` in the repository root and configure `DB_DRIVER`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, and `DB_NAME`. The backend also accepts `DATABASE_URL`; URL-encode reserved characters in its username and password. Real `.env` files are ignored by Git. Do not run `database/schema.sql` or `database/seed.sql` during normal startup; the schema script recreates the database.
+
+## Current integration boundaries
+
+- Kitchen queue, decisions, status transitions, and shared order detail use SQLAlchemy/MySQL through `OrderRepository` and the shared models.
+- Voucher and report APIs use SQLAlchemy repositories, while their Admin/Manager frontends are integrated.
+- Customer ordering, hub/menu data, and customer order lists still use the shared mock repository. Keep `app/repositories/mock_orders.py` until TV1's database-backed Customer implementation replaces those calls.
+- Authentication accounts and sessions remain in-memory demo implementations.
+
+Run automated checks from `backend` with `python -m compileall -q app tests` and `python -m pytest -q`. The intended database-dependent tests use isolated SQLite fixtures; confirm each test result in the current checkout before relying on it.

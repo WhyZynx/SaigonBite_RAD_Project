@@ -82,6 +82,8 @@ class OrderSummary(BaseModel):
 
 
 class OrderDetail(OrderSummary):
+    customer_name: str | None = None
+    customer_phone: str | None = None
     items: list[OrderItem]
     delivery_address: str
     delivery_distance_km: float

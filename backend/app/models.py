@@ -44,8 +44,16 @@ class MenuItem(Base):
     __tablename__ = "menu_items"
 
     menu_item_id = Column(Integer, primary_key=True, autoincrement=True)
-    hub_id = Column(Integer, ForeignKey("hubs.hub_id", ondelete="RESTRICT"), nullable=False)
-    brand_id = Column(Integer, ForeignKey("brands.brand_id", ondelete="RESTRICT"), nullable=False)
+    hub_id = Column(
+        Integer,
+        ForeignKey("hubs.hub_id", ondelete="RESTRICT", onupdate="CASCADE"),
+        nullable=False,
+    )
+    brand_id = Column(
+        Integer,
+        ForeignKey("brands.brand_id", ondelete="RESTRICT", onupdate="CASCADE"),
+        nullable=False,
+    )
     name = Column(String(100), nullable=False)
     price = Column(Integer, nullable=False)
     is_available = Column(Boolean, default=True, nullable=False)
@@ -74,9 +82,21 @@ class Order(Base):
     __tablename__ = "orders"
 
     order_id = Column(Integer, primary_key=True, autoincrement=True)
-    customer_id = Column(Integer, ForeignKey("customers.customer_id", ondelete="RESTRICT"), nullable=False)
-    hub_id = Column(Integer, ForeignKey("hubs.hub_id", ondelete="RESTRICT"), nullable=False)
-    voucher_id = Column(Integer, ForeignKey("vouchers.voucher_id", ondelete="SET NULL"), nullable=True)
+    customer_id = Column(
+        Integer,
+        ForeignKey("customers.customer_id", ondelete="RESTRICT", onupdate="CASCADE"),
+        nullable=False,
+    )
+    hub_id = Column(
+        Integer,
+        ForeignKey("hubs.hub_id", ondelete="RESTRICT", onupdate="CASCADE"),
+        nullable=False,
+    )
+    voucher_id = Column(
+        Integer,
+        ForeignKey("vouchers.voucher_id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+    )
     status = Column(String(30), default="PENDING", nullable=False)
     delivery_address = Column(String(255), nullable=False)
     delivery_distance_km = Column(Float, nullable=False)
@@ -101,8 +121,16 @@ class OrderItem(Base):
     __tablename__ = "order_items"
 
     order_item_id = Column(Integer, primary_key=True, autoincrement=True)
-    order_id = Column(Integer, ForeignKey("orders.order_id", ondelete="CASCADE"), nullable=False)
-    menu_item_id = Column(Integer, ForeignKey("menu_items.menu_item_id", ondelete="RESTRICT"), nullable=False)
+    order_id = Column(
+        Integer,
+        ForeignKey("orders.order_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
+    )
+    menu_item_id = Column(
+        Integer,
+        ForeignKey("menu_items.menu_item_id", ondelete="RESTRICT", onupdate="CASCADE"),
+        nullable=False,
+    )
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Integer, nullable=False)
 
@@ -114,7 +142,11 @@ class OrderStatusHistory(Base):
     __tablename__ = "order_status_history"
 
     history_id = Column(Integer, primary_key=True, autoincrement=True)
-    order_id = Column(Integer, ForeignKey("orders.order_id", ondelete="CASCADE"), nullable=False)
+    order_id = Column(
+        Integer,
+        ForeignKey("orders.order_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
+    )
     old_status = Column(String(30), nullable=True)
     new_status = Column(String(30), nullable=False)
     reason = Column(String(255), nullable=True)
@@ -127,7 +159,12 @@ class Delivery(Base):
     __tablename__ = "deliveries"
 
     delivery_id = Column(Integer, primary_key=True, autoincrement=True)
-    order_id = Column(Integer, ForeignKey("orders.order_id", ondelete="CASCADE"), unique=True, nullable=False)
+    order_id = Column(
+        Integer,
+        ForeignKey("orders.order_id", ondelete="CASCADE", onupdate="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
     pickup_at = Column(DateTime, nullable=True)
     delivered_at = Column(DateTime, nullable=True)
     outcome = Column(String(30), default="IN_TRANSIT", nullable=False)

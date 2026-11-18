@@ -1,10 +1,9 @@
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Response, Depends
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.orm import Session
 
 from app.auth import (
     DEMO_EMAIL,
@@ -16,8 +15,6 @@ from app.auth import (
     get_session,
     role_home,
 )
-from app.database import get_db
-from app.repositories.order import OrderRepository
 from app.routers.kitchen import router as kitchen_router
 from app.routers.customer import router as customer_router
 from app.routers.reports import router as reports_router
@@ -208,62 +205,6 @@ def manager_javascript():
     )
 
 
-@app.get("/api/orders/{order_id}", tags=["Orders"])
-def get_order_detail(order_id: int, request: Request, db: Session = Depends(get_db)):
-    session = get_session(request.cookies.get(SESSION_COOKIE))
-    if not session:
-        return JSONResponse(status_code=401, content={"detail": "Authentication required"})
-    if session["role"] not in {"CUSTOMER", "KITCHEN_STAFF", "MANAGER", "ADMIN"}:
-        return JSONResponse(status_code=403, content={"detail": "This account role cannot access this resource"})
-    
-    order = OrderRepository(db).get_order(order_id)
-    
-    if session["role"] == "CUSTOMER" and order.customer_id != 1:
-        return JSONResponse(status_code=404, content={"detail": "Order not found"})
-        
-    items = [
-        {
-            "menu_item_id": item.menu_item_id,
-            "name": item.menu_item.name if item.menu_item else "Item",
-            "quantity": item.quantity,
-            "unit_price": item.unit_price,
-            "line_total": item.quantity * item.unit_price
-        }
-        for item in order.order_items
-    ]
-    
-    history = sorted(order.status_history, key=lambda entry: (entry.changed_at, entry.history_id))
-    history_data = [
-        {
-            "status": entry.new_status,
-            "changed_at": entry.changed_at,
-            "note": entry.reason
-        }
-        for entry in history
-    ]
-
-    return {
-        "id": order.order_id,
-        "customer_id": order.customer_id,
-        "hub_id": order.hub_id,
-        "status": order.status,
-        "total": order.total,
-        "created_at": order.created_at,
-        "customer_name": order.customer.name if order.customer else None,
-        "customer_phone": order.customer.phone if order.customer else None,
-        "items": items,
-        "delivery_address": order.delivery_address,
-        "delivery_distance_km": order.delivery_distance_km,
-        "voucher_code": order.voucher.code if order.voucher else None,
-        "payment_method": order.payment_method,
-        "payment_status": order.payment_status,
-        "subtotal": order.subtotal,
-        "delivery_fee": order.delivery_fee,
-        "surcharge": order.surcharge,
-        "discount": order.discount,
-        "rejection_reason": next((entry.reason for entry in reversed(history) if entry.new_status == "REJECTED" and entry.reason), None),
-        "status_history": history_data
-    }
-
 
 app.mount("/kitchen", StaticFiles(directory=frontend_dir.resolve(), html=True), name="kitchen-ui")
+app.mount("/img", StaticFiles(directory=(project_dir / "frontend" / "img").resolve()), name="food-images")

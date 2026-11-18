@@ -2,6 +2,7 @@
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const money = (amount) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(amount || 0);
+  const MOCK_DELIVERY_DISTANCE_KM = 3.5;
   const iconPaths = {
     chef: '<path d="M6 19h12M8 19v3h8v-3M5 11a4 4 0 0 1 2.4-7.2A5.5 5.5 0 0 1 17.8 5 3.5 3.5 0 0 1 19 12H5z"/>',
     home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
@@ -27,21 +28,26 @@
     plus: '<path d="M12 5v14M5 12h14"/>',
     minus: '<path d="M5 12h14"/>',
     close: '<path d="m6 6 12 12M18 6 6 18"/>',
-    food: '<path d="M3 11h18a9 9 0 0 1-18 0zM5 7a8 8 0 0 1 14 0M12 3v2"/>'
+    food: '<path d="M3 11h18a9 9 0 0 1-18 0zM5 7a8 8 0 0 1 14 0M12 3v2"/>',
+    cart: '<path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 9H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>'
   };
   function icon(name, className = "icon") { return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPaths[name] || iconPaths.food}</svg>`; }
   function hydrateIcons(root = document) { root.querySelectorAll("[data-icon]").forEach((node) => { node.innerHTML = icon(node.dataset.icon, "icon"); }); }
   const copy = {
     en: {
-      tagline:"GOOD FOOD, CLOSE BY",home:"Home",order_food:"Order Food",my_orders:"My Orders",vouchers:"Vouchers",profile:"Profile",footer_tagline:"Freshly made.\nHappily delivered.",hello:"Hello,",customer_account:"Customer account",logout:"Log out",nearby_label:"NEARBY RESTAURANTS",hero_title:"What are you craving today?",hero_subtitle:"Choose a nearby restaurant and explore its menu.",search_placeholder:"Search restaurants...",search_hint:"Search by name or location",restaurants:"NEARBY RESTAURANTS",restaurant_data_note:'Real restaurant locations based on <a href="https://international.tdtu.edu.vn/en/support/surrounding" target="_blank" rel="noreferrer">TDTU information</a>. Menus, prices and delivery availability are demo data.',menu_demo_note:"Sample menu and prices for this demo. They may differ from the restaurant's current menu.",your_cart:"Your Cart",view_cart:"View cart",cart_subtitle:"Review your items before placing the order.",order_summary:"Order Summary",subtotal:"Subtotal",total:"Total",delivery_fee_not_included:"Delivery fee is not included.",continue_checkout:"Continue to Checkout",checkout_title:"Checkout",checkout_subtitle:"A few details and your restaurant will get cooking.",delivery_information:"Delivery Information",delivery_address:"Delivery address",address_placeholder:"Street, building, apartment...",recipient_name:"Recipient name",name_placeholder:"Your name",phone_number:"Phone number",note_optional:"Note (optional)",note_placeholder:"For example: call when you arrive",voucher:"Voucher",voucher_placeholder:"Enter voucher code",apply:"Apply",voucher_unavailable:"Voucher validation is not connected yet.",payment_method:"Payment Method",cod:"Cash on Delivery (COD)",delivery_fee:"Delivery fee",not_calculated:"Not calculated",discount:"Discount",delivery_fee_note:"Delivery fee is not included in this demo.",place_order:"Place Order",order_success_eyebrow:"ORDER PLACED SUCCESSFULLY",order_success_title:"Your order is on its way!",order_number:"Order number",order_success_message:"The restaurant will confirm and prepare your order.",restaurant:"Restaurant",order_total:"Order total",status:"Status",order_status_message:"Your order status will update when the restaurant confirms.",order_again:"Order Again",track_order:"Track Order",placeholder_prompt:"Choose",placeholder_suffix:"to browse nearby restaurants.",search_empty:"No restaurants match your search.",view_menu:"View menu",on_campus:"Nearby restaurant",menu_sample:"Sample menu",add:"Add",all:"All",items:"items",item:"item",placed_from:"ORDER FROM",empty_cart:"Your cart is empty. Add a dish to continue.",empty_cart_short:"Your cart is empty.",demo_error:"This feature is not connected yet.",cancel_hub_change:"Changing restaurants will clear the current cart. Continue?",choose_items:"Choose a restaurant and add at least one item.",placing:"Placing order...",track_pending:"Order {id} is PENDING. Order tracking is part of UC02.",load_error:"Unable to load restaurants",no_menu:"No sample menu is available for this restaurant.",main_dish:"Main dish",side_dish:"Side dish",drink:"Drinks"
+      tagline:"GOOD FOOD, CLOSE BY",home:"Home",order_food:"Order Food",my_orders:"My Orders",vouchers:"Vouchers",profile:"Profile",footer_tagline:"Freshly made.\nHappily delivered.",hello:"Hello,",customer_account:"Customer account",logout:"Log out",nearby_label:"NEARBY RESTAURANTS",hero_title:"What are you craving today?",hero_subtitle:"Choose a nearby restaurant and explore its menu.",search_placeholder:"Search restaurants...",search_hint:"Search by name or location",restaurants:"NEARBY RESTAURANTS",menu_demo_note:"Sample menu and prices for this demo. They may differ from the restaurant's current menu.",your_cart:"Your Cart",view_cart:"View cart",cart_subtitle:"Review your items before placing the order.",order_summary:"Order Summary",subtotal:"Subtotal",total:"Total",delivery_fee_not_included:"Delivery fee is not included.",continue_checkout:"Continue to Checkout",checkout_title:"Checkout",checkout_subtitle:"A few details and your restaurant will get cooking.",delivery_information:"Delivery Information",delivery_address:"Delivery address",address_placeholder:"Street, building, apartment...",recipient_name:"Recipient name",name_placeholder:"Your name",phone_number:"Phone number",note_optional:"Note (optional)",note_placeholder:"For example: call when you arrive",voucher:"Voucher",voucher_placeholder:"Enter voucher code",apply:"Apply",voucher_unavailable:"Voucher validation is not connected yet.",payment_method:"Payment Method",cod:"Cash on Delivery (COD)",delivery_fee:"Delivery fee",not_calculated:"Not calculated",discount:"Discount",delivery_fee_note:"Delivery fee is not included in this demo.",place_order:"Place Order",order_success_eyebrow:"ORDER PLACED SUCCESSFULLY",order_success_title:"Your order is on its way!",order_number:"Order number",order_success_message:"The restaurant will confirm and prepare your order.",restaurant:"Restaurant",order_total:"Order total",status:"Status",order_status_message:"Your order status will update when the restaurant confirms.",order_again:"Order Again",track_order:"Track Order",placeholder_prompt:"Choose",placeholder_suffix:"to browse nearby restaurants.",search_empty:"No restaurants match your search.",view_menu:"View menu",on_campus:"Nearby restaurant",menu_sample:"Sample menu",add:"Add",all:"All",items:"items",item:"item",placed_from:"ORDER FROM",empty_cart:"Your cart is empty. Add a dish to continue.",empty_cart_short:"Your cart is empty.",demo_error:"This feature is not connected yet.",cancel_hub_change:"Changing restaurants will clear the current cart. Continue?",choose_items:"Choose a restaurant and add at least one item.",placing:"Placing order...",track_pending:"Order {id} is PENDING. Order tracking is part of UC02.",load_error:"Unable to load restaurants",no_menu:"No sample menu is available for this restaurant.",main_dish:"Main dish",side_dish:"Side dish",drink:"Drinks"
     }
   };
   let language = "en";
   const t = (key) => copy[language][key] || copy.en[key] || key;
-  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customerOrders: [] };
+  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customerOrders: [] };
   const savedCart = sessionStorage.getItem("saigonbite-cart");
   if (savedCart) {
     try { Object.assign(state.cart, JSON.parse(savedCart)); } catch { sessionStorage.removeItem("saigonbite-cart"); }
+  }
+  const savedCartCatalog = sessionStorage.getItem("saigonbite-cart-catalog");
+  if (savedCartCatalog) {
+    try { Object.assign(state.cartCatalog, JSON.parse(savedCartCatalog)); } catch { sessionStorage.removeItem("saigonbite-cart-catalog"); }
   }
 
   async function api(url, options = {}) {
@@ -62,7 +68,7 @@
   }
   function clearNotice() { $("#notice").className = "alert d-none"; }
   function toggleScreen(name) {
-    ["hub", "menu", "cart", "checkout", "success"].forEach((screen) => $(`#${screen}-screen`)?.classList.toggle("d-none", screen !== name));
+    ["hub", "menu", "cart", "restaurant-cart", "checkout", "success"].forEach((screen) => $(`#${screen}-screen`)?.classList.toggle("d-none", screen !== name));
     state.screen = name;
     clearNotice();
   }
@@ -86,6 +92,23 @@
     return ({ "Mì nóng với thịt gà và rau": "Hot noodles with chicken and greens", "Cơm chiên trứng và rau củ": "Fried rice with egg and vegetables", "Trà sữa dùng lạnh": "Chilled milk tea", "Sườn nướng ăn kèm cơm": "Grilled pork served with rice", "Mì Ý sốt cà chua": "Spaghetti with tomato sauce", "Trà chanh mát lạnh": "Refreshing iced lemon tea", "Cơm gà cho bữa trưa": "Chicken rice for lunch", "Rau tươi cuốn bánh tráng": "Fresh vegetables in rice paper", "Cơm ăn kèm rau củ tươi": "Rice with fresh vegetables", "Cơm tấm sườn nướng": "Broken rice with grilled pork", "Cơm gà dùng kèm rau": "Chicken rice with greens" })[item.description] || item.description;
   }
 
+  const menuImage = {
+    "Com Tam Suon Bi Cha": "suon_bi_cha.jpeg",
+    "Pho Bo Tai Nam": "pho_tai_nam.jpeg",
+    "Tra Dao Cam Sa": "tradaocamsa.jpeg",
+    "Com Ga Xoi Mo": "com_ga_xoi_mo.jpeg",
+    "Bun Bo Hue Dac Bien": "bun_bo_hue.jpeg",
+    "Banh Mi Thit Nuong": "banhmi_thit_nuong.jpeg",
+    "Com Tam Suon Trung": "suon_trung.jpeg",
+    "Tra Sua Tran Chau Duong Den": "tran_chau_duong_den.jpeg"
+  };
+  function foodImage(item, className = "food-thumb-image") {
+    const filename = menuImage[item.name];
+    return filename
+      ? `<img class="${className}" src="/img/${filename}" alt="${escapeHtml(item.name)}" loading="lazy">`
+      : icon("food", "food-icon");
+  }
+
   function categoryName(category) {
     if (category === "All") return t("all");
     if (category === "Món chính") return t("main_dish");
@@ -104,22 +127,20 @@
   function renderHubs(filter = "") {
     const hubs = state.hubs.filter((hub) => `${hub.name} ${hub.address}`.toLowerCase().includes(filter.toLowerCase()));
     $("#hub-count").textContent = `${hubs.length} restaurants`;
-    $("#hub-list").innerHTML = hubs.length ? hubs.map((hub) => `<article class="hub-card"><div class="hub-art ${escapeHtml(hub.icon || "restaurant")}" aria-hidden="true">${icon(hub.icon || "restaurant", "hub-icon")}</div><div class="hub-info"><span class="location-chip">${icon("map-pin")} ${t("on_campus")}</span><h2>${escapeHtml(hub.name)}</h2><a class="map-link" href="https://maps.google.com/?q=${encodeURIComponent(`${hub.name} ${hub.address}`)}" target="_blank" rel="noreferrer">${icon("map-pin")} ${escapeHtml(hub.address)}</a><div class="hub-meta">${icon("utensils")}<span>${escapeHtml(hub.description)}</span></div></div><button class="btn btn-outline-light hub-action" data-hub="${hub.id}"><span>${t("view_menu")}</span>${icon("arrow-right")}</button></article>`).join("") : `<div class="empty-state">${t("search_empty")}</div>`;
+    $("#hub-list").innerHTML = hubs.length ? hubs.map((hub) => `<article class="hub-card"><div class="hub-art ${escapeHtml(hub.icon || "restaurant")}" aria-hidden="true">${icon(hub.icon || "restaurant", "hub-icon")}</div><div class="hub-info"><span class="location-chip">${icon("map-pin")} ${t("on_campus")}</span><h2>${escapeHtml(hub.name)}</h2><a class="map-link" href="https://maps.google.com/?q=${encodeURIComponent(`${hub.name} ${hub.address}`)}" target="_blank" rel="noreferrer">${icon("map-pin")} ${escapeHtml(hub.address)}</a>${hub.description ? `<div class="hub-meta">${icon("utensils")}<span>${escapeHtml(hub.description)}</span></div>` : ""}</div><button class="btn btn-outline-light hub-action" data-hub="${hub.id}"><span>${t("view_menu")}</span>${icon("arrow-right")}</button></article>`).join("") : `<div class="empty-state">${t("search_empty")}</div>`;
     $$("[data-hub]").forEach((button) => button.addEventListener("click", () => selectHub(Number(button.dataset.hub))));
   }
 
   async function selectHub(hubId) {
     const hub = state.hubs.find((item) => item.id === hubId);
     if (!hub) return;
-    if (state.cartHubId && state.cartHubId !== hubId && cartCount()) {
-      const confirmed = window.confirm(t("cancel_hub_change"));
-      if (!confirmed) return;
-      state.cart = {};
-    }
     state.hub = hub;
-    state.cartHubId = hubId;
     try {
       state.menu = await api(`/api/menu-items?hub_id=${hubId}`);
+      state.menu.forEach((item) => {
+        if (state.cart[item.id]) state.cartCatalog[item.id] = { ...item, hub_id: hubId, hub_name: hub.name };
+      });
+      saveCart();
       $("#selected-hub-name").textContent = hub.name;
       $("#selected-hub-meta").innerHTML = `${icon(hub.icon || "restaurant")} ${escapeHtml(hub.address)} · ${t("menu_sample")}`;
       state.category = "All";
@@ -135,82 +156,139 @@
 
   function renderMenu() {
     const visible = state.menu.filter((item) => state.category === "All" || item.category === state.category);
-    $("#menu-grid").innerHTML = visible.length ? visible.map((item, index) => `<article class="menu-card"><div class="food-art color-${index % 4}" aria-hidden="true">${icon("food", "food-icon")}</div><h2>${escapeHtml(itemName(item))}</h2><p>${escapeHtml(itemDescription(item) || "Freshly prepared for you")}</p><div class="menu-card-bottom"><span>${money(item.price)}</span><button class="btn btn-brand" data-add="${item.id}" ${item.is_available ? "" : "disabled"}>${icon("plus")} ${t("add")}</button></div></article>`).join("") : `<div class="empty-state">${t("no_menu")}</div>`;
+    $("#menu-grid").innerHTML = visible.length ? visible.map((item, index) => {
+      const image = menuImage[item.name];
+      const visual = image
+        ? `<img class="food-photo" src="/img/${image}" alt="${escapeHtml(item.name)}" loading="lazy">`
+        : icon("food", "food-icon");
+      return `<article class="menu-card"><div class="food-art color-${index % 4}">${visual}</div><h2>${escapeHtml(itemName(item))}</h2><p>${escapeHtml(itemDescription(item) || "Freshly prepared for you")}</p><div class="menu-card-bottom"><span>${money(item.price)}</span><button class="btn btn-brand" data-add="${item.id}" ${item.is_available ? "" : "disabled"}>${icon("plus")} ${t("add")}</button></div></article>`;
+    }).join("") : `<div class="empty-state">${t("no_menu")}</div>`;
     $$("[data-add]").forEach((button) => button.addEventListener("click", () => addToCart(Number(button.dataset.add))));
     updateCartBar();
   }
 
   function addToCart(itemId) {
+    const item = state.menu.find((entry) => entry.id === itemId);
+    if (!item || !state.hub) return;
     state.cart[itemId] = (state.cart[itemId] || 0) + 1;
+    state.cartCatalog[itemId] = { ...item, hub_id: state.hub.id, hub_name: state.hub.name };
     saveCart(); renderMenu();
   }
-  function cartEntries() { return state.menu.filter((item) => state.cart[item.id]).map((item) => ({ ...item, quantity: state.cart[item.id] })); }
+  function cartEntries() { return Object.entries(state.cart).filter(([, quantity]) => quantity > 0).map(([id, quantity]) => ({ ...state.cartCatalog[id], id: Number(id), quantity })).filter((item) => item.name); }
+  function cartGroups() {
+    const groups = new Map();
+    cartEntries().forEach((item) => {
+      const hubId = item.hub_id;
+      if (!groups.has(hubId)) groups.set(hubId, { hub_id: hubId, hub_name: item.hub_name || hubName(hubId), items: [] });
+      groups.get(hubId).items.push(item);
+    });
+    return [...groups.values()];
+  }
   function cartCount() { return Object.values(state.cart).reduce((sum, quantity) => sum + quantity, 0); }
   function subtotal() { return cartEntries().reduce((sum, item) => sum + item.price * item.quantity, 0); }
   function saveCart() {
     sessionStorage.setItem("saigonbite-cart", JSON.stringify(state.cart));
-    if (state.cartHubId) sessionStorage.setItem("saigonbite-cart-hub", String(state.cartHubId));
-    else sessionStorage.removeItem("saigonbite-cart-hub");
+    sessionStorage.setItem("saigonbite-cart-catalog", JSON.stringify(state.cartCatalog));
+    sessionStorage.removeItem("saigonbite-cart-hub");
   }
 
   function updateCartBar() {
-    const count = cartCount();
-    $("#cart-count").textContent = `${count} ${count === 1 ? t("item") : t("items")}`;
-    $("#cart-total").textContent = money(subtotal());
-    $("#view-cart").disabled = !count;
+    const allCount = cartCount();
+    const restaurantItems = state.hub ? cartEntries().filter((item) => item.hub_id === state.hub.id) : [];
+    const restaurantCount = restaurantItems.reduce((sum, item) => sum + item.quantity, 0);
+    const restaurantSubtotal = restaurantItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    $("#cart-count").textContent = `${restaurantCount} ${restaurantCount === 1 ? t("item") : t("items")}`;
+    $("#cart-total").textContent = money(restaurantSubtotal);
+    $("#global-cart-count").textContent = String(allCount);
+    $("#global-cart").disabled = false;
+    $("#view-cart").disabled = allCount === 0;
   }
 
   function renderCart() {
-    const entries = cartEntries();
-    if (!entries.length) { toggleScreen("menu"); showNotice(t("empty_cart"), "info"); return; }
-    $("#cart-hub").innerHTML = `<small>${t("placed_from")}</small><strong>${escapeHtml(state.hub?.name || "SaigonBite")}</strong>`;
-    $("#cart-lines").innerHTML = entries.map((item) => `<article class="cart-line"><div class="cart-thumb">${icon("food")}</div><div><h3>${escapeHtml(itemName(item))}</h3><p>${money(item.price)}</p></div><div class="quantity-control"><button data-qty="${item.id}" data-delta="-1" aria-label="${"Decrease quantity"}">${icon("minus")}</button><span>${item.quantity}</span><button data-qty="${item.id}" data-delta="1" aria-label="${"Increase quantity"}">${icon("plus")}</button></div><button class="remove-item" data-remove="${item.id}" aria-label="${"Remove"} ${escapeHtml(itemName(item))}">${icon("close")}</button></article>`).join("");
-    $("#cart-subtotal").textContent = money(subtotal());
-    $("#cart-grand-total").textContent = money(subtotal());
-    $$('[data-qty]').forEach((button) => button.addEventListener("click", () => changeQuantity(Number(button.dataset.qty), Number(button.dataset.delta))));
-    $$('[data-remove]').forEach((button) => button.addEventListener("click", () => { delete state.cart[button.dataset.remove]; saveCart(); renderCart(); updateCartBar(); }));
+    const groups = cartGroups();
+    if (!groups.length) {
+      $("#cart-restaurants").innerHTML = `<div class="empty-state">${t("empty_cart_short")}</div>`;
+      toggleScreen("cart");
+      return;
+    }
+    $("#cart-restaurants").innerHTML = groups.map((group) => {
+      const count = group.items.reduce((sum, item) => sum + item.quantity, 0);
+      const groupSubtotal = group.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      return `<button class="cart-restaurant-card" type="button" data-cart-hub="${group.hub_id}"><span class="cart-restaurant-photo">${foodImage(group.items[0])}</span><span class="cart-restaurant-copy"><strong>${escapeHtml(group.hub_name)}</strong><small>${count} ${count === 1 ? t("item") : t("items")} · ${money(groupSubtotal)}</small></span>${icon("arrow-right")}</button>`;
+    }).join("");
+    $$('[data-cart-hub]').forEach((button) => button.addEventListener("click", () => renderRestaurantCart(Number(button.dataset.cartHub))));
     toggleScreen("cart");
+  }
+
+  function renderRestaurantCart(hubId) {
+    const group = cartGroups().find((item) => item.hub_id === hubId);
+    if (!group) { renderCart(); return; }
+    state.selectedCartHubId = hubId;
+    state.hub = state.hubs.find((hub) => hub.id === hubId) || state.hub;
+    $("#restaurant-cart-title").textContent = group.hub_name;
+    $("#cart-hub").innerHTML = `<small>${t("placed_from")}</small><strong>${escapeHtml(group.hub_name)}</strong>`;
+    $("#cart-lines").innerHTML = group.items.map((item) => `<article class="cart-line"><div class="cart-thumb">${foodImage(item)}</div><div><h3>${escapeHtml(itemName(item))}</h3><p>${money(item.price)}</p></div><div class="quantity-control"><button data-qty="${item.id}" data-delta="-1" aria-label="Decrease quantity">${icon("minus")}</button><span>${item.quantity}</span><button data-qty="${item.id}" data-delta="1" aria-label="Increase quantity">${icon("plus")}</button></div><button class="remove-item" data-remove="${item.id}" aria-label="Remove ${escapeHtml(itemName(item))}">${icon("close")}</button></article>`).join("");
+    const restaurantSubtotal = group.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    $("#cart-subtotal").textContent = money(restaurantSubtotal);
+    $("#cart-grand-total").textContent = money(restaurantSubtotal);
+    $$('[data-qty]').forEach((button) => button.addEventListener("click", () => changeQuantity(Number(button.dataset.qty), Number(button.dataset.delta))));
+    $$('[data-remove]').forEach((button) => button.addEventListener("click", () => { delete state.cart[button.dataset.remove]; delete state.cartCatalog[button.dataset.remove]; saveCart(); updateCartBar(); renderRestaurantCart(hubId); }));
+    toggleScreen("restaurant-cart");
   }
 
   function changeQuantity(itemId, delta) {
     state.cart[itemId] = (state.cart[itemId] || 0) + delta;
-    if (state.cart[itemId] <= 0) delete state.cart[itemId];
-    saveCart(); updateCartBar(); renderCart();
+    if (state.cart[itemId] <= 0) { delete state.cart[itemId]; delete state.cartCatalog[itemId]; }
+    saveCart(); updateCartBar();
+    if (state.screen === "restaurant-cart" && state.selectedCartHubId) renderRestaurantCart(state.selectedCartHubId);
+    else renderCart();
   }
 
   function renderCheckout() {
-    if (!cartCount()) { showNotice(t("empty_cart_short"), "info"); toggleScreen("menu"); return; }
-    $("#checkout-hub-name").textContent = state.hub?.name || "SaigonBite";
-    $("#checkout-subtotal").textContent = money(subtotal());
-    $("#checkout-total").textContent = money(subtotal());
+    const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
+    if (!group) { renderCart(); showNotice(t("empty_cart_short"), "info"); return; }
+    const groupSubtotal = group.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    $("#checkout-hub-name").textContent = group.hub_name;
+    $("#checkout-subtotal").textContent = money(groupSubtotal);
+    updateCheckoutTotals();
     toggleScreen("checkout");
+  }
+
+  function updateCheckoutTotals() {
+    const fee = 15000;
+    $("#checkout-delivery-fee").textContent = money(fee);
+    const groupSubtotal = cartGroups().find((group) => group.hub_id === state.selectedCartHubId)?.items.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+    $("#checkout-total").textContent = money(groupSubtotal + fee);
   }
 
   async function placeOrder(event) {
     event.preventDefault();
     clearNotice();
-    if (!state.hub || !cartCount()) { showNotice(t("choose_items")); return; }
+    const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
+    if (!group) { showNotice(t("choose_items")); return; }
     const submit = $("#place-order");
     submit.disabled = true; submit.textContent = t("placing");
     try {
+      const address = [
+        $("#address").value.trim(),
+        `Recipient: ${$("#recipient").value.trim()}`,
+        `Phone: ${$("#phone").value.trim()}`,
+        $("#note").value.trim() ? `Note: ${$("#note").value.trim()}` : ""
+      ].filter(Boolean).join("\n");
       const response = await api("/api/orders", { method: "POST", body: JSON.stringify({
         customer_id: 1,
-        hub_id: state.hub.id,
-        items: cartEntries().map((item) => ({ menu_item_id: item.id, quantity: item.quantity })),
-        delivery_address: [
-          $("#address").value.trim(),
-          `Recipient: ${$("#recipient").value.trim()}`,
-          `Phone: ${$("#phone").value.trim()}`,
-          $("#note").value.trim() ? `Note: ${$("#note").value.trim()}` : ""
-        ].filter(Boolean).join("\n"),
-        delivery_distance_km: 0,
-        payment_method: new FormData($("#checkout-form")).get("payment")
+        hub_id: group.hub_id,
+        items: group.items.map((item) => ({ menu_item_id: item.id, quantity: item.quantity })),
+        delivery_address: address,
+        delivery_distance_km: MOCK_DELIVERY_DISTANCE_KM,
+        payment_method: "COD"
       }) });
       state.lastOrder = response;
       $("#success-order-id").textContent = `#SB${String(response.id).padStart(7, "0")}`;
-      $("#success-hub").textContent = state.hub.name;
+      $("#success-hub").textContent = group.hub_name;
       $("#success-total").textContent = money(response.total);
-      state.cart = {}; saveCart(); updateCartBar();
+      group.items.forEach((item) => { delete state.cart[item.id]; delete state.cartCatalog[item.id]; });
+      saveCart(); updateCartBar();
       toggleScreen("success");
     } catch (error) { showNotice(error.message, "danger"); }
     finally { submit.disabled = false; submit.innerHTML = `<span data-i18n="place_order">${t("place_order")}</span> ${icon("arrow-right")}`; }
@@ -292,10 +370,11 @@
   function showView(name) {
     const views = { order: "view-order", orders: "view-orders", home: "view-home", vouchers: "view-vouchers", profile: "view-profile" };
     Object.entries(views).forEach(([key, id]) => $(`#${id}`).classList.toggle("d-none", key !== name));
+    $("#customer-footer").classList.toggle("d-none", !["order", "home"].includes(name));
     $$(".side-nav a").forEach((link) => link.classList.toggle("active", link.dataset.view === name));
   }
   function orderHeader(order, title) { return `<button class="text-back" data-orders-back>← &nbsp; My Orders</button><div class="order-title-row"><div><span class="eyebrow">${orderCode(order.id)}</span><h1>${title}</h1><p>${escapeHtml(hubName(order.hub_id))} · ${orderDate(order.created_at)}</p></div><span class="order-status ${statusClass(order.status)}">${escapeHtml(statusLabel[order.status] || order.status)}</span></div>`; }
-  function orderItemsMarkup(order) { return (order.items || []).map((item) => `<div class="detail-item"><div><strong>${escapeHtml(item.name)}</strong><small>${item.quantity} × ${money(item.unit_price)}</small></div><strong>${money(item.line_total)}</strong></div>`).join(""); }
+  function orderItemsMarkup(order) { return (order.items || []).map((item) => `<div class="detail-item"><span class="detail-thumb">${foodImage(item)}</span><div><strong>${escapeHtml(item.name)}</strong><small>${item.quantity} × ${money(item.unit_price)}</small></div><strong>${money(item.line_total)}</strong></div>`).join(""); }
   function statusHistoryMarkup(order) {
     const history = order.status_history || [];
     return history.map((entry) => `<div class="timeline-entry"><span class="timeline-dot ${entry.status === order.status ? "current" : ""}"></span><div><strong>${escapeHtml(statusLabel[entry.status] || entry.status)}</strong>${entry.note ? `<p>${escapeHtml(entry.note)}</p>` : ""}</div><time>${new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(entry.changed_at))}</time></div>`).join("") || `<p class="muted-copy">Status updates will appear here.</p>`;
@@ -338,13 +417,45 @@
     } catch { return; }
     applyLanguage();
     await loadHubs();
+    if (cartCount() && !Object.keys(state.cartCatalog).length && state.cartHubId) {
+      const oldHub = state.hubs.find((hub) => hub.id === state.cartHubId);
+      if (oldHub) {
+        const oldMenu = await api(`/api/menu-items?hub_id=${oldHub.id}`).catch(() => []);
+        oldMenu.forEach((item) => {
+          if (state.cart[item.id]) state.cartCatalog[item.id] = { ...item, hub_id: oldHub.id, hub_name: oldHub.name };
+        });
+      }
+    }
+    if (cartCount()) {
+      const hubIds = new Set(Object.values(state.cartCatalog).map((item) => item.hub_id));
+      for (const hubId of hubIds) {
+        const hub = state.hubs.find((item) => item.id === hubId);
+        const freshMenu = hub ? await api(`/api/menu-items?hub_id=${hubId}`).catch(() => []) : [];
+        Object.keys(state.cart).forEach((id) => {
+          const stored = state.cartCatalog[id];
+          if (!stored) { delete state.cart[id]; return; }
+          if (stored.hub_id !== hubId) return;
+          const fresh = freshMenu.find((item) => item.id === Number(id));
+          if (fresh) state.cartCatalog[id] = { ...fresh, hub_id: hubId, hub_name: hub.name };
+          else { delete state.cart[id]; delete state.cartCatalog[id]; }
+        });
+      }
+      Object.keys(state.cart).forEach((id) => { if (!state.cartCatalog[id]) delete state.cart[id]; });
+      saveCart();
+    }
+    updateCartBar();
     await loadHome();
     $("#hub-search").addEventListener("input", (event) => renderHubs(event.target.value));
     $$("[data-order-filter]").forEach((button) => button.addEventListener("click", () => { $$("[data-order-filter]").forEach((item) => item.classList.toggle("active", item === button)); renderCustomerOrders(button.dataset.orderFilter); }));
     $("#back-hubs").addEventListener("click", () => toggleScreen("hub"));
-    $("#back-menu").addEventListener("click", () => toggleScreen("menu"));
-    $("#back-cart").addEventListener("click", renderCart);
-    $("#view-cart").addEventListener("click", renderCart);
+    $("#back-menu").addEventListener("click", () => { showView("order"); toggleScreen("hub"); });
+    $("#back-all-carts").addEventListener("click", renderCart);
+    $("#back-cart").addEventListener("click", () => renderRestaurantCart(state.selectedCartHubId));
+    $("#view-cart").addEventListener("click", () => {
+      if (state.hub) renderRestaurantCart(state.hub.id);
+      else renderCart();
+    });
+    $("#global-cart").addEventListener("click", () => { showView("order"); renderCart(); });
     $("#proceed-checkout").addEventListener("click", renderCheckout);
     $("#checkout-form").addEventListener("submit", placeOrder);
     $("#apply-voucher").addEventListener("click", () => showNotice(t("demo_error"), "info"));

@@ -15,6 +15,14 @@ from app.schemas import (
 router = APIRouter(prefix="/api/kitchen", tags=["Kitchen"])
 
 
+@router.get("/hubs")
+def list_kitchen_hubs(db: Session = Depends(get_db)):
+    return [
+        {"id": hub.hub_id, "name": hub.name, "status": hub.status}
+        for hub in OrderRepository(db).list_hubs()
+    ]
+
+
 @router.get("/orders", response_model=list[OrderSummary])
 def list_kitchen_orders(
     hub_id: int = Query(gt=0),

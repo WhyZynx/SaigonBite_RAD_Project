@@ -3,7 +3,7 @@ from sqlalchemy import select, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.models import Order, OrderItem, OrderStatusHistory
+from app.models import Hub, Order, OrderItem, OrderStatusHistory
 from app.schemas import OrderStatus
 
 
@@ -24,6 +24,9 @@ class OrderRepository:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def list_hubs(self):
+        return self.db.scalars(select(Hub).order_by(Hub.hub_id)).all()
 
     def list_orders(self, hub_id: int, status: OrderStatus | None = None):
         statement = select(Order).where(Order.hub_id == hub_id)

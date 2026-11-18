@@ -110,6 +110,17 @@ def test_list_filters_orders_by_hub_and_status(client):
     assert client.get("/api/kitchen/orders?hub_id=2").json()[0]["id"] == 109
 
 
+def test_kitchen_hubs_are_loaded_from_database(client):
+    response = client.get("/api/kitchen/hubs")
+    assert response.status_code == 200
+    assert response.json() == [
+        {"id": 1, "name": "Central", "status": "OPEN"},
+        {"id": 2, "name": "East", "status": "OPEN"},
+    ]
+    assert "id=\"hub-select\"" in client.get("/kitchen/").text
+    assert "api('/api/kitchen/hubs')" in client.get("/app.js").text
+
+
 def test_home_and_kitchen_frontend_assets_after_login(client):
     home = client.get("/", follow_redirects=True)
     kitchen = client.get("/kitchen/")

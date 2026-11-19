@@ -39,3 +39,73 @@
 }
 
 .nav-link > span:not(.nav-icon) { white-space: nowrap; }
+
+/* Customer-matched Kitchen brand and order navigation. */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin: 0 0 30.5px;
+  padding: 0;
+  color: #fff;
+  text-align: center;
+  font: 14px/1.45 Inter, "Segoe UI", Arial, sans-serif;
+  letter-spacing: normal;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 31px;
+  line-height: 1.1;
+  font-weight: 300;
+}
+
+.brand-mark .icon { width: 34px; height: 34px; stroke-width: 1.4; }
+.brand strong { margin-top: 8px; font-size: 18px; font-weight: 700; letter-spacing: -.5px; }
+.brand small { display: block; margin-top: 4px; color: #c1d1c4; font: 600 7px/1.2 "DM Sans", sans-serif; letter-spacing: .25px; }
+
+.nav-list { gap: 7px; }
+.nav-link {
+  height: 39px;
+  min-height: 39px;
+  gap: 11px;
+  padding: 9px 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.nav-link .nav-icon { width: 17px; flex: 0 0 17px; font-size: 18px; line-height: 1; }
+.nav-link > span:not(.nav-icon) { min-width: 0; flex: 1 1 auto; font-size: 11px; line-height: 1.2; }
+.nav-link b { min-width: 20px; font-size: 10px; }
+.nav-link.active {
+  background: #edf2df;
+  color: var(--forest);
+  font-weight: 600;
+  box-shadow: none;
+}
+.nav-link.active .nav-icon,
+.nav-link.active b { color: var(--forest); }
+
+@media (min-width: 768px) {
+  .sidebar { padding-top: 31px; }
+}
+
+@media (min-width: 901px) and (max-width: 1024px) {
+  .nav-link { gap: 11px; padding: 9px 11px; font-size: 12px; }
+  .nav-link .nav-icon { width: 17px; flex-basis: 17px; font-size: 18px; }
+}
+
+@media (min-width: 768px) and (max-width: 900px) {
+  .brand { margin-bottom: 30.5px; }
+  .nav-list { gap: 7px; }
+  .nav-link { gap: 9px; padding: 9px 8px; font-size: 11px; }
+  .nav-link .nav-icon { width: 17px; flex-basis: 17px; font-size: 18px; }
+  .nav-link > span:not(.nav-icon) { font-size: 11px; }
+}

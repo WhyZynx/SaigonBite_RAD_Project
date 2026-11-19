@@ -42,7 +42,7 @@ class CreateOrderRequest(BaseModel):
     customer_id: int = Field(gt=0)
     hub_id: int = Field(gt=0)
     items: list[CreateOrderItem] = Field(min_length=1)
-    delivery_address: str = Field(min_length=5, max_length=500)
+    delivery_address: str = Field(min_length=5, max_length=255)
     delivery_distance_km: float = Field(ge=0)
     voucher_code: str | None = None
     payment_method: str = Field(default="COD", pattern="^COD$")

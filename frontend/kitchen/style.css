@@ -82,16 +82,20 @@
   font-weight: 500;
 }
 .nav-link .nav-icon { width: 17px; flex: 0 0 17px; font-size: 18px; line-height: 1; }
+.nav-link .nav-icon .icon { display: block; width: 17px; height: 17px; stroke-width: 1.7; }
 .nav-link > span:not(.nav-icon) { min-width: 0; flex: 1 1 auto; font-size: 11px; line-height: 1.2; }
 .nav-link b { min-width: 20px; font-size: 10px; }
-.nav-link.active {
+.nav-link.active,
+.nav-link:hover {
   background: #edf2df;
   color: var(--forest);
   font-weight: 600;
   box-shadow: none;
 }
 .nav-link.active .nav-icon,
-.nav-link.active b { color: var(--forest); }
+.nav-link:hover .nav-icon,
+.nav-link.active b,
+.nav-link:hover b { color: var(--forest); }
 
 @media (min-width: 768px) {
   .sidebar { padding-top: 31px; }

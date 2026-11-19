@@ -54,7 +54,7 @@ python -m pytest -q
 | Admin | configured locally | `/admin/` |
 | Manager | configured locally | `/manager/` |
 
-Override default credentials via environment variables before starting Uvicorn: `SAIGONBITE_CUSTOMER_EMAIL`, `SAIGONBITE_CUSTOMER_PASSWORD`, `SAIGONBITE_DEMO_EMAIL`, `SAIGONBITE_DEMO_PASSWORD`, `SAIGONBITE_ADMIN_EMAIL`, `SAIGONBITE_ADMIN_PASSWORD`, `SAIGONBITE_MANAGER_EMAIL`, and `SAIGONBITE_MANAGER_PASSWORD`.
+Override default credentials via environment variables before starting Uvicorn: `SAIGONBITE_CUSTOMER_EMAIL` (one customer email) or `SAIGONBITE_CUSTOMER_EMAILS` (comma-separated customer emails sharing `SAIGONBITE_CUSTOMER_PASSWORD`), `SAIGONBITE_DEMO_EMAIL`, `SAIGONBITE_DEMO_PASSWORD`, `SAIGONBITE_ADMIN_EMAIL`, `SAIGONBITE_ADMIN_PASSWORD`, `SAIGONBITE_MANAGER_EMAIL`, and `SAIGONBITE_MANAGER_PASSWORD`. Each configured customer email must match exactly one row in `customers.email`.
 
 ---
 
@@ -126,9 +126,14 @@ Invalidates the server-side session and expires the `saigonbite_session` cookie.
 | Auth | POST | `/api/auth/logout` | Shared | Clear session and expire cookie |
 | UC01 | GET | `/api/hubs` | TV1 | List hubs |
 | UC01 | GET | `/api/menu-items?hub_id={id}` | TV1 | List menu items for a hub |
-| UC01 | POST | `/api/orders` | TV1 | Place order |
+| UC01 | GET | `/api/delivery-options?hub_id={id}` | TV1 | List fixed demo destinations, route distances, and fees for a hub |
+| UC01 | POST | `/api/orders` | TV1 | Place order for the customer bound to the active session |
+| UC01 | POST | `/api/customer/vouchers/validate` | TV1 | Validate a global voucher and preview the discount/total |
+| UC02 | GET | `/api/customer/profile` | TV1 | Resolve current customer profile from the active session |
+| UC02 | GET | `/api/customer/orders` | TV1 | List current customer's orders |
+| UC02 | POST | `/api/customer/orders/{id}/cancel` | TV1 | Cancel an owned order while it is still pending |
+| UC01 | GET | `/api/customer/vouchers` | TV1 | List active vouchers that are currently within their validity dates |
 | UC02 | GET | `/api/orders/{id}` | TV1 | Get order detail and current status |
-| UC02 | GET | `/api/customers/{id}/orders` | TV1 | List customer orders |
 | UC03/04 | GET | `/api/kitchen/orders?hub_id={id}` | TV2 | Kitchen order queue |
 | UC03 | PATCH | `/api/kitchen/orders/{id}/decision` | TV2 | Confirm/reject incoming order |
 | UC04 | PATCH | `/api/kitchen/orders/{id}/status` | TV2 | Start preparation / mark ready |
@@ -167,8 +172,8 @@ Invalidates the server-side session and expires the `saigonbite_session` cookie.
   "items": [
     {"menu_item_id": 1, "name": "Chicken Rice", "quantity": 2, "unit_price": 50000, "line_total": 100000}
   ],
-  "delivery_address": "District 1, HCMC",
-  "delivery_distance_km": 3.5,
+  "delivery_address": "Apartment 12\nRecipient: Nguyen Minh Anh\nPhone: 0901234567",
+  "delivery_distance_km": 1.0,
   "voucher_code": "WELCOME10",
   "payment_method": "COD",
   "payment_status": "UNPAID",
@@ -217,17 +222,24 @@ Required query: `hub_id`.
 
 ```json
 {
-  "customer_id": 1,
   "hub_id": 1,
+  "destination_id": "nguyen-hue",
   "items": [{"menu_item_id": 1, "quantity": 2}],
   "delivery_address": "District 1, HCMC",
-  "delivery_distance_km": 3.5,
   "voucher_code": "WELCOME10",
   "payment_method": "COD"
 }
 ```
 
 `voucher_code` is optional; maximum **one** voucher per order.
+
+#### `GET /api/delivery-options?hub_id=1`
+
+Returns the selected hub as the route origin and available fixed demo street addresses for that hub. Each option includes `destination_id`, a full street address, estimated road `distance_km`, and `delivery_fee`. Destinations beyond the 10 km demo service limit are omitted. Fees are 15,000 VND through 3 km, 20,000 VND through 6 km, and 30,000 VND through 10 km. Distances are editable estimates between listed addresses in `backend/app/delivery.py`, not live navigation distances.
+
+#### `POST /api/customer/vouchers/validate`
+
+Customer-only preview endpoint. Request: `{"code":"WELCOME10","hub_id":1,"destination_id":"nguyen-hue","items":[{"menu_item_id":1,"quantity":2}]}`. The server loads current menu prices, checks availability, gets the fee from the selected fixed route, then verifies that the voucher is active, within its validity dates, meets `min_order`, and has not already been used by this Customer. A voucher can be used once per Customer; creating an order consumes it even if that order is later cancelled. The response includes `code`, `subtotal`, `discount`, `delivery_distance_km`, `delivery_fee`, and `total`. Vouchers are global in the current schema; order creation repeats all checks and calculates persisted totals authoritatively.
 
 **Response 201:**
 
@@ -243,15 +255,27 @@ Required query: `hub_id`.
 }
 ```
 
-**Current implementation:** The endpoint verifies the demo customer identity, open hub, menu item availability, and optional active voucher; it calculates prices from database menu items and persists the order, items, and initial status history in one transaction. Delivery distance (3.5 km) and fee (15,000 VND) are fixed demo values; the submitted distance is not used. Hub capacity is not currently checked. Customer accounts map to demo customer ID 1.
+**Current implementation:** The endpoint resolves the signed-in account's email to exactly one `customers.email` record, then uses that profile ID for the order; the client does not submit a customer ID. It verifies the selected hub-to-destination route, open hub, menu item availability, and optional active voucher; calculates prices from database menu items; and persists the order, items, and initial status history in one transaction. The server sets distance and fee from the fixed route map; client-supplied distance/fee values are ignored. Hub capacity is not currently checked.
 
 ### 5.4 `GET /api/orders/{id}`
 
-**Response 200:** Order detail shape (§4.2) including customer name/phone, items, and `status_history`. The endpoint is shared with Kitchen. Returns `404` if not found or if a Customer session requests an order outside the demo customer. The current database schema has no separate customer-note or per-item-options fields.
+**Response 200:** Order detail shape (§4.2) including customer name/phone, items, and `status_history`. The endpoint is shared with Kitchen. Returns `404` if not found or if a Customer session requests an order outside the Customer profile mapped from that session email. The current database schema has no separate customer-note or per-item-options fields.
 
-### 5.5 `GET /api/customers/{id}/orders`
+### 5.5 `GET /api/customer/profile`
 
-**Response 200:** Array of order summaries (§4.1), newest first, with optional `status` filter.
+Returns the current Customer profile (`id`, `name`, `email`, `phone`) resolved from the active session email. The mapping must match exactly one `customers.email` row; otherwise the endpoint returns `403`.
+
+### 5.6 `GET /api/customer/orders`
+
+Returns only the signed-in Customer's order summaries (§4.1), newest first, with optional `status` filter. The customer ID comes from the resolved session profile rather than a path or query parameter.
+
+### 5.7 `POST /api/customer/orders/{id}/cancel`
+
+Cancels the signed-in Customer's own order only while its status is `PENDING`. The status update and `CANCELLED` history entry are committed together. Returns `404` when the order does not belong to the Customer and `409` if its status has already changed.
+
+### 5.8 `GET /api/customer/vouchers`
+
+Returns vouchers with `ACTIVE` status whose validity window includes the current time and which the signed-in Customer has not used before. Each result includes `code`, `discount_type`, `discount_value`, `min_order`, `valid_from`, and `valid_until`. Voucher minimum order is based on the item subtotal; delivery fee does not count. Each code is limited to one order per Customer, including when the order is later cancelled.
 
 ---
 
@@ -467,7 +491,7 @@ Requires an authenticated `MANAGER` session (`401` if unauthenticated, `403` for
 ### 9.2 Database Dependencies & Integration Rules
 
 - **TV3 Database:** `orders`, `order_items`, `order_status_history`, `menu_items`, `hubs`, `vouchers`, `deliveries`, and supporting tables defined in `database/schema.sql`.
-- **Cross-Module Persistence:** Customer-created orders (`PENDING`) are stored in the shared database and appear in Kitchen with the same ID. Kitchen status changes and history are visible through the shared `/api/orders/{id}` detail endpoint. Voucher and report repositories also use the shared SQLAlchemy models. Customer distance/fee and Manager average-time figures still include fixed demo values as described above.
+- **Cross-Module Persistence:** Customer-created orders (`PENDING`) are stored in the shared database and appear in Kitchen with the same ID. Kitchen status changes and history are visible through the shared `/api/orders/{id}` detail endpoint. Voucher and report repositories also use the shared SQLAlchemy models. Customer route distances are fixed estimates between configured landmarks; Manager average-time figures still include fixed demo values as described above.
 - **Transaction Boundary:** Every status transition must atomically persist both order status and `order_status_history` within a single transaction.
 
 ### 9.3 Team Approval Checklist

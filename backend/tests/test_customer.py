@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from pathlib import Path
 import sys
 
@@ -13,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.auth import SESSION_COOKIE, clear_session, create_session
 from app.database import Base, get_db
 from app.main import app
-from app.models import Brand, Customer, Hub, MenuItem
+from app.models import Brand, Customer, Hub, MenuItem, Voucher
 from app.schemas import CreateOrderRequest
 
 
@@ -34,7 +35,15 @@ def customer_client():
                     customer_id=1,
                     customer_type="LOCAL",
                     name="Customer Test12334",
+                    email="customer-test@example.invalid",
                     phone="0900000001",
+                ),
+                Customer(
+                    customer_id=2,
+                    customer_type="LOCAL",
+                    name="Second Customer",
+                    email="second-customer@example.invalid",
+                    phone="0900000002",
                 ),
                 Hub(hub_id=1, name="Test Hub", address="Test address"),
                 Brand(brand_id=1, name="Test Brand"),
@@ -71,11 +80,10 @@ def customer_client():
 
 def test_delivery_address_limit_matches_database_column():
     payload = {
-        "customer_id": 1,
         "hub_id": 1,
+        "destination_id": "nguyen-hue",
         "items": [{"menu_item_id": 1, "quantity": 1}],
         "delivery_address": "A" * 255,
-        "delivery_distance_km": 3.5,
         "payment_method": "COD",
     }
 
@@ -95,11 +103,10 @@ def test_delivery_contact_string_round_trips_to_order_detail(customer_client):
     response = customer_client.post(
         "/api/orders",
         json={
-            "customer_id": 1,
             "hub_id": 1,
+            "destination_id": "nguyen-hue",
             "items": [{"menu_item_id": 1, "quantity": 1}],
             "delivery_address": delivery_address,
-            "delivery_distance_km": 8.25,
             "payment_method": "COD",
         },
     )
@@ -110,8 +117,218 @@ def test_delivery_contact_string_round_trips_to_order_detail(customer_client):
 
     assert detail_response.status_code == 200
     detail = detail_response.json()
-    assert detail["delivery_address"] == delivery_address
+    assert detail["delivery_address"] == "18 Nguyen Hue Street, District 1\n" + delivery_address
     assert detail["customer_name"] == "Customer Test12334"
     assert detail["customer_phone"] == "0900000001"
-    # The current API intentionally stores the demo distance configured by the router.
-    assert detail["delivery_distance_km"] == 3.5
+    assert detail["delivery_distance_km"] == 1.0
+
+
+def test_customer_can_validate_and_apply_voucher(customer_client):
+    # The fixture's database is reached through the overridden session factory; seed
+    # through the same dependency so the endpoint sees this voucher.
+    db_generator = app.dependency_overrides[get_db]()
+    db = next(db_generator)
+    try:
+        now = datetime.now()
+        db.add(Voucher(code="SAVE10", discount_type="PERCENT", discount_value=10,
+                       min_order=80000, start_date=now - timedelta(days=1),
+                       end_date=now + timedelta(days=1), status="ACTIVE"))
+        db.commit()
+    finally:
+        db.close()
+        db_generator.close()
+
+    preview = customer_client.post("/api/customer/vouchers/validate", json={
+        "code": "save10", "hub_id": 1, "destination_id": "nguyen-hue",
+        "items": [{"menu_item_id": 1, "quantity": 2}],
+    })
+    assert preview.status_code == 200
+    assert preview.json() == {
+        "code": "SAVE10", "subtotal": 100000, "discount": 10000,
+        "delivery_fee": 15000, "delivery_distance_km": 1.0, "total": 105000,
+    }
+
+    rejected = customer_client.post("/api/customer/vouchers/validate", json={
+        "code": "SAVE10", "hub_id": 1, "destination_id": "nguyen-hue",
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+    })
+    assert rejected.status_code == 400
+    assert rejected.json()["detail"] == (
+        "Minimum order for this voucher is 80,000 VND. Add 30,000 VND more to apply it."
+    )
+
+    order = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_id": "nguyen-hue",
+        "items": [{"menu_item_id": 1, "quantity": 2}],
+        "delivery_address": "Test street 12\nRecipient: Customer Test12334\nPhone: 0900000001",
+        "voucher_code": "SAVE10", "payment_method": "COD",
+    })
+    assert order.status_code == 201
+    assert order.json()["discount"] == 10000
+    assert order.json()["total"] == 105000
+
+    reuse_preview = customer_client.post("/api/customer/vouchers/validate", json={
+        "code": "SAVE10", "hub_id": 1, "destination_id": "nguyen-hue",
+        "items": [{"menu_item_id": 1, "quantity": 2}],
+    })
+    assert reuse_preview.status_code == 400
+    assert reuse_preview.json()["detail"] == "You have already used this voucher on a previous order"
+
+
+def test_customer_voucher_page_lists_only_currently_available_codes(customer_client):
+    db_generator = app.dependency_overrides[get_db]()
+    db = next(db_generator)
+    try:
+        now = datetime.now()
+        db.add_all([
+            Voucher(code="SAVE10", discount_type="PERCENT", discount_value=10,
+                    min_order=80000, start_date=now - timedelta(days=1),
+                    end_date=now + timedelta(days=10), status="ACTIVE"),
+            Voucher(code="ARCHIVED", discount_type="FIXED", discount_value=5000,
+                    min_order=0, start_date=now - timedelta(days=1),
+                    end_date=now + timedelta(days=10), status="ARCHIVED"),
+        ])
+        db.commit()
+    finally:
+        db.close()
+        db_generator.close()
+
+    response = customer_client.get("/api/customer/vouchers")
+    assert response.status_code == 200
+    assert [voucher["code"] for voucher in response.json()] == ["SAVE10"]
+    assert response.json()[0]["min_order"] == 80000
+
+    order = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_id": "nguyen-hue",
+        "items": [{"menu_item_id": 1, "quantity": 2}],
+        "delivery_address": "House 12\nRecipient: Customer Test12334\nPhone: 0900000001",
+        "voucher_code": "SAVE10", "payment_method": "COD",
+    })
+    assert order.status_code == 201
+    response_after_use = customer_client.get("/api/customer/vouchers")
+    assert response_after_use.status_code == 200
+    assert response_after_use.json() == []
+
+
+def test_customer_can_cancel_only_own_pending_order(customer_client):
+    order = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_id": "nguyen-hue",
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+        "delivery_address": "House 12\nRecipient: Customer Test12334\nPhone: 0900000001",
+        "payment_method": "COD",
+    })
+    assert order.status_code == 201
+    order_id = order.json()["id"]
+
+    cancelled = customer_client.post(f"/api/customer/orders/{order_id}/cancel")
+    assert cancelled.status_code == 200
+    assert cancelled.json() == {"id": order_id, "previous_status": "PENDING", "status": "CANCELLED"}
+
+    detail = customer_client.get(f"/api/orders/{order_id}").json()
+    assert detail["status"] == "CANCELLED"
+    assert detail["status_history"][-1]["status"] == "CANCELLED"
+    assert detail["status_history"][-1]["note"] == "Cancelled by customer"
+
+    repeated_cancel = customer_client.post(f"/api/customer/orders/{order_id}/cancel")
+    assert repeated_cancel.status_code == 409
+
+    other_token = create_session("second-customer@example.invalid", "CUSTOMER", demo=False)
+    customer_client.cookies.set(SESSION_COOKIE, other_token)
+    try:
+        other_cancel = customer_client.post(f"/api/customer/orders/{order_id}/cancel")
+        assert other_cancel.status_code == 404
+    finally:
+        customer_client.cookies.delete(SESSION_COOKIE)
+        clear_session(other_token)
+
+
+def test_customer_identity_maps_from_session_email(customer_client):
+    first_profile = customer_client.get("/api/customer/profile")
+    assert first_profile.status_code == 200
+    assert first_profile.json()["id"] == 1
+
+    first_order = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_id": "nguyen-hue",
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+        "delivery_address": "First customer address\nRecipient: Customer Test12334\nPhone: 0900000001",
+        "payment_method": "COD",
+    })
+    assert first_order.status_code == 201
+
+    second_token = create_session("second-customer@example.invalid", "CUSTOMER", demo=False)
+    customer_client.cookies.set(SESSION_COOKIE, second_token)
+    try:
+        second_profile = customer_client.get("/api/customer/profile")
+        assert second_profile.status_code == 200
+        assert second_profile.json()["id"] == 2
+        assert second_profile.json()["name"] == "Second Customer"
+        assert customer_client.get("/api/customer/orders").json() == []
+        assert customer_client.get(f"/api/orders/{first_order.json()['id']}").status_code == 404
+
+        second_order = customer_client.post("/api/orders", json={
+            "hub_id": 1, "destination_id": "nguyen-hue",
+            "items": [{"menu_item_id": 1, "quantity": 1}],
+            "delivery_address": "Second customer address\nRecipient: Second Customer\nPhone: 0900000002",
+            "payment_method": "COD",
+        })
+        assert second_order.status_code == 201
+        assert customer_client.get("/api/customer/orders").json()[0]["customer_id"] == 2
+    finally:
+        customer_client.cookies.delete(SESSION_COOKIE)
+        clear_session(second_token)
+
+
+def test_customer_account_without_matching_profile_is_rejected(customer_client):
+    unknown_token = create_session("unknown@example.invalid", "CUSTOMER", demo=False)
+    customer_client.cookies.set(SESSION_COOKIE, unknown_token)
+    try:
+        response = customer_client.get("/api/customer/profile")
+        assert response.status_code == 403
+    finally:
+        customer_client.cookies.delete(SESSION_COOKIE)
+        clear_session(unknown_token)
+
+
+def test_delivery_options_change_distance_and_authoritative_fee(customer_client):
+    options_response = customer_client.get("/api/delivery-options?hub_id=1")
+    assert options_response.status_code == 200
+    options = {option["destination_id"]: option for option in options_response.json()["options"]}
+    assert options["nguyen-hue"]["distance_km"] == 1.0
+    assert options["nguyen-hue"]["delivery_fee"] == 15000
+    assert options["war-remnants"]["distance_km"] == 3.6
+    assert options["war-remnants"]["delivery_fee"] == 20000
+
+    nearby = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_id": "nguyen-hue",
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+        "delivery_address": "House 12, Floor 3\nRecipient: Customer Test12334\nPhone: 0900000001",
+        "payment_method": "COD",
+        "delivery_fee": 1, "delivery_distance_km": 99,
+    })
+    farther = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_id": "war-remnants",
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+        "delivery_address": "Building B\nRecipient: Customer Test12334\nPhone: 0900000001",
+        "payment_method": "COD",
+    })
+    assert nearby.status_code == farther.status_code == 201
+    assert nearby.json()["delivery_fee"] == 15000
+    assert farther.json()["delivery_fee"] == 20000
+    assert nearby.json()["total"] == 65000
+    assert farther.json()["total"] == 70000
+
+    nearby_detail = customer_client.get(f"/api/orders/{nearby.json()['id']}").json()
+    farther_detail = customer_client.get(f"/api/orders/{farther.json()['id']}").json()
+    assert nearby_detail["delivery_distance_km"] == 1.0
+    assert farther_detail["delivery_distance_km"] == 3.6
+    assert "Nguyen Hue Street" in nearby_detail["delivery_address"]
+    assert "Vo Van Tan Street" in farther_detail["delivery_address"]
+
+    missing_phone = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_id": "nguyen-hue",
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+        "delivery_address": "Address details\nRecipient: Customer Test12334\nPhone:   ",
+        "payment_method": "COD",
+    })
+    assert missing_phone.status_code == 422
+    assert missing_phone.json()["detail"] == "Delivery phone number is required"

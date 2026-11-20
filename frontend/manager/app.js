@@ -102,7 +102,7 @@ async function fetchReport(type, startDate, endDate) {
     });
     if (!response.ok) {
         let message = `Request failed (${response.status})`;
-        try { message = (await response.json()).detail || message; } catch {}
+        try { message = (await response.json()).detail || message; } catch { }
         throw new Error(message);
     }
     return response.json();

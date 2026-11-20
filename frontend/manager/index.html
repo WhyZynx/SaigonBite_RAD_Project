@@ -1,48 +1,122 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#173d32"><title>SaigonBite | Management Reports</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/manager/style.css"></head>
-<body><div class="portal-layout">
-<aside class="sidebar">
-<a class="brand" href="#reports" aria-label="SaigonBite Manager"><span class="brand-mark">S</span><strong>Saigon<span class="brand-light">Bite</span></strong><small>MANAGER PORTAL</small></a>
-<div class="nav-caption">MANAGEMENT WORKSPACE</div>
-<nav class="side-nav">
-<a href="#dashboard" class="nav-item" data-nav="dashboard"><span class="nav-icon">⌂</span><span>Dashboard</span></a>
-<a href="#reports" class="nav-item active" data-nav="reports"><span class="nav-icon">▤</span><span>Reports</span></a>
-<a href="#hub-operations" class="nav-item" data-nav="hub-operations"><span class="nav-icon">▦</span><span>Hub Operations</span></a>
-<a href="#order-history" class="nav-item" data-nav="order-history"><span class="nav-icon">◷</span><span>Order History</span></a>
-</nav>
-<div class="sidebar-footer"><p>Review performance.<br>Support better operations.</p><small>© 2026 SaigonBite</small><button class="logout-button" id="logoutButton" type="button">↪ &nbsp; Log Out</button></div>
-</aside>
-<main class="main-area">
-<header class="user-header"><div class="user-info"><span class="user-name">Minh Nguyen</span><span class="user-role">Manager</span></div><div class="user-avatar" aria-hidden="true">MN</div></header>
-<section class="page-section" id="reportsPage">
-<div class="page-heading"><h1>Management Reports</h1><p>Review sales, hub operations and delivery performance.</p></div>
-<div class="report-filter-card">
-<div class="form-field"><label for="reportType">Report Type</label><select id="reportType"><option value="sales">Sales Report</option><option value="hub-workload">Hub Workload Report</option><option value="delivery">Delivery Performance Report</option></select></div>
-<div class="form-field"><label for="startDate">Start Date</label><input type="date" id="startDate"></div>
-<div class="form-field"><label for="endDate">End Date</label><input type="date" id="endDate"></div>
-<button class="primary-button" id="generateReportButton" type="button">Generate Report</button>
-</div>
-<div class="no-data-notice hidden" id="reportNotice"></div>
-<div class="kpi-grid">
-<article class="kpi-card"><span id="kpiLabel1">Total Revenue</span><strong id="totalRevenue">—</strong></article>
-<article class="kpi-card"><span id="kpiLabel2">Total Orders</span><strong id="totalOrders">—</strong></article>
-<article class="kpi-card"><span id="kpiLabel3">Avg. Delivery Time</span><strong id="averageDelivery">—</strong></article>
-</div>
-<div class="report-card chart-card">
-<div class="card-header-row"><h2 id="chartTitle">Daily Sales Revenue</h2><span class="chart-meta" id="chartMeta"></span></div>
-<div class="chart-empty-state hidden" id="chartEmptyState"><strong>No Data Available</strong><p>Try a different date range to view your report.</p></div>
-<div class="bar-chart-wrapper" id="barChartWrapper">
-<div class="y-axis" id="chartYAxis"><span></span><span></span><span></span><span>0</span></div>
-<div class="chart-plot-area"><div class="chart-gridlines"><span></span><span></span><span></span><span></span></div><div class="bars-container" id="barsContainer"></div></div>
-</div></div>
-<div class="report-card breakdown-card">
-<div class="breakdown-header"><h2 id="breakdownTitle">Daily sales breakdown</h2></div>
-<div class="table-responsive"><table class="data-table"><thead><tr id="reportTableHeader"></tr></thead><tbody id="reportTableBody"></tbody></table></div>
-<div class="table-footer" id="tableFooter"><div class="table-pagination"><span id="tablePaginationInfo"></span><button type="button" class="text-link-button" id="toggleRowsButton">Show all</button></div><div class="table-total" id="tableTotalSummary"></div></div>
-</div>
-</section></main></div><script src="/manager/app.js"></script></body></html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#173d32">
+    <title>SaigonBite | Management Reports</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/manager/style.css">
+</head>
+
+<body>
+    <div class="portal-layout">
+
+        <aside class="sidebar">
+            <a class="brand" href="#reports" aria-label="SaigonBite Manager">
+                <span class="brand-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                            d="M6 19h12M8 19v3h8v-3M5 11a4 4 0 0 1 2.4-7.2A5.5 5.5 0 0 1 17.8 5 3.5 3.5 0 0 1 19 12H5z" />
+                    </svg>
+                </span>
+                <strong>SaigonBite</strong>
+                <small>GOOD FOOD, CLOSE BY</small>
+            </a>
+
+            <nav class="side-nav" aria-label="Manager navigation">
+                <a href="#reports" class="nav-item active" data-nav="reports">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M4 19V5m0 14h17M8 15v-4m5 4V7m5 8V9" />
+                    </svg>
+                    <span>Reports</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <button class="side-nav-logout" id="logoutButton" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7" />
+                    </svg>
+                    <span>Log out</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-area">
+            <header class="user-header">
+                <div class="user-info"><span class="user-name">Minh Nguyen</span><span class="user-role">Manager</span>
+                </div>
+                <div class="user-avatar" aria-hidden="true">MN</div>
+            </header>
+            <section class="page-section" id="reportsPage">
+                <div class="page-heading">
+                    <h1>Management Reports</h1>
+                    <p>Review sales, hub operations and delivery performance.</p>
+                </div>
+                <div class="report-filter-card">
+                    <div class="form-field"><label for="reportType">Report Type</label><select id="reportType">
+                            <option value="sales">Sales Report</option>
+                            <option value="hub-workload">Hub Workload Report</option>
+                            <option value="delivery">Delivery Performance Report</option>
+                        </select></div>
+                    <div class="form-field"><label for="startDate">Start Date</label><input type="date" id="startDate">
+                    </div>
+                    <div class="form-field"><label for="endDate">End Date</label><input type="date" id="endDate"></div>
+                    <button class="primary-button" id="generateReportButton" type="button">Generate Report</button>
+                </div>
+                <div class="no-data-notice hidden" id="reportNotice"></div>
+                <div class="kpi-grid">
+                    <article class="kpi-card"><span id="kpiLabel1">Total Revenue</span><strong
+                            id="totalRevenue">—</strong></article>
+                    <article class="kpi-card"><span id="kpiLabel2">Total Orders</span><strong
+                            id="totalOrders">—</strong></article>
+                    <article class="kpi-card"><span id="kpiLabel3">Avg. Delivery Time</span><strong
+                            id="averageDelivery">—</strong></article>
+                </div>
+                <div class="report-card chart-card">
+                    <div class="card-header-row">
+                        <h2 id="chartTitle">Daily Sales Revenue</h2><span class="chart-meta" id="chartMeta"></span>
+                    </div>
+                    <div class="chart-empty-state hidden" id="chartEmptyState"><strong>No Data Available</strong>
+                        <p>Try a different date range to view your report.</p>
+                    </div>
+                    <div class="bar-chart-wrapper" id="barChartWrapper">
+                        <div class="y-axis" id="chartYAxis"><span></span><span></span><span></span><span>0</span></div>
+                        <div class="chart-plot-area">
+                            <div class="chart-gridlines"><span></span><span></span><span></span><span></span></div>
+                            <div class="bars-container" id="barsContainer"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="report-card breakdown-card">
+                    <div class="breakdown-header">
+                        <h2 id="breakdownTitle">Daily sales breakdown</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr id="reportTableHeader"></tr>
+                            </thead>
+                            <tbody id="reportTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="table-footer" id="tableFooter">
+                        <div class="table-pagination"><span id="tablePaginationInfo"></span><button type="button"
+                                class="text-link-button" id="toggleRowsButton">Show all</button></div>
+                        <div class="table-total" id="tableTotalSummary"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="/manager/app.js"></script>
+</body>
+
+</html>

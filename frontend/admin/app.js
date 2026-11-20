@@ -135,11 +135,144 @@ form.addEventListener("submit", async event => {
     await loadVouchers();
 });
 
+
+const vouchersPage = document.getElementById("vouchersPage");
+const deliveriesPage = document.getElementById("deliveriesPage");
+const readyOrdersTableBody = document.getElementById("readyOrdersTableBody");
+const readyOrdersCount = document.getElementById("readyOrdersCount");
+const refreshReadyOrdersButton = document.getElementById("refreshReadyOrdersButton");
+
+function showAdminPage(page) {
+    const isDeliveries = page === "deliveries";
+
+    vouchersPage.classList.toggle("hidden", isDeliveries);
+    deliveriesPage.classList.toggle("hidden", !isDeliveries);
+
+    document.querySelectorAll(".nav-item").forEach(item => {
+        const active = item.dataset.nav === page;
+        item.classList.toggle("active", active);
+    });
+
+    if (isDeliveries) {
+        loadReadyOrders();
+    }
+}
+
 document.querySelectorAll(".nav-item").forEach(item => {
     item.addEventListener("click", event => {
-        if (item.dataset.nav !== "vouchers") event.preventDefault();
+        event.preventDefault();
+        showAdminPage(item.dataset.nav);
     });
 });
+
+function renderReadyOrders(orders) {
+    if (!orders.length) {
+        readyOrdersTableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-table-message">
+                    No READY orders available.
+                </td>
+            </tr>`;
+        readyOrdersCount.textContent = "Showing 0 orders";
+        return;
+    }
+
+    readyOrdersTableBody.innerHTML = orders.map(order => `
+        <tr>
+            <td>#${order.id}</td>
+            <td>
+                <div class="code-cell">
+                    <span class="code-primary">${escapeHtml(order.customer_name)}</span>
+                    <span class="code-sub">${escapeHtml(order.customer_phone)}</span>
+                </div>
+            </td>
+            <td>${escapeHtml(order.hub_name)}</td>
+            <td>${escapeHtml(order.delivery_address)}</td>
+            <td>${Number(order.total).toLocaleString("en-US")} VND</td>
+            <td><span class="status-badge status-ACTIVE">READY</span></td>
+            <td class="action-cell">
+                <button
+                    type="button"
+                    class="deliver-btn"
+                    data-deliver="${order.id}">
+                    Mark Delivered
+                </button>
+            </td>
+        </tr>
+    `).join("");
+
+    readyOrdersCount.textContent = `Showing ${orders.length} READY orders`;
+}
+
+async function loadReadyOrders() {
+    readyOrdersTableBody.innerHTML = `
+        <tr>
+            <td colspan="7" class="empty-table-message">Loading orders...</td>
+        </tr>`;
+    readyOrdersCount.textContent = "Loading orders...";
+
+    try {
+        const response = await fetch("/api/admin/orders/ready", {
+            credentials: "same-origin"
+        });
+
+        const body = await response.json();
+
+        if (!response.ok) {
+            throw new Error(body.detail || "Unable to load READY orders.");
+        }
+
+        renderReadyOrders(body);
+    } catch (error) {
+        readyOrdersTableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-table-message">
+                    ${escapeHtml(error.message)}
+                </td>
+            </tr>`;
+        readyOrdersCount.textContent = "Unable to load orders";
+    }
+}
+
+readyOrdersTableBody.addEventListener("click", async event => {
+    const button = event.target.closest("[data-deliver]");
+    if (!button || button.disabled) return;
+
+    const orderId = Number(button.dataset.deliver);
+
+    if (!confirm(`Confirm that order #${orderId} has been delivered?`)) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Processing...";
+
+    try {
+        const response = await fetch(
+            `/api/admin/orders/${orderId}/deliver`,
+            {
+                method: "PATCH",
+                credentials: "same-origin"
+            }
+        );
+
+        const body = await response.json();
+
+        if (!response.ok) {
+            throw new Error(body.detail || "Unable to mark order as delivered.");
+        }
+
+        alert(`Order #${orderId} has been marked as DELIVERED.`);
+        await loadReadyOrders();
+    } catch (error) {
+        alert(error.message);
+        button.disabled = false;
+        button.textContent = "Mark Delivered";
+    }
+});
+
+refreshReadyOrdersButton.addEventListener("click", loadReadyOrders);
+
 document.getElementById("logoutButton").addEventListener("click", async () => {
     try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }
     finally { window.location.assign("/"); }

@@ -5,36 +5,36 @@
 | Nội dung | Kết quả |
 |---|---|
 | Nhánh tích hợp | `integration/tv3-admin` |
-| HEAD rà soát | `1216ca183ee4165b6d97513b365c87538462d732` |
-| Ngày rà soát | 19-11-2026 |
+| HEAD rà soát | `ad9a85532b5877473af5cb665f314b31e2f745c3` (working tree có thay đổi chưa commit) |
+| Ngày rà soát | 20-11-2026 — cập nhật code TV1; không chạy lại test |
 | Customer | TV1 — 524H0040 |
 | Kitchen | TV2 — 524H0130 |
 | Admin/Manager | TV3 — 524H0021 |
-| Tổng mã vấn đề đang theo dõi | 24: 21 còn mở, 3 đã sửa |
-| Lỗi mã nguồn còn mở | 2 |
+| Tổng mã vấn đề đang theo dõi | 24: 18 còn mở, 6 đã sửa/đóng trong phạm vi demo |
+| Lỗi mã nguồn còn mở | 2 (hai lỗi Manager) |
 | Vấn đề tích hợp còn mở | 4 |
-| Tính năng chưa triển khai còn mở | 6 |
-| Giới hạn demo còn mở | 4 |
+| Tính năng chưa triển khai còn mở | 5 |
+| Giới hạn demo còn mở | 2 |
 | Chưa xác minh còn mở | 5 |
 | Cần nhóm thống nhất | 9 chủ đề; liệt kê tại phần F |
 | Kết luận | **PARTIALLY WORKING** — có kiểm thử SQLite cho một số API/luồng Kitchen; chưa kiểm tra MySQL ghi dữ liệu, trình duyệt đầy đủ hoặc toàn bộ luồng liên module trên cùng một đơn |
 
 | Module | Code/API hiện có theo mã nguồn | Giới hạn được ghi nhận |
 |---|---|---|
-| Customer | Đọc Hub/Menu, tạo đơn, danh sách/chi tiết/lịch sử đơn | Apply Voucher chưa nối; Customer ID và khoảng cách/phí còn giá trị demo |
+| Customer | Đọc Hub/Menu, tạo đơn, danh sách/chi tiết/lịch sử đơn; voucher preview và đặt đơn dùng kết quả tính của backend; Customer ánh xạ theo email phiên đăng nhập; phí giao hàng lấy từ tuyến mẫu | Tuyến không tính bằng bản đồ thực; tài khoản/session vẫn là mock |
 | Kitchen | Hub list/filter; confirm/reject; PREPARING/READY; ghi status history | Đã kiểm thử SQLite; MySQL đồng thời và giao diện chưa kiểm chứng |
 | Admin | Voucher GET/filter/create/archive | Dashboard, Hub/Menu/Users và update Voucher chưa có luồng hoàn chỉnh; Hub label không được lưu |
 | Manager | Sales, Hub Workload, Delivery Reports; repository truy vấn Order/Delivery/Hub | Hai lỗi trình bày/tính Pending; Delivery producer chưa có; một số thời gian demo |
 
-Các con số là mã vấn đề duy nhất, không tính lặp các mục liên module ở phần C. Ba mục đã sửa là KIT-01, KIT-02 và INT-DATA-02.
+Các con số là mã vấn đề duy nhất, không tính lặp các mục liên module ở phần C. Sáu mục đã sửa/đóng là KIT-01, KIT-02, INT-DATA-02 và CUS-01–03. CUS-02/03 được đóng trong phạm vi demo đã ghi rõ; không đồng nghĩa auth hay định tuyến thực tế đã hoàn thiện.
 
 | Đầu mối | Còn mở | Đã sửa | Ghi chú |
 |---|---:|---:|---|
-| TV1 — Customer | 3 | 0 | CUS-01–03; phối hợp INT-CUS-KIT-01 |
+| TV1 — Customer | 0 | 3 | CUS-01–03 đã xử lý trong phạm vi demo; phối hợp INT-CUS-KIT-01 |
 | TV2 — Kitchen/login | 2 | 2 | KIT-03, AUTH-01; KIT-01/02 đã sửa |
 | TV3 — Admin/Manager | 9 | 0 | ADM-01–04, INT-ADMIN-01, MAN-01–04 |
 | Backend/Dùng chung | 6 | 1 | INT-DATA-01, INT-AUTH-01, DATA-DB-01, VER-DB-01, VER-UI-01, INT-REPORT-01; INT-DATA-02 đã sửa |
-| Phối hợp liên module | 1 | 0 | INT-CUS-KIT-01; tính một lần trong tổng 21 mã còn mở |
+| Phối hợp liên module | 1 | 0 | INT-CUS-KIT-01; tính một lần trong tổng 18 mã còn mở |
 
 Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ parent `d575ee3`; parser giao hàng được thêm sau trong `1216ca1`. Merge TV1 `4c64205` giữ nguyên `frontend/customer/app.js` và `customer_repository.py` so với parent TV1; thay đổi liên quan là bổ sung `customer_name`/`customer_phone` vào Order Detail. Không thấy merge tráo dữ liệu giao hàng.
 
@@ -44,9 +44,9 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 
 | ID | Vấn đề | Tình huống dễ hiểu | Nguyên nhân | Cách sửa/đề xuất | Người phụ trách | Mức độ | Trạng thái |
 |---|---|---|---|---|---|---|---|
-| CUS-01 | Nút Apply Voucher chưa áp dụng mã | Nhập mã rồi bấm Apply | Giao diện chỉ hiện thông báo chưa kết nối; `placeOrder()` không gửi `voucher_code`; backend chỉ kiểm tra mã nếu yêu cầu có trường này | Nối giao diện với API/luồng kiểm tra đã thống nhất; hiển thị mức giảm và tổng tiền do backend trả | TV1; backend phối hợp nếu cần API xem trước | Trung bình; cao nếu voucher thuộc nghiệm thu | THIẾU TÍNH NĂNG |
-| CUS-02 | Customer ID cố định là 1 | Tài khoản khác đặt đơn hoặc xem lịch sử | Frontend gửi `customer_id: 1`; router chỉ cho phép ID 1; phiên đăng nhập chưa ánh xạ hồ sơ riêng | Xác nhận demo chỉ có một Customer hay cần ánh xạ tài khoản sang Customer | TV1; TV2 phối hợp đăng nhập | Thấp cho demo một khách; cao nếu cần nhiều tài khoản | GIỚI HẠN DEMO |
-| CUS-03 | Khoảng cách/phí giao hàng là giá trị demo | Đặt từ các địa chỉ hoặc hub khác nhau | Frontend và router dùng 3.5 km; router dùng phí cố định 15.000 và không dùng khoảng cách gửi lên | Ghi rõ giới hạn hoặc thống nhất cách tính theo tuyến trước khi triển khai | TV1; nhóm xác nhận chính sách | Thấp nếu là demo; cao nếu cần tính thực | GIỚI HẠN DEMO |
+| CUS-01 | Nút Apply Voucher chưa áp dụng mã | Nhập mã rồi bấm Apply | Frontend gọi API preview; dùng subtotal, phí giao, discount và total do backend trả để cập nhật checkout. Khi đổi điểm giao, báo giá được lấy lại; khi đặt đơn backend kiểm tra mã và tính tổng cuối lần nữa | Đã nối luồng voucher và dùng kết quả backend cho preview lẫn đơn cuối | TV1; backend phối hợp nếu API đổi | Đã xử lý; vẫn cần trình duyệt nghiệm thu theo tiêu chí đồ án | ĐÃ SỬA |
+| CUS-02 | Customer identity phụ thuộc tài khoản demo và hồ sơ DB | Customer khác đăng nhập, đặt đơn hoặc xem lịch sử | Backend không nhận ID từ frontend; ánh xạ email trong phiên đăng nhập tới đúng một hồ sơ Customer. Tài khoản/session vẫn là mock cấu hình sẵn | Đã bỏ ID cố định trong luồng Customer. Giới hạn nhiều tài khoản nằm ở cấu hình mock và hồ sơ tương ứng; triển khai thật cần identity/account store chính thức | TV1; TV2 phối hợp đăng nhập | Thấp trong demo; cao nếu yêu cầu tài khoản thật | ĐÃ SỬA TRONG PHẠM VI DEMO |
+| CUS-03 | Khoảng cách/phí giao hàng dùng tuyến ước lượng mẫu | Chọn điểm giao hoặc hub khác nhau | Frontend lấy tuyến từ API; backend tra khoảng cách theo hub/điểm đến và tự tính phí theo bậc khi tạo đơn. Không dùng khoảng cách/phí do client gửi | Đã thống nhất hành vi demo trong code. Nếu cần tính phí thực, chốt biểu phí và tích hợp nguồn tính tuyến thực tế | TV1; nhóm xác nhận chính sách | Thấp trong demo; cao nếu cần tính thực | ĐÃ SỬA TRONG PHẠM VI DEMO |
 
 ### 2. Kitchen — TV2
 
@@ -109,19 +109,22 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | Manager Delivery Report | Báo cáo truy vấn bảng Deliveries; không tìm thấy code tạo/cập nhật Delivery | Luồng giao hàng/báo cáo chưa nối; xem INT-REPORT-01 |
 | Toàn bộ E2E | Chưa chạy một order_id xuyên suốt cả bốn vai trò | NOT TESTED |
 
-## D. Các lỗi đã sửa
+## D. Các lỗi đã sửa hoặc xử lý trong phạm vi demo
 
 | ID | Lỗi trước khi sửa | File đã sửa | Cách sửa | Test xác nhận | Kết quả |
 |---|---|---|---|---|---|
 | KIT-01 | Kitchen cố định Hub ID 1 | Commit `1216ca183ee4165b6d97513b365c87538462d732`: `backend/app/routers/kitchen.py`, `backend/app/repositories/order.py`, `backend/tests/test_kitchen.py`, ba file `frontend/kitchen/` | Thêm API danh sách Hub, bộ chọn hub và lọc queue theo hub đang chọn | SQLite test danh sách Hub/lọc đơn; GET MySQL chỉ đọc trước đó thấy order 111 thuộc hub 2 | Đã sửa; thao tác chọn hub trên browser và MySQL ghi chưa kiểm tra |
 | KIT-02 | Kitchen chỉ đọc các trường note riêng, API Customer chỉ trả chuỗi `delivery_address` | Commit `1216ca183ee4165b6d97513b365c87538462d732`: `frontend/kitchen/app.js` | Thêm parser nhãn Recipient/Phone/Note, không đổi schema/API | Node syntax và chạy parser hiện tại với dữ liệu tổng hợp chính xác | PASS cho parser thuần; chưa kiểm tra giao diện/browser và đơn người dùng báo |
 | INT-DATA-02 | Pydantic từng cho phép 500 ký tự nhưng Model/SQL giới hạn 255 | `backend/app/schemas.py`; thêm `backend/tests/test_customer.py` | Giới hạn request còn 255 để khớp Model và SQL hiện có; không sửa schema/database | SQLite/Pydantic chấp nhận 255, từ chối 256; POST/GET test chuỗi giao hàng | PASS trên SQLite; chưa ghi MySQL |
+| CUS-02 | Customer API/frontend phụ thuộc Customer ID cố định | `backend/app/routers/customer.py`, `frontend/customer/app.js`, `backend/app/auth.py` | Router lấy email từ phiên đăng nhập rồi ánh xạ tới đúng một hồ sơ Customer; không nhận ID do frontend gửi | `backend/tests/test_customer.py::test_customer_identity_maps_from_session_email` có hai hồ sơ và xác nhận lịch sử/chi tiết được giới hạn theo Customer; không chạy lại trong lần cập nhật này | Đã sửa cho các tài khoản mock có hồ sơ khớp; auth/session vẫn là demo |
+| CUS-03 | Khoảng cách luôn 3.5 km, phí cố định 15.000 | `backend/app/delivery.py`, `backend/app/routers/customer.py`, `frontend/customer/app.js` | API trả tuyến theo hub/điểm đến; backend tự lấy khoảng cách mẫu và tính phí theo bậc khi tạo đơn; client không quyết định giá trị lưu | `backend/tests/test_customer.py::test_delivery_options_change_distance_and_authoritative_fee` đã có kiểm tra tuyến/phí khác nhau và bỏ qua giá trị client gửi; không chạy lại trong lần cập nhật này | Đã sửa trong phạm vi demo; chưa phải định tuyến/biểu phí thực tế |
+| CUS-01 | Apply Voucher chưa nối và preview chưa dùng tổng backend | `frontend/customer/app.js`, `backend/app/routers/customer.py`, `backend/app/repositories/customer_repository.py` | Apply gọi API preview; checkout hiển thị subtotal, phí, discount và `total` từ server; đổi tuyến gọi lại preview; khi POST tạo đơn backend kiểm tra voucher và tính lại tổng cuối | `backend/tests/test_customer.py` có test preview, minimum order, voucher đã dùng và tổng đơn; không chạy lại trong lần cập nhật này | Đã sửa trong code; chưa nghiệm thu UI bằng browser |
 
 ## E. Việc từng thành viên cần làm
 
 | Thành viên | Module | Việc cần làm | Mức ưu tiên | Điều kiện hoàn thành |
 |---|---|---|---|---|
-| TV1 — 524H0040 | Customer | Nối Apply Voucher nếu thuộc phạm vi; xác nhận demo Customer ID cố định và phí/khoảng cách; cùng TV2 truy vết INT-CUS-KIT-01 | Cao cho lỗi Note/Phone; các mục khác theo nghiệm thu | Payload của cùng order_id có đúng giá trị form; voucher gửi và tổng tiền đúng nếu được yêu cầu |
+| TV1 — 524H0040 | Customer | CUS-01–03 đã xử lý trong code/phạm vi demo; cùng TV2 truy vết INT-CUS-KIT-01 theo cùng order_id | Cao cho lỗi Note/Phone; nghiệm thu UI theo tiêu chí đồ án | Preview dùng quote backend; payload của cùng order_id khớp form và được xác minh trên luồng tích hợp |
 | TV2 — 524H0130 | Kitchen/login | Cùng TV1 tái hiện Note/Phone; thử bộ chọn hub/parser trên trình duyệt; kiểm tra cập nhật đồng thời trên MySQL test; xác nhận chính sách asset/login | Cao trước khi tuyên bố Kitchen/MySQL hoàn tất | Browser evidence; MySQL test chứng minh chuyển tiếp và history không sai khi đua |
 | TV3 — 524H0021 | Admin/Manager | Xác nhận phạm vi màn hình thiếu; sửa báo lỗi Reports; thống nhất Pending metric; làm rõ Voucher Hub; gắn nhãn/tính lại metrics demo | Cao cho MAN-02/MAN-04; còn lại theo nghiệm thu | 200 rỗng khác 401/500; Pending có định nghĩa đúng; dữ liệu hub/voucher và metrics nhất quán |
 | Backend/Shared — cần chỉ định | Database/API/report | Chốt delivery contract; cấp DB test; xác minh nguồn dữ liệu vượt seed; thống nhất chủ thể ghi Delivery và status lifecycle | Cao cho API/DB E2E | Có người chịu trách nhiệm được nhóm chỉ định; test dùng DB riêng và theo cùng order_id |
@@ -138,7 +141,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | 5 | Voucher áp dụng toàn hệ thống hay theo Hub | API nhận nhãn hub nhưng database không lưu quan hệ | Voucher global; hoặc thêm quan hệ theo Hub sau khi duyệt | Nếu global, bỏ/đổi nhãn Applicable Hub; nếu theo Hub, thống nhất schema/API và áp dụng voucher | TV1, TV3, Backend |
 | 6 | Định nghĩa Pending trong Hub Workload | UI gọi cột là Pending nhưng API tính mọi đơn chưa DELIVERED | Chỉ status PENDING; hoặc mọi đơn chưa giao với nhãn khác | Dùng status PENDING nếu giữ nhãn hiện tại | TV3 |
 | 7 | Định nghĩa On-Time Rate | Code đếm outcome DELIVERED; schema có DELIVERED/LATE nhưng không thấy writer cập nhật outcome hoặc ETA | Dựa vào outcome do delivery owner ghi; hoặc thêm quy tắc ETA/giờ hẹn | Chốt ý nghĩa, nguồn dữ liệu và cách ghi trước khi gọi là on-time thực tế | TV3, Backend/Shared, delivery owner |
-| 8 | Login/Customer identity | Tài khoản/session giả lập; Customer ID bị cố định 1 | Chấp nhận demo một khách; hoặc ánh xạ account → customer_id và session bền vững | Ghi rõ giới hạn demo; không tự thêm bảng tài khoản | TV1, TV2, TV3 |
+| 8 | Login/Customer identity | Session còn giả lập; Customer đã ánh xạ theo email phiên đăng nhập tới đúng một hồ sơ DB | Chấp nhận cấu hình mock cho demo; hoặc triển khai identity/account store và session bền vững | Luồng hiện tại không còn cố định Customer ID; xác nhận giới hạn mock trước nghiệm thu thật | TV1, TV2, TV3 |
 | 9 | Phạm vi Admin/Manager demo | Dashboard, Hub/Menu/Users, Hub Operations/Order History và update Voucher còn thiếu | Bắt buộc hoàn thiện; hoặc đánh dấu ngoài phạm vi demo | Đối chiếu tiêu chí đồ án trước khi giao làm tính năng | TV3 và nhóm |
 
 ## G. Kết quả kiểm thử
@@ -152,7 +155,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | `node --check frontend/admin/app.js` | Node 24 | PASS | Chạy sau sửa |
 | `node --check frontend/manager/app.js` | Node 24 | PASS | Chạy sau sửa |
 | Parser Kitchen trên chuỗi mẫu Note/Phone | Node, hàm lấy trực tiếp từ `frontend/kitchen/app.js` | PASS | Trả đúng Recipient `Customer Test12334`, Phone `324324`, Note `1111111` |
-| Customer POST → Order Detail | SQLite riêng trong pytest | PASS | Chuỗi giữ nguyên; customer name/phone lấy từ hồ sơ fixture; khoảng cách backend vẫn là 3.5 theo hằng số hiện tại |
+| Customer POST → Order Detail | SQLite riêng trong pytest (kết quả ghi từ lần chạy trước) | PASS | Chuỗi giữ nguyên; customer name/phone lấy từ hồ sơ fixture; khoảng cách và phí do backend lấy theo tuyến hub/điểm đến, không phải hằng số 3.5 |
 | Kitchen transitions/history | SQLite riêng trong pytest | PASS | Confirm, reject có lý do, prepare, ready, invalid transition, missing order và history |
 | Router registration/import | Import app trong pytest | PASS | TestClient tải ứng dụng và gọi các API Customer/Kitchen được kiểm thử |
 | `git diff --check` | Working tree | PASS | Lệnh chạy thành công; README có cảnh báo line ending LF/CRLF, không phải lỗi whitespace từ code vừa sửa |
@@ -167,7 +170,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 
 | Điều kiện | Trạng thái | Ghi chú |
 |---|---|---|
-| Customer hoạt động | PARTIAL | SQLite API tạo/xem đơn đạt; voucher UI, browser và identity nhiều khách chưa hoàn tất |
+| Customer hoạt động | PARTIAL | Voucher preview/order dùng giá trị backend; identity ánh xạ theo email trong giới hạn mock; tuyến giao hàng vẫn là dữ liệu demo; browser chưa xác minh |
 | Kitchen hoạt động | PARTIAL | SQLite statuses/history và hub API đạt; browser, MySQL/concurrency chưa xác minh |
 | Admin hoạt động | PARTIAL | Voucher list/create/archive có code; các màn hình khác chưa triển khai |
 | Manager Reports hoạt động | PARTIAL | Có API/ giao diện Reports nhưng Pending label/count sai khác; lỗi API bị hiểu như rỗng; một số metrics giả lập |
@@ -175,7 +178,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | Database tương thích | PARTIAL | `delivery_address` API/model/SQL cùng giới hạn 255 sau sửa; MySQL runtime chưa thử |
 | Luồng tạo và xử lý đơn hoàn chỉnh | NOT TESTED | Chưa chạy cùng order_id trên toàn hệ thống/MySQL test |
 | Không còn lỗi nghiêm trọng | NOT VERIFIED | Còn vấn đề báo cáo và phần chưa xác minh; nhóm cần đánh giá theo tiêu chí nghiệm thu |
-| Giới hạn demo đã được ghi rõ | PASS | Tài liệu ghi Customer ID, khoảng cách/phí, login và số liệu thời gian cố định |
+| Giới hạn demo đã được ghi rõ | PASS | Customer ID cứng đã bỏ; tài liệu ghi rõ ánh xạ email/mock auth, tuyến/phí demo và số liệu thời gian cố định |
 | Test đã chạy lại | PASS | Compile, 16 pytest và bốn lệnh Node syntax đã chạy sau sửa |
 
 ## Kết luận

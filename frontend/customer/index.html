@@ -72,7 +72,7 @@
           <div id="orders-error" class="alert alert-warning d-none" role="status"></div>
           <div class="orders-featured d-none" id="featured-order"></div>
           <div class="orders-toolbar"><div class="order-filters" role="group" aria-label="Filter orders"><button class="active" data-order-filter="ALL">All</button><button data-order-filter="PENDING">Pending</button><button data-order-filter="PREPARING">Preparing</button><button data-order-filter="DELIVERING">Delivering</button><button data-order-filter="COMPLETED">Completed</button></div><span id="order-count"></span></div>
-          <div class="order-table-wrap"><table class="order-table"><thead><tr><th>Order ID</th><th>Hub</th><th>Order date</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead><tbody id="orders-table-body"></tbody></table></div>
+          <div class="order-table-wrap"><table class="order-table"><colgroup><col class="order-col-id"><col class="order-col-hub"><col class="order-col-date"><col class="order-col-total"><col class="order-col-status"><col class="order-col-completed"><col class="order-col-actions"></colgroup><thead><tr><th>Order ID</th><th>Hub</th><th>Order date</th><th>Total</th><th>Status</th><th>Completed</th><th>Actions</th></tr></thead><tbody id="orders-table-body"></tbody></table></div>
           <div id="orders-empty" class="empty-state d-none">No orders found yet. Your orders will appear here.</div>
         </div>
         <div id="order-detail-screen" class="d-none"></div>

@@ -62,6 +62,13 @@ def _utc_timestamp(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat()
 
 
+def _order_completed_at(order: Order) -> str | None:
+    if order.delivery and order.delivery.delivered_at:
+        return _utc_timestamp(order.delivery.delivered_at)
+    delivered = [entry.changed_at for entry in order.status_history if entry.new_status == "DELIVERED"]
+    return _utc_timestamp(max(delivered)) if delivered else None
+
+
 @router.post("/api/customer/vouchers/validate")
 def validate_voucher(payload: VoucherPreviewRequest, request: Request, db: Session = Depends(get_db)):
     customer = current_customer(request, db)
@@ -167,7 +174,8 @@ def list_customer_orders(request: Request, status: str | None = None, db: Sessio
     customer = current_customer(request, db)
     rows = customer_repository.get_customer_orders(db, customer.customer_id, status)
     return [{"id": order.order_id, "customer_id": order.customer_id, "hub_id": order.hub_id,
-             "status": order.status, "total": order.total, "created_at": _utc_timestamp(order.created_at)}
+             "status": order.status, "total": order.total, "created_at": _utc_timestamp(order.created_at),
+             "completed_at": _order_completed_at(order)}
             for order in rows]
 
 
@@ -192,6 +200,7 @@ def get_order_detail(order_id: int, request: Request, db: Session = Depends(get_
     return {
         "id": order.order_id, "customer_id": order.customer_id, "hub_id": order.hub_id,
         "status": order.status, "total": order.total, "created_at": _utc_timestamp(order.created_at),
+        "completed_at": _order_completed_at(order),
         "customer_name": order.customer.name if order.customer else None,
         "customer_phone": order.customer.phone if order.customer else None,
         "items": [{"menu_item_id": item.menu_item_id,

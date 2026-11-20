@@ -142,19 +142,39 @@ const readyOrdersTableBody = document.getElementById("readyOrdersTableBody");
 const readyOrdersCount = document.getElementById("readyOrdersCount");
 const refreshReadyOrdersButton = document.getElementById("refreshReadyOrdersButton");
 
+const adminPages = {
+    dashboard: document.getElementById("dashboardPage"),
+    "hubs-menu": document.getElementById("hubsMenuPage"),
+    users: document.getElementById("usersPage"),
+    vouchers: vouchersPage,
+    deliveries: deliveriesPage
+};
+
 function showAdminPage(page) {
-    const isDeliveries = page === "deliveries";
-
-    vouchersPage.classList.toggle("hidden", isDeliveries);
-    deliveriesPage.classList.toggle("hidden", !isDeliveries);
-
-    document.querySelectorAll(".nav-item").forEach(item => {
-        const active = item.dataset.nav === page;
-        item.classList.toggle("active", active);
+    Object.values(adminPages).forEach(section => {
+        if (section) {
+            section.classList.add("hidden");
+        }
     });
 
-    if (isDeliveries) {
+    const selectedPage = adminPages[page];
+
+    if (!selectedPage) {
+        return;
+    }
+
+    selectedPage.classList.remove("hidden");
+
+    document.querySelectorAll(".nav-item").forEach(item => {
+        item.classList.toggle("active", item.dataset.nav === page);
+    });
+
+    if (page === "deliveries") {
         loadReadyOrders();
+    }
+
+    if (page === "vouchers") {
+        renderVouchers();
     }
 }
 

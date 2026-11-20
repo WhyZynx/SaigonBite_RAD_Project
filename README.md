@@ -10,8 +10,8 @@ The project is organized into role-based portals:
 |---|---|---|
 | Customer | `/customer/` | Browse hubs and menu items, place orders, and view order information |
 | Kitchen Staff | `/kitchen/` | View incoming orders, confirm or reject orders, and update preparation status |
-| Admin | `/admin/` | Manage vouchers and simulate delivery completion for READY orders |
-| Manager | `/manager/` | View sales, hub workload, and delivery reports |
+| Admin | `/admin/` | Manage vouchers, simulate delivery completion, and access planned Dashboard, Hubs & Menu, and Users pages |
+| Manager | `/manager/` | Generate management reports and access planned Dashboard, Hub Operations, and Order History pages |
 
 The Admin module is documented in [docs/TV3_ADMIN_OVERVIEW.md](docs/TV3_ADMIN_OVERVIEW.md).
 
@@ -126,21 +126,41 @@ Do not commit real `.env` files or database credentials to Git.
 
 ### Admin
 
+**Implemented features:**
+
 - Views, searches, and filters vouchers.
 - Creates and edits vouchers.
 - Archives eligible vouchers.
 - Views orders that have reached `READY`.
 - Provides a demo action to mark a `READY` order as `DELIVERED`.
 
+**Future development pages (Coming Soon):**
+
+- Dashboard: Overview of system activities and key statistics.
+- Hubs & Menu: Hub and menu management.
+- Users: Customer and staff account management.
+
+The three future development pages are currently UI placeholders. They do not call backend APIs or modify database records.
+
 The Admin delivery action is a simulation for the project demonstration. It does not represent a complete real-world shipper or delivery-management workflow.
 
 ### Manager
+
+**Implemented features:**
 
 - Generates Sales Reports.
 - Generates Hub Workload Reports.
 - Generates Delivery Performance Reports.
 - Selects a start date and end date for each report.
 - Views report KPIs, charts, and detail tables.
+
+**Future development pages (Coming Soon):**
+
+- Dashboard: Overview of business performance and key statistics.
+- Hub Operations: Hub monitoring and operational management.
+- Order History: Historical order search and review.
+
+The three future development pages are currently UI placeholders. They do not call backend APIs or modify database records.
 
 Report values are calculated from the current database records. Some reports may show `—` when the required delivery timestamps are not available.
 
@@ -191,7 +211,8 @@ node --check ../frontend/manager/app.js
 | Document | Description |
 |---|---|
 | `docs/RAD_REPORT.docx` | Original RAD project report |
-| `docs/TV3_ADMIN_OVERVIEW.md` | Overview of the implemented Admin module |
+| `docs/TV3_ADMIN_OVERVIEW.md` | Admin implementation and planned future pages |
+| `docs/TV3_MANAGER_OVERVIEW.md` | Manager reports and planned future pages |
 | `docs/API_CONTRACT.md` | Shared API contract |
 
 The authentication document describes the current temporary mock authentication behavior and should be read together with the actual backend implementation.

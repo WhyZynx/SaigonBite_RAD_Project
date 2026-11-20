@@ -1136,3 +1136,67 @@ button {
         border-radius: 0;
     }
 }
+
+/* Coming Soon pages */
+.coming-soon-card {
+    min-height: 340px;
+    padding: 45px 28px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.coming-soon-icon {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 18px;
+    border-radius: 16px;
+    background: var(--sage);
+    color: var(--forest);
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.coming-soon-badge {
+    display: inline-block;
+    margin-bottom: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: #fff0dc;
+    color: #a96528;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .8px;
+}
+
+.coming-soon-card h2 {
+    margin: 0;
+    color: #294338;
+    font-size: 20px;
+}
+
+.coming-soon-card p {
+    max-width: 520px;
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+@media (max-width: 650px) {
+    .coming-soon-card {
+        min-height: 280px;
+        padding: 30px 18px;
+    }
+
+    .coming-soon-card h2 {
+        font-size: 17px;
+    }
+}

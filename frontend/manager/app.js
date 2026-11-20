@@ -196,9 +196,42 @@ toggleRowsButton.addEventListener("click", () => {
 reportType.addEventListener("change", renderReport);
 generateReportButton.addEventListener("click", renderReport);
 
+const managerPages = {
+    dashboard: document.getElementById("dashboardPage"),
+    "hub-operations": document.getElementById("hubOperationsPage"),
+    "order-history": document.getElementById("orderHistoryPage"),
+    reports: document.getElementById("reportsPage")
+};
+
+function showManagerPage(page) {
+    Object.values(managerPages).forEach(section => {
+        if (section) {
+            section.classList.add("hidden");
+        }
+    });
+
+    const selectedPage = managerPages[page];
+
+    if (!selectedPage) {
+        return;
+    }
+
+    selectedPage.classList.remove("hidden");
+
+    document.querySelectorAll(".nav-item").forEach(item => {
+        item.classList.toggle("active", item.dataset.nav === page);
+    });
+
+    // Generate a report only when the Reports page is opened.
+    if (page === "reports") {
+        renderReport();
+    }
+}
+
 document.querySelectorAll(".nav-item").forEach(item => {
     item.addEventListener("click", event => {
-        if (item.dataset.nav !== "reports") event.preventDefault();
+        event.preventDefault();
+        showManagerPage(item.dataset.nav);
     });
 });
 

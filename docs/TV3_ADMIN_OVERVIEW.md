@@ -19,15 +19,38 @@ Admin users must sign in through the shared login page. The backend checks the a
 
 ## 2. Admin Portal Structure
 
-The current Admin interface contains the following navigation items:
+The Admin sidebar contains the following navigation items:
 
-| Navigation | Description |
-|---|---|
-| Vouchers | Manage promotional vouchers |
-| Mark as Delivered | View Kitchen-ready orders and simulate delivery completion |
-| Log out | End the current session |
+| Navigation | Current Status | Description |
+|---|---|---|
+| Dashboard | Coming Soon | Future overview of system activities and key statistics |
+| Hubs & Menu | Coming Soon | Future management of hubs, menu items, categories and availability |
+| Users | Coming Soon | Future management of customer and staff accounts |
+| Vouchers | Implemented | Manage promotional vouchers |
+| Mark as Delivered | Implemented (Demo) | View Kitchen-ready orders and simulate delivery completion |
+| Log out | Implemented | End the current session |
 
-The Admin module does not currently include separate Dashboard, User Management, Hub Management, or Menu Management pages.
+### 2.1 Future Development Pages
+
+Dashboard, Hubs & Menu, and Users are currently placeholder pages.
+
+They are displayed in the Admin sidebar to show the planned future scope of the Admin portal. Selecting one of these items displays a Coming Soon message.
+
+These placeholder pages:
+
+- Do not call backend APIs.
+- Do not modify database records.
+- Do not perform user, hub, menu or dashboard operations.
+- Are reserved for future development.
+
+### 2.2 Currently Implemented Pages
+
+The currently functional Admin pages are:
+
+1. **Vouchers:** Supports viewing, searching, filtering, creating, editing and archiving vouchers.
+2. **Mark as Delivered:** Supports viewing READY orders and simulating the transition from READY to DELIVERED.
+
+The existing voucher and delivery workflows remain unchanged by the placeholder pages.
 
 ## 3. Voucher Management
 
@@ -323,9 +346,9 @@ The delivery completion action can therefore provide delivery timestamps and out
 
 ## 8. Current Scope and Limitations
 
-The following items describe the current implementation rather than proposed future features.
+The following table distinguishes implemented functions from planned future pages.
 
-| Item | Current Status |
+| Feature | Current Status |
 |---|---|
 | View vouchers | Implemented |
 | Search vouchers | Implemented |
@@ -337,19 +360,32 @@ The following items describe the current implementation rather than proposed fut
 | View Kitchen-ready orders | Implemented |
 | Mark READY orders as DELIVERED | Implemented as a demo action |
 | Persist delivery completion timestamp | Implemented |
+| Admin Dashboard | Coming Soon |
+| Hub management | Coming Soon |
+| Menu management | Coming Soon |
+| User management | Coming Soon |
 | Real shipper assignment and tracking | Not implemented |
 | Hub-specific voucher association | Not supported by the current shared schema |
-| Admin user management | Not implemented |
-| Hub and menu management | Not implemented |
-| Admin dashboard | Not implemented |
+
+### 8.1 Future Development Notes
+
+The Dashboard, Hubs & Menu, and Users pages are currently interface placeholders only.
+
+Their appearance in the sidebar does not mean that the corresponding backend functionality has been implemented. API endpoints, business logic, database operations and testing will be required when these features are developed.
 
 ## 9. Summary
 
-The TV3 Admin module currently provides two main functions:
+The TV3 Admin module currently provides two implemented functions:
 
 1. **Voucher Management:** Admin can view, search, filter, create, edit, and archive vouchers.
-2. **Mark as Delivered:** Admin can view orders completed by Kitchen and simulate delivery completion for orders in the `READY` state.
+2. **Mark as Delivered:** Admin can view orders completed by Kitchen and simulate delivery completion for orders in the READY state.
 
-Both functions use the project's shared FastAPI backend and database.
+The Admin sidebar also displays three planned pages:
 
-The delivery action is intended for project demonstration and does not represent a complete real-world delivery workflow. The current implementation should be evaluated according to the project's agreed RAD scope.
+- Dashboard
+- Hubs & Menu
+- Users
+
+These pages currently display Coming Soon messages and are reserved for future development. They do not perform actual business operations.
+
+All implemented functions use the project's shared FastAPI backend and database. The delivery action is intended for project demonstration and does not represent a complete real-world delivery workflow.

@@ -40,9 +40,9 @@ class CreateOrderItem(BaseModel):
 
 class CreateOrderRequest(BaseModel):
     hub_id: int = Field(gt=0)
-    destination_id: str = Field(min_length=1, max_length=40)
     items: list[CreateOrderItem] = Field(min_length=1)
     delivery_address: str = Field(min_length=5, max_length=255)
+    destination_address: str = Field(min_length=5, max_length=255)
     voucher_code: str | None = None
     payment_method: str = Field(default="COD", pattern="^COD$")
 
@@ -52,6 +52,7 @@ class CreateOrderResponse(BaseModel):
     status: OrderStatus
     subtotal: int
     delivery_fee: int
+    delivery_distance_km: float
     surcharge: int
     discount: int
     total: int

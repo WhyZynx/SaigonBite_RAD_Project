@@ -13,13 +13,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.auth import SESSION_COOKIE, clear_session, create_session
 from app.database import Base, get_db
+from app import delivery_fee_service
 from app.main import app
 from app.models import Brand, Customer, Hub, MenuItem, Voucher
 from app.schemas import CreateOrderRequest
 
 
 @pytest.fixture
-def customer_client():
+def customer_client(monkeypatch):
+    monkeypatch.setattr(delivery_fee_service, "_geocode", lambda address: (10.0, 20.0))
+    monkeypatch.setattr(delivery_fee_service, "_route_distance_meters", lambda *coords: 1_000.0)
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -40,7 +43,7 @@ def customer_client():
                 ),
                 Customer(
                     customer_id=2,
-                    customer_type="LOCAL",
+                    customer_type="TOURIST",
                     name="Second Customer",
                     email="second-customer@example.invalid",
                     phone="0900000002",
@@ -81,7 +84,7 @@ def customer_client():
 def test_delivery_address_limit_matches_database_column():
     payload = {
         "hub_id": 1,
-        "destination_id": "nguyen-hue",
+        "destination_address": "18 Nguyen Hue Street, District 1",
         "items": [{"menu_item_id": 1, "quantity": 1}],
         "delivery_address": "A" * 255,
         "payment_method": "COD",
@@ -104,7 +107,7 @@ def test_delivery_contact_string_round_trips_to_order_detail(customer_client):
         "/api/orders",
         json={
             "hub_id": 1,
-            "destination_id": "nguyen-hue",
+            "destination_address": "18 Nguyen Hue Street, District 1",
             "items": [{"menu_item_id": 1, "quantity": 1}],
             "delivery_address": delivery_address,
             "payment_method": "COD",
@@ -139,17 +142,17 @@ def test_customer_can_validate_and_apply_voucher(customer_client):
         db_generator.close()
 
     preview = customer_client.post("/api/customer/vouchers/validate", json={
-        "code": "save10", "hub_id": 1, "destination_id": "nguyen-hue",
+        "code": "save10", "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
         "items": [{"menu_item_id": 1, "quantity": 2}],
     })
     assert preview.status_code == 200
     assert preview.json() == {
         "code": "SAVE10", "subtotal": 100000, "discount": 10000,
-        "delivery_fee": 15000, "delivery_distance_km": 1.0, "total": 105000,
+        "delivery_fee": 13000, "delivery_distance_km": 1.0, "surcharge": 0, "total": 103000,
     }
 
     rejected = customer_client.post("/api/customer/vouchers/validate", json={
-        "code": "SAVE10", "hub_id": 1, "destination_id": "nguyen-hue",
+        "code": "SAVE10", "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
         "items": [{"menu_item_id": 1, "quantity": 1}],
     })
     assert rejected.status_code == 400
@@ -158,17 +161,17 @@ def test_customer_can_validate_and_apply_voucher(customer_client):
     )
 
     order = customer_client.post("/api/orders", json={
-        "hub_id": 1, "destination_id": "nguyen-hue",
+        "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
         "items": [{"menu_item_id": 1, "quantity": 2}],
         "delivery_address": "Test street 12\nRecipient: Customer Test12334\nPhone: 0900000001",
         "voucher_code": "SAVE10", "payment_method": "COD",
     })
     assert order.status_code == 201
     assert order.json()["discount"] == 10000
-    assert order.json()["total"] == 105000
+    assert order.json()["total"] == 103000
 
     reuse_preview = customer_client.post("/api/customer/vouchers/validate", json={
-        "code": "SAVE10", "hub_id": 1, "destination_id": "nguyen-hue",
+        "code": "SAVE10", "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
         "items": [{"menu_item_id": 1, "quantity": 2}],
     })
     assert reuse_preview.status_code == 400
@@ -199,7 +202,7 @@ def test_customer_voucher_page_lists_only_currently_available_codes(customer_cli
     assert response.json()[0]["min_order"] == 80000
 
     order = customer_client.post("/api/orders", json={
-        "hub_id": 1, "destination_id": "nguyen-hue",
+        "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
         "items": [{"menu_item_id": 1, "quantity": 2}],
         "delivery_address": "House 12\nRecipient: Customer Test12334\nPhone: 0900000001",
         "voucher_code": "SAVE10", "payment_method": "COD",
@@ -212,7 +215,7 @@ def test_customer_voucher_page_lists_only_currently_available_codes(customer_cli
 
 def test_customer_can_cancel_only_own_pending_order(customer_client):
     order = customer_client.post("/api/orders", json={
-        "hub_id": 1, "destination_id": "nguyen-hue",
+        "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
         "items": [{"menu_item_id": 1, "quantity": 1}],
         "delivery_address": "House 12\nRecipient: Customer Test12334\nPhone: 0900000001",
         "payment_method": "COD",
@@ -246,9 +249,10 @@ def test_customer_identity_maps_from_session_email(customer_client):
     first_profile = customer_client.get("/api/customer/profile")
     assert first_profile.status_code == 200
     assert first_profile.json()["id"] == 1
+    assert first_profile.json()["customer_type"] == "LOCAL"
 
     first_order = customer_client.post("/api/orders", json={
-        "hub_id": 1, "destination_id": "nguyen-hue",
+        "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
         "items": [{"menu_item_id": 1, "quantity": 1}],
         "delivery_address": "First customer address\nRecipient: Customer Test12334\nPhone: 0900000001",
         "payment_method": "COD",
@@ -262,11 +266,12 @@ def test_customer_identity_maps_from_session_email(customer_client):
         assert second_profile.status_code == 200
         assert second_profile.json()["id"] == 2
         assert second_profile.json()["name"] == "Second Customer"
+        assert second_profile.json()["customer_type"] == "TOURIST"
         assert customer_client.get("/api/customer/orders").json() == []
         assert customer_client.get(f"/api/orders/{first_order.json()['id']}").status_code == 404
 
         second_order = customer_client.post("/api/orders", json={
-            "hub_id": 1, "destination_id": "nguyen-hue",
+            "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
             "items": [{"menu_item_id": 1, "quantity": 1}],
             "delivery_address": "Second customer address\nRecipient: Second Customer\nPhone: 0900000002",
             "payment_method": "COD",
@@ -289,43 +294,9 @@ def test_customer_account_without_matching_profile_is_rejected(customer_client):
         clear_session(unknown_token)
 
 
-def test_delivery_options_change_distance_and_authoritative_fee(customer_client):
-    options_response = customer_client.get("/api/delivery-options?hub_id=1")
-    assert options_response.status_code == 200
-    options = {option["destination_id"]: option for option in options_response.json()["options"]}
-    assert options["nguyen-hue"]["distance_km"] == 1.0
-    assert options["nguyen-hue"]["delivery_fee"] == 15000
-    assert options["war-remnants"]["distance_km"] == 3.6
-    assert options["war-remnants"]["delivery_fee"] == 20000
-
-    nearby = customer_client.post("/api/orders", json={
-        "hub_id": 1, "destination_id": "nguyen-hue",
-        "items": [{"menu_item_id": 1, "quantity": 1}],
-        "delivery_address": "House 12, Floor 3\nRecipient: Customer Test12334\nPhone: 0900000001",
-        "payment_method": "COD",
-        "delivery_fee": 1, "delivery_distance_km": 99,
-    })
-    farther = customer_client.post("/api/orders", json={
-        "hub_id": 1, "destination_id": "war-remnants",
-        "items": [{"menu_item_id": 1, "quantity": 1}],
-        "delivery_address": "Building B\nRecipient: Customer Test12334\nPhone: 0900000001",
-        "payment_method": "COD",
-    })
-    assert nearby.status_code == farther.status_code == 201
-    assert nearby.json()["delivery_fee"] == 15000
-    assert farther.json()["delivery_fee"] == 20000
-    assert nearby.json()["total"] == 65000
-    assert farther.json()["total"] == 70000
-
-    nearby_detail = customer_client.get(f"/api/orders/{nearby.json()['id']}").json()
-    farther_detail = customer_client.get(f"/api/orders/{farther.json()['id']}").json()
-    assert nearby_detail["delivery_distance_km"] == 1.0
-    assert farther_detail["delivery_distance_km"] == 3.6
-    assert "Nguyen Hue Street" in nearby_detail["delivery_address"]
-    assert "Vo Van Tan Street" in farther_detail["delivery_address"]
-
+def test_customer_order_requires_delivery_phone(customer_client):
     missing_phone = customer_client.post("/api/orders", json={
-        "hub_id": 1, "destination_id": "nguyen-hue",
+        "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
         "items": [{"menu_item_id": 1, "quantity": 1}],
         "delivery_address": "Address details\nRecipient: Customer Test12334\nPhone:   ",
         "payment_method": "COD",

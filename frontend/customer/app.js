@@ -39,7 +39,7 @@
   };
   let language = "en";
   const t = (key) => copy[language][key] || copy.en[key] || key;
-  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customer: null, customerOrders: [], appliedVoucher: null, voucherQuoteRequestId: 0, voucherQuotePending: false, deliveryOptions: [], selectedDestinationId: "" };
+  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customer: null, customerOrders: [], appliedVoucher: null, voucherQuoteRequestId: 0, voucherQuotePending: false, deliveryQuote: null, deliveryQuoteRequestId: 0, deliveryQuoteTimer: null, deliveryQuotePending: false };
   const savedCart = sessionStorage.getItem("saigonbite-cart");
   if (savedCart) {
     try { Object.assign(state.cart, JSON.parse(savedCart)); } catch { sessionStorage.removeItem("saigonbite-cart"); }
@@ -250,56 +250,78 @@
     $("#checkout-hub-name").textContent = group.hub_name;
     $("#checkout-subtotal").textContent = money(groupSubtotal);
     $("#delivery-origin").textContent = state.hubs.find((hub) => hub.id === group.hub_id)?.address || group.hub_name;
-    state.deliveryOptions = [];
-    state.selectedDestinationId = "";
+    state.deliveryQuote = null;
+    state.deliveryQuotePending = false;
+    $("#address").value = "";
+    $("#delivery-details").value = "";
+    $("#delivery-quote-status").textContent = "Enter your address to calculate the distance and delivery fee.";
     state.appliedVoucher = null;
     state.voucherQuoteRequestId += 1;
     state.voucherQuotePending = false;
     $("#apply-voucher").disabled = false;
     $("#voucher").value = "";
-    $("#delivery-zone").innerHTML = '<option value="">Loading delivery areas...</option>';
     $("#place-order").disabled = true;
     updateCheckoutTotals();
     toggleScreen("checkout");
-    try {
-      const routeData = await api(`/api/delivery-options?hub_id=${group.hub_id}`);
-      state.deliveryOptions = routeData.options || [];
-      $("#delivery-origin").textContent = `${routeData.hub_name} · ${routeData.hub_address}`;
-      $("#delivery-zone").innerHTML = '<option value="">Choose a delivery address</option>' + state.deliveryOptions.map((option) =>
-        `<option value="${escapeHtml(option.destination_id)}">${escapeHtml(option.address)}</option>`
-      ).join("");
-      if (state.deliveryOptions.length === 1) {
-        state.selectedDestinationId = state.deliveryOptions[0].destination_id;
-        $("#delivery-zone").value = state.selectedDestinationId;
-      }
-      updateCheckoutTotals();
-    } catch (error) {
-      $("#delivery-zone").innerHTML = '<option value="">Delivery areas unavailable</option>';
-      showNotice(error.message, "danger");
-    }
   }
 
   function updateCheckoutTotals() {
-    const route = state.deliveryOptions.find((item) => item.destination_id === state.selectedDestinationId);
-    const quote = state.appliedVoucher?.destination_id === state.selectedDestinationId ? state.appliedVoucher : null;
-    const fee = quote?.delivery_fee ?? route?.delivery_fee ?? 0;
-    $("#delivery-route-card").classList.toggle("d-none", !route);
-    $("#delivery-route-distance").textContent = route ? `${route.distance_km} km` : "—";
-    $("#checkout-delivery-fee").textContent = route ? money(fee) : "Choose destination";
+    const quote = state.deliveryQuote;
+    const voucher = state.appliedVoucher;
+    const fee = quote?.delivery_fee ?? 0;
+    const surcharge = quote?.surcharge ?? 0;
+    $("#delivery-route-card").classList.toggle("d-none", !quote);
+    const distanceText = quote
+      ? new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(quote.delivery_distance_km)
+      : "—";
+    $("#delivery-route-distance").textContent = quote ? `${distanceText} km` : "—";
+    $("#checkout-delivery-fee").textContent = quote ? money(fee) : "—";
+    $("#checkout-surcharge").textContent = quote ? money(surcharge) : "—";
     const groupSubtotal = cartGroups().find((group) => group.hub_id === state.selectedCartHubId)?.items.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
-    const subtotal = quote?.subtotal ?? groupSubtotal;
-    const discount = quote?.discount ?? 0;
+    const subtotal = voucher?.subtotal ?? groupSubtotal;
+    const discount = voucher?.discount ?? 0;
     $("#checkout-subtotal").textContent = money(subtotal);
     $("#checkout-discount").textContent = `−${money(discount)}`;
-    $("#checkout-total").textContent = money(quote?.total ?? subtotal + fee - discount);
-    $("#place-order").disabled = !route || state.voucherQuotePending;
+    $("#checkout-total").textContent = money(voucher?.total ?? subtotal + fee + surcharge - discount);
+    $("#place-order").disabled = !quote || state.voucherQuotePending || state.deliveryQuotePending;
+  }
+
+  async function calculateDeliveryQuote() {
+    const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
+    const address = $("#address").value.trim();
+    const requestId = ++state.deliveryQuoteRequestId;
+    state.deliveryQuote = null;
+    state.appliedVoucher = null;
+    state.deliveryQuotePending = false;
+    if (!address || address.length < 5 || !group) {
+      $("#delivery-quote-status").textContent = "Enter your address to calculate the distance and delivery fee.";
+      updateCheckoutTotals();
+      return;
+    }
+    state.deliveryQuotePending = true;
+    $("#delivery-quote-status").textContent = "Calculating driving distance and delivery fee…";
+    updateCheckoutTotals();
+    try {
+      const quote = await api("/api/delivery-quote", { method: "POST", body: JSON.stringify({ hub_id: group.hub_id, delivery_address: address }) });
+      if (requestId !== state.deliveryQuoteRequestId || address !== $("#address").value.trim()) return;
+      state.deliveryQuote = quote;
+      $("#delivery-quote-status").textContent = "Delivery distance and fee calculated.";
+    } catch (error) {
+      if (requestId !== state.deliveryQuoteRequestId) return;
+      $("#delivery-quote-status").textContent = error.message;
+    } finally {
+      if (requestId === state.deliveryQuoteRequestId) {
+        state.deliveryQuotePending = false;
+        updateCheckoutTotals();
+      }
+    }
   }
 
   async function applyVoucher() {
     const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
     const code = $("#voucher").value.trim().toUpperCase();
     if (!group) return;
-    if (!state.selectedDestinationId) { showNotice("Choose a delivery area before applying a voucher.", "warning"); return; }
+    if (!state.deliveryQuote) { showNotice("Enter a valid delivery address before applying a voucher.", "warning"); return; }
     if (!code) {
       state.voucherQuoteRequestId += 1;
       state.voucherQuotePending = false;
@@ -310,7 +332,7 @@
     }
     const button = $("#apply-voucher");
     const requestId = ++state.voucherQuoteRequestId;
-    const destinationId = state.selectedDestinationId;
+    const destinationAddress = $("#address").value.trim();
     state.voucherQuotePending = true;
     button.disabled = true;
     updateCheckoutTotals();
@@ -318,12 +340,12 @@
       const quote = await api("/api/customer/vouchers/validate", {
         method: "POST", body: JSON.stringify({
           code, hub_id: group.hub_id,
-          destination_id: destinationId,
+          destination_address: destinationAddress,
           items: group.items.map((item) => ({ menu_item_id: item.id, quantity: item.quantity }))
         })
       });
-      if (requestId !== state.voucherQuoteRequestId || destinationId !== state.selectedDestinationId || code !== $("#voucher").value.trim().toUpperCase()) return;
-      state.appliedVoucher = { ...quote, destination_id: destinationId };
+      if (requestId !== state.voucherQuoteRequestId || destinationAddress !== $("#address").value.trim() || code !== $("#voucher").value.trim().toUpperCase()) return;
+      state.appliedVoucher = quote;
       $("#voucher").value = state.appliedVoucher.code;
       showNotice(`Voucher applied. You save ${money(state.appliedVoucher.discount)}.`, "success");
     } catch (error) {
@@ -345,6 +367,7 @@
     if (state.voucherQuotePending) { showNotice("Wait for the voucher total to finish updating.", "warning"); return; }
     const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
     if (!group) { showNotice(t("choose_items")); return; }
+    if (!state.deliveryQuote) { showNotice("Enter a valid address within the 10 km delivery range.", "warning"); return; }
     if (!$("#phone").value.trim()) {
       $("#phone").focus();
       showNotice("Enter a phone number so the restaurant can contact you.", "warning");
@@ -353,15 +376,16 @@
     const submit = $("#place-order");
     submit.disabled = true; submit.textContent = t("placing");
     try {
+      const destinationAddress = $("#address").value.trim();
       const address = [
-        $("#address").value.trim(),
+        $("#delivery-details").value.trim(),
         `Recipient: ${$("#recipient").value.trim()}`,
         `Phone: ${$("#phone").value.trim()}`,
         $("#note").value.trim() ? `Note: ${$("#note").value.trim()}` : ""
       ].filter(Boolean).join("\n");
       const response = await api("/api/orders", { method: "POST", body: JSON.stringify({
         hub_id: group.hub_id,
-        destination_id: state.selectedDestinationId,
+        destination_address: destinationAddress,
         items: group.items.map((item) => ({ menu_item_id: item.id, quantity: item.quantity })),
         delivery_address: address,
         voucher_code: state.appliedVoucher?.code || null,
@@ -554,6 +578,9 @@
       $("#profile-customer-email").textContent = user.email;
       $("#profile-email-field").textContent = user.email;
       $("#profile-phone-field").textContent = state.customer.phone || "—";
+      $("#profile-customer-type").textContent = state.customer.customer_type
+        ? state.customer.customer_type.toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase())
+        : "—";
     } catch { return; }
     applyLanguage();
     await loadHubs();
@@ -599,15 +626,14 @@
     $("#proceed-checkout").addEventListener("click", renderCheckout);
     $("#checkout-form").addEventListener("submit", placeOrder);
     $("#apply-voucher").addEventListener("click", applyVoucher);
-    $("#delivery-zone").addEventListener("change", (event) => {
-      const appliedCode = state.appliedVoucher?.code;
-      state.selectedDestinationId = event.target.value;
+    $("#address").addEventListener("input", () => {
+      state.deliveryQuoteRequestId += 1;
+      clearTimeout(state.deliveryQuoteTimer);
+      state.deliveryQuoteTimer = setTimeout(calculateDeliveryQuote, 600);
+      state.deliveryQuote = null;
       state.appliedVoucher = null;
+      $("#delivery-quote-status").textContent = "Address changed. Recalculating delivery distance…";
       updateCheckoutTotals();
-      if (appliedCode) {
-        $("#voucher").value = appliedCode;
-        applyVoucher();
-      }
     });
     $("#voucher").addEventListener("input", () => {
       if (state.appliedVoucher && $("#voucher").value.trim().toUpperCase() !== state.appliedVoucher.code) {

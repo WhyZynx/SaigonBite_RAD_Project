@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth import SESSION_COOKIE, get_session
-from app.delivery import get_delivery_route, list_delivery_routes
+from app.delivery_fee_service import DeliveryFeeService
 from app.database import get_db
 from app.repositories import customer_repository
 from app.schemas import CreateOrderItem, CreateOrderRequest, CreateOrderResponse
@@ -19,7 +19,7 @@ router = APIRouter(tags=["Customer"])
 class VoucherPreviewRequest(BaseModel):
     code: str = Field(min_length=1, max_length=50)
     hub_id: int = Field(gt=0)
-    destination_id: str = Field(min_length=1, max_length=40)
+    destination_address: str = Field(min_length=5, max_length=255)
     items: list[CreateOrderItem] = Field(min_length=1)
 
 
@@ -72,7 +72,7 @@ def _order_completed_at(order: Order) -> str | None:
 @router.post("/api/customer/vouchers/validate")
 def validate_voucher(payload: VoucherPreviewRequest, request: Request, db: Session = Depends(get_db)):
     customer = current_customer(request, db)
-    route = get_delivery_route(payload.hub_id, payload.destination_id)
+    route = DeliveryFeeService(db).calculate(payload.hub_id, payload.destination_address)
     hub = db.query(Hub).filter(Hub.hub_id == payload.hub_id).first()
     if hub is None or hub.status != "OPEN":
         raise HTTPException(status_code=400, detail="This hub is not accepting orders")
@@ -90,9 +90,8 @@ def validate_voucher(payload: VoucherPreviewRequest, request: Request, db: Sessi
     if customer_repository.customer_has_used_voucher(db, customer.customer_id, voucher.voucher_id):
         raise HTTPException(status_code=400, detail="You have already used this voucher on a previous order")
     return {"code": voucher.code, "subtotal": subtotal,
-            "discount": discount, "delivery_fee": route["delivery_fee"],
-            "delivery_distance_km": route["distance_km"],
-            "total": subtotal + route["delivery_fee"] - discount}
+            "discount": discount, **route,
+            "total": subtotal + route["delivery_fee"] + route["surcharge"] - discount}
 
 
 @router.get("/api/customer/vouchers")
@@ -134,8 +133,18 @@ def delivery_options(request: Request, hub_id: int = Query(gt=0), db: Session = 
         raise HTTPException(status_code=404, detail="Hub not found")
     if hub.status != "OPEN":
         raise HTTPException(status_code=400, detail="This hub is not accepting orders")
-    return {"hub_id": hub.hub_id, "hub_name": hub.name, "hub_address": hub.address,
-            "options": list_delivery_routes(hub_id)}
+    return {"hub_id": hub.hub_id, "hub_name": hub.name, "hub_address": hub.address}
+
+
+class DeliveryQuoteRequest(BaseModel):
+    hub_id: int = Field(gt=0)
+    delivery_address: str = Field(min_length=5, max_length=255)
+
+
+@router.post("/api/delivery-quote")
+def delivery_quote(payload: DeliveryQuoteRequest, request: Request, db: Session = Depends(get_db)):
+    current_customer(request, db)
+    return DeliveryFeeService(db).calculate(payload.hub_id, payload.delivery_address)
 
 
 @router.post("/api/orders", response_model=CreateOrderResponse, status_code=201)
@@ -145,8 +154,8 @@ def create_order(payload: CreateOrderRequest, request: Request, db: Session = De
         raise HTTPException(status_code=422, detail="Recipient name is required")
     if not _has_nonblank_contact_line(payload.delivery_address, "Phone"):
         raise HTTPException(status_code=422, detail="Delivery phone number is required")
-    route = get_delivery_route(payload.hub_id, payload.destination_id)
-    address = f"{route['address']}\n{payload.delivery_address}"
+    route = DeliveryFeeService(db).calculate(payload.hub_id, payload.destination_address)
+    address = f"{payload.destination_address}\n{payload.delivery_address}"
     if len(address) > 255:
         raise HTTPException(status_code=422, detail="Delivery address details are too long")
     payload.delivery_address = address
@@ -154,11 +163,13 @@ def create_order(payload: CreateOrderRequest, request: Request, db: Session = De
         db,
         payload,
         customer_id=customer.customer_id,
-        delivery_distance_km=route["distance_km"],
+        delivery_distance_km=route["delivery_distance_km"],
         delivery_fee=route["delivery_fee"],
+        surcharge=route["surcharge"],
     )
     return {"id": order.order_id, "status": order.status, "subtotal": order.subtotal,
-            "delivery_fee": order.delivery_fee, "surcharge": order.surcharge,
+            "delivery_fee": order.delivery_fee, "delivery_distance_km": order.delivery_distance_km,
+            "surcharge": order.surcharge,
             "discount": order.discount, "total": order.total}
 
 
@@ -166,7 +177,8 @@ def create_order(payload: CreateOrderRequest, request: Request, db: Session = De
 def get_customer_profile(request: Request, db: Session = Depends(get_db)):
     customer = current_customer(request, db)
     return {"id": customer.customer_id, "name": customer.name,
-            "email": customer.email, "phone": customer.phone}
+            "email": customer.email, "phone": customer.phone,
+            "customer_type": customer.customer_type}
 
 
 @router.get("/api/customer/orders")

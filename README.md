@@ -43,11 +43,15 @@ Proposed authentication endpoints, responses, and session behavior are documente
 
 Copy `.env.example` to `.env` in the repository root and configure `DB_DRIVER`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, and `DB_NAME`. The backend also accepts `DATABASE_URL`; URL-encode reserved characters in its username and password. Real `.env` files are ignored by Git. Do not run `database/schema.sql` or `database/seed.sql` during normal startup; the schema script recreates the database.
 
+### Customer delivery distance and fees
+
+Checkout sends the typed address to the FastAPI backend. The backend geocodes the Hub and customer addresses with Nominatim, then requests a driving route from OSRM. These public OpenStreetMap services require no key or payment card. There is no API key configuration. Nominatim requests use an identifying `SaigonBite` User-Agent, are paced, and geocoded coordinates are cached; the frontend does not use address autocomplete. The fee is 10,000 VND + 2,500 VND/km, rounded upward to the next 1,000 VND, with a separate 3,000 VND surcharge above 5 km. Routes longer than 10 km are rejected. The checkout shows © OpenStreetMap contributors attribution.
+
 ## Current integration boundaries
 
 - Kitchen queue, decisions, and status transitions use `OrderRepository`; Customer and Kitchen share the database-backed order detail endpoint.
 - Voucher and report APIs use SQLAlchemy repositories, while their Admin/Manager frontends are integrated.
-- Customer hub/menu reads, order creation, order history, and order detail use SQLAlchemy repositories and the shared database models. Customer sessions map to a database Customer by matching email; every configured login still needs exactly one matching profile. Delivery options use estimated distances from a fixed demo hub-to-destination table; the backend derives the fee from distance bands and is authoritative when creating an order. The Customer UI validates and submits voucher codes, while the backend recalculates the discount and final order total. Admin’s voucher hub label is display-only because the shared schema has no hub association.
+- Customer hub/menu reads, order creation, order history, and order detail use SQLAlchemy repositories and the shared database models. Customer sessions map to a database Customer by matching email; every configured login still needs exactly one matching profile. The Customer backend calculates driving distances using Nominatim and OSRM and recalculates fees, surcharge, discount, and total during order creation. Admin’s voucher hub label is display-only because the shared schema has no hub association.
 - The schema has no separate customer-note or item-options fields. The Customer UI currently appends recipient, phone, and note text to the delivery address; Kitchen receives that address as stored.
 - Manager report totals are read from the database, but average preparation/delivery time labels currently use fixed demo values.
 - Authentication accounts and sessions remain in-memory demo implementations.

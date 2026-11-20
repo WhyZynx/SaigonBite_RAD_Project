@@ -29,6 +29,7 @@ def create_order(
     customer_id: int,
     delivery_distance_km: float,
     delivery_fee: int,
+    surcharge: int = 0,
 ) -> Order:
     try:
         customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
@@ -72,9 +73,9 @@ def create_order(
             payment_status="UNPAID",
             subtotal=subtotal,
             delivery_fee=delivery_fee,
-            surcharge=0,
+            surcharge=surcharge,
             discount=discount,
-            total=subtotal + delivery_fee - discount,
+            total=subtotal + delivery_fee + surcharge - discount,
         )
         for line in payload.items:
             item = menu_by_id[line.menu_item_id]

@@ -6,7 +6,7 @@
 |---|---|
 | Nhánh tích hợp | `integration/tv3-admin` |
 | HEAD rà soát | `ad9a85532b5877473af5cb665f314b31e2f745c3` (working tree có thay đổi chưa commit) |
-| Ngày rà soát | 20-11-2026 — cập nhật code TV1; không chạy lại test |
+| Ngày rà soát | 20-11-2026 — cập nhật CUS-03 TV1; chạy 10 test service mock, chưa chạy toàn bộ suite |
 | Customer | TV1 — 524H0040 |
 | Kitchen | TV2 — 524H0130 |
 | Admin/Manager | TV3 — 524H0021 |
@@ -21,7 +21,7 @@
 
 | Module | Code/API hiện có theo mã nguồn | Giới hạn được ghi nhận |
 |---|---|---|
-| Customer | Đọc Hub/Menu, tạo đơn, danh sách/chi tiết/lịch sử đơn; voucher preview và đặt đơn dùng kết quả tính của backend; Customer ánh xạ theo email phiên đăng nhập; phí giao hàng lấy từ tuyến mẫu | Tuyến không tính bằng bản đồ thực; tài khoản/session vẫn là mock |
+| Customer | Đọc Hub/Menu, tạo đơn, danh sách/chi tiết/lịch sử đơn; voucher preview và đặt đơn dùng kết quả backend; Customer ánh xạ theo email phiên đăng nhập; Nominatim geocode và OSRM tính tuyến lái xe | Địa chỉ OSM có thể chỉ geocode tới đoạn đường thay vì đúng số nhà; tài khoản/session vẫn là mock |
 | Kitchen | Hub list/filter; confirm/reject; PREPARING/READY; ghi status history | Đã kiểm thử SQLite; MySQL đồng thời và giao diện chưa kiểm chứng |
 | Admin | Voucher GET/filter/create/archive | Dashboard, Hub/Menu/Users và update Voucher chưa có luồng hoàn chỉnh; Hub label không được lưu |
 | Manager | Sales, Hub Workload, Delivery Reports; repository truy vấn Order/Delivery/Hub | Hai lỗi trình bày/tính Pending; Delivery producer chưa có; một số thời gian demo |
@@ -44,9 +44,9 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 
 | ID | Vấn đề | Tình huống dễ hiểu | Nguyên nhân | Cách sửa/đề xuất | Người phụ trách | Mức độ | Trạng thái |
 |---|---|---|---|---|---|---|---|
-| CUS-01 | Nút Apply Voucher chưa áp dụng mã | Nhập mã rồi bấm Apply | Frontend gọi API preview; dùng subtotal, phí giao, discount và total do backend trả để cập nhật checkout. Khi đổi điểm giao, báo giá được lấy lại; khi đặt đơn backend kiểm tra mã và tính tổng cuối lần nữa | Đã nối luồng voucher và dùng kết quả backend cho preview lẫn đơn cuối | TV1; backend phối hợp nếu API đổi | Đã xử lý; vẫn cần trình duyệt nghiệm thu theo tiêu chí đồ án | ĐÃ SỬA |
+| CUS-01 | Nút Apply Voucher chưa áp dụng mã | Nhập mã rồi bấm Apply | Frontend gọi API preview; dùng subtotal, phí giao, discount và total do backend trả để cập nhật checkout. Khi đổi địa chỉ giao, báo giá được lấy lại; khi đặt đơn backend kiểm tra mã và tính tổng cuối lần nữa | Đã nối luồng voucher và dùng kết quả backend cho preview lẫn đơn cuối | TV1; backend phối hợp nếu API đổi | Đã xử lý; vẫn cần trình duyệt nghiệm thu theo tiêu chí đồ án | ĐÃ SỬA |
 | CUS-02 | Customer identity phụ thuộc tài khoản demo và hồ sơ DB | Customer khác đăng nhập, đặt đơn hoặc xem lịch sử | Backend không nhận ID từ frontend; ánh xạ email trong phiên đăng nhập tới đúng một hồ sơ Customer. Tài khoản/session vẫn là mock cấu hình sẵn | Đã bỏ ID cố định trong luồng Customer. Giới hạn nhiều tài khoản nằm ở cấu hình mock và hồ sơ tương ứng; triển khai thật cần identity/account store chính thức | TV1; TV2 phối hợp đăng nhập | Thấp trong demo; cao nếu yêu cầu tài khoản thật | ĐÃ SỬA TRONG PHẠM VI DEMO |
-| CUS-03 | Khoảng cách/phí giao hàng dùng tuyến ước lượng mẫu | Chọn điểm giao hoặc hub khác nhau | Frontend lấy tuyến từ API; backend tra khoảng cách theo hub/điểm đến và tự tính phí theo bậc khi tạo đơn. Không dùng khoảng cách/phí do client gửi | Đã thống nhất hành vi demo trong code. Nếu cần tính phí thực, chốt biểu phí và tích hợp nguồn tính tuyến thực tế | TV1; nhóm xác nhận chính sách | Thấp trong demo; cao nếu cần tính thực | ĐÃ SỬA TRONG PHẠM VI DEMO |
+| CUS-03 | Nominatim không tìm thấy địa chỉ Hub/Customer khi gửi nguyên văn | Nhập địa chỉ giao thực tế tại Checkout | Truy vấn nguyên văn trước đây thiếu `countrycodes=vn`, không thử truy vấn Hub rút gọn và chỉ trả lỗi chung khi kết quả rỗng | Thêm truy vấn Nominatim `format=jsonv2`, `countrycodes=vn`, `limit=1`; fallback Hub và structured lookup cho Customer; log HTTP status/body; kiểm tra tọa độ trước OSRM; backend tính lại phí khi tạo đơn theo công thức 10.000 + 2.500/km, làm tròn lên 1.000; phụ phí 3.000 nếu trên 5 km; từ chối trên 10 km | TV1 | Đã gọi thật với hai địa chỉ mẫu; OSM trả tọa độ đoạn đường, chưa xác định chính xác cửa nhà | ĐÃ SỬA; CÒN GIỚI HẠN ĐỘ CHÍNH XÁC OSM |
 
 ### 2. Kitchen — TV2
 
@@ -116,15 +116,15 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | KIT-01 | Kitchen cố định Hub ID 1 | Commit `1216ca183ee4165b6d97513b365c87538462d732`: `backend/app/routers/kitchen.py`, `backend/app/repositories/order.py`, `backend/tests/test_kitchen.py`, ba file `frontend/kitchen/` | Thêm API danh sách Hub, bộ chọn hub và lọc queue theo hub đang chọn | SQLite test danh sách Hub/lọc đơn; GET MySQL chỉ đọc trước đó thấy order 111 thuộc hub 2 | Đã sửa; thao tác chọn hub trên browser và MySQL ghi chưa kiểm tra |
 | KIT-02 | Kitchen chỉ đọc các trường note riêng, API Customer chỉ trả chuỗi `delivery_address` | Commit `1216ca183ee4165b6d97513b365c87538462d732`: `frontend/kitchen/app.js` | Thêm parser nhãn Recipient/Phone/Note, không đổi schema/API | Node syntax và chạy parser hiện tại với dữ liệu tổng hợp chính xác | PASS cho parser thuần; chưa kiểm tra giao diện/browser và đơn người dùng báo |
 | INT-DATA-02 | Pydantic từng cho phép 500 ký tự nhưng Model/SQL giới hạn 255 | `backend/app/schemas.py`; thêm `backend/tests/test_customer.py` | Giới hạn request còn 255 để khớp Model và SQL hiện có; không sửa schema/database | SQLite/Pydantic chấp nhận 255, từ chối 256; POST/GET test chuỗi giao hàng | PASS trên SQLite; chưa ghi MySQL |
-| CUS-02 | Customer API/frontend phụ thuộc Customer ID cố định | `backend/app/routers/customer.py`, `frontend/customer/app.js`, `backend/app/auth.py` | Router lấy email từ phiên đăng nhập rồi ánh xạ tới đúng một hồ sơ Customer; không nhận ID do frontend gửi | `backend/tests/test_customer.py::test_customer_identity_maps_from_session_email` có hai hồ sơ và xác nhận lịch sử/chi tiết được giới hạn theo Customer; không chạy lại trong lần cập nhật này | Đã sửa cho các tài khoản mock có hồ sơ khớp; auth/session vẫn là demo |
-| CUS-03 | Khoảng cách luôn 3.5 km, phí cố định 15.000 | `backend/app/delivery.py`, `backend/app/routers/customer.py`, `frontend/customer/app.js` | API trả tuyến theo hub/điểm đến; backend tự lấy khoảng cách mẫu và tính phí theo bậc khi tạo đơn; client không quyết định giá trị lưu | `backend/tests/test_customer.py::test_delivery_options_change_distance_and_authoritative_fee` đã có kiểm tra tuyến/phí khác nhau và bỏ qua giá trị client gửi; không chạy lại trong lần cập nhật này | Đã sửa trong phạm vi demo; chưa phải định tuyến/biểu phí thực tế |
-| CUS-01 | Apply Voucher chưa nối và preview chưa dùng tổng backend | `frontend/customer/app.js`, `backend/app/routers/customer.py`, `backend/app/repositories/customer_repository.py` | Apply gọi API preview; checkout hiển thị subtotal, phí, discount và `total` từ server; đổi tuyến gọi lại preview; khi POST tạo đơn backend kiểm tra voucher và tính lại tổng cuối | `backend/tests/test_customer.py` có test preview, minimum order, voucher đã dùng và tổng đơn; không chạy lại trong lần cập nhật này | Đã sửa trong code; chưa nghiệm thu UI bằng browser |
+| CUS-02 | Customer API/frontend phụ thuộc Customer ID cố định | `backend/app/routers/customer.py`, `frontend/customer/app.js`, `backend/app/auth.py` | Router lấy email phiên đăng nhập để ánh xạ hồ sơ; profile API trả customer_type từ DB và UI hiển thị Local/Tourist; không nhận ID do frontend gửi | `backend/tests/test_customer.py::test_customer_identity_maps_from_session_email` có hồ sơ LOCAL/TOURIST, xác nhận profile trả đúng customer_type và lịch sử/chi tiết được giới hạn theo Customer; không chạy lại trong lần cập nhật này | Đã sửa cho các tài khoản mock có hồ sơ khớp; auth/session vẫn là demo |
+| CUS-03 | Địa chỉ nguyên văn bị Nominatim trả về danh sách rỗng, UI báo lỗi Hub chung chung | `backend/app/delivery_fee_service.py`, `backend/app/routers/customer.py`, `frontend/customer/app.js`, `frontend/customer/index.html` | Bổ sung fallback Hub `128 Nguyen Hue, Ho Chi Minh City, Vietnam`; Customer thử structured lookup; cache địa chỉ Hub thành công; pacing Nominatim/OSRM; OSRM nhận `lon,lat`; báo lỗi upstream kèm status/body trong log; checkout hiển thị km theo định dạng `vi-VN` | `backend/tests/test_delivery_fee_service.py`: 10 test mock qua. Gọi thật với Hub `128 Nguyen Hue, District 1, Ho Chi Minh City` và Customer `12 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh`: OSRM trả 395,1 m (0,395 km), phí 11.000 VND, surcharge 0 VND. Nominatim chỉ trả tọa độ đoạn đường, không phải pin chính xác số nhà | Đã sửa; khoảng cách thật tới cửa nhà phụ thuộc độ chi tiết dữ liệu OSM |
+| CUS-01 | Apply Voucher chưa nối và preview chưa dùng tổng backend | `frontend/customer/app.js`, `backend/app/routers/customer.py`, `backend/app/repositories/customer_repository.py` | Apply gọi API preview; checkout hiển thị subtotal, phí, discount và `total` từ server; đổi địa chỉ giao gọi lại preview; khi POST tạo đơn backend kiểm tra voucher và tính lại tổng cuối | `backend/tests/test_customer.py` có test preview, minimum order, voucher đã dùng và tổng đơn; không chạy lại trong lần cập nhật này | Đã sửa trong code; chưa nghiệm thu UI bằng browser |
 
 ## E. Việc từng thành viên cần làm
 
 | Thành viên | Module | Việc cần làm | Mức ưu tiên | Điều kiện hoàn thành |
 |---|---|---|---|---|
-| TV1 — 524H0040 | Customer | CUS-01–03 đã xử lý trong code/phạm vi demo; cùng TV2 truy vết INT-CUS-KIT-01 theo cùng order_id | Cao cho lỗi Note/Phone; nghiệm thu UI theo tiêu chí đồ án | Preview dùng quote backend; payload của cùng order_id khớp form và được xác minh trên luồng tích hợp |
+| TV1 — 524H0040 | Customer | CUS-01–03 đã xử lý trong code; CUS-03 dùng Nominatim + OSRM, phí và khoảng cách được backend tính lại; cùng TV2 truy vết INT-CUS-KIT-01 theo cùng order_id | Cần nghiệm thu UI; lưu ý geocode OSM có thể chỉ tới đoạn đường | Test mock 10 case qua; đã kiểm tra live tuyến mẫu 395,1 m, phí 11.000 VND, surcharge 0 VND; preview/order dùng quote backend |
 | TV2 — 524H0130 | Kitchen/login | Cùng TV1 tái hiện Note/Phone; thử bộ chọn hub/parser trên trình duyệt; kiểm tra cập nhật đồng thời trên MySQL test; xác nhận chính sách asset/login | Cao trước khi tuyên bố Kitchen/MySQL hoàn tất | Browser evidence; MySQL test chứng minh chuyển tiếp và history không sai khi đua |
 | TV3 — 524H0021 | Admin/Manager | Xác nhận phạm vi màn hình thiếu; sửa báo lỗi Reports; thống nhất Pending metric; làm rõ Voucher Hub; gắn nhãn/tính lại metrics demo | Cao cho MAN-02/MAN-04; còn lại theo nghiệm thu | 200 rỗng khác 401/500; Pending có định nghĩa đúng; dữ liệu hub/voucher và metrics nhất quán |
 | Backend/Shared — cần chỉ định | Database/API/report | Chốt delivery contract; cấp DB test; xác minh nguồn dữ liệu vượt seed; thống nhất chủ thể ghi Delivery và status lifecycle | Cao cho API/DB E2E | Có người chịu trách nhiệm được nhóm chỉ định; test dùng DB riêng và theo cùng order_id |
@@ -170,7 +170,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 
 | Điều kiện | Trạng thái | Ghi chú |
 |---|---|---|
-| Customer hoạt động | PARTIAL | Voucher preview/order dùng giá trị backend; identity ánh xạ theo email trong giới hạn mock; tuyến giao hàng vẫn là dữ liệu demo; browser chưa xác minh |
+| Customer hoạt động | PARTIAL | Voucher preview/order dùng giá trị backend; identity ánh xạ theo email trong giới hạn mock; khoảng cách dùng Nominatim/OSRM, nhưng độ chính xác tới số nhà phụ thuộc dữ liệu OSM; browser chưa xác minh |
 | Kitchen hoạt động | PARTIAL | SQLite statuses/history và hub API đạt; browser, MySQL/concurrency chưa xác minh |
 | Admin hoạt động | PARTIAL | Voucher list/create/archive có code; các màn hình khác chưa triển khai |
 | Manager Reports hoạt động | PARTIAL | Có API/ giao diện Reports nhưng Pending label/count sai khác; lỗi API bị hiểu như rỗng; một số metrics giả lập |
@@ -178,7 +178,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | Database tương thích | PARTIAL | `delivery_address` API/model/SQL cùng giới hạn 255 sau sửa; MySQL runtime chưa thử |
 | Luồng tạo và xử lý đơn hoàn chỉnh | NOT TESTED | Chưa chạy cùng order_id trên toàn hệ thống/MySQL test |
 | Không còn lỗi nghiêm trọng | NOT VERIFIED | Còn vấn đề báo cáo và phần chưa xác minh; nhóm cần đánh giá theo tiêu chí nghiệm thu |
-| Giới hạn demo đã được ghi rõ | PASS | Customer ID cứng đã bỏ; tài liệu ghi rõ ánh xạ email/mock auth, tuyến/phí demo và số liệu thời gian cố định |
+| Giới hạn demo đã được ghi rõ | PASS | Customer ID cứng đã bỏ; tài liệu ghi rõ ánh xạ email/mock auth, giới hạn geocode địa chỉ OSM và số liệu thời gian cố định |
 | Test đã chạy lại | PASS | Compile, 16 pytest và bốn lệnh Node syntax đã chạy sau sửa |
 
 ## Kết luận

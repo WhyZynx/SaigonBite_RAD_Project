@@ -87,10 +87,13 @@ The backend validates credentials and assigns one of the supported roles: CUSTOM
 - The schema has no separate recipient, delivery-phone, special-note, or item-options fields. Customer currently stores recipient, phone, note, and address together in the order's delivery_address; Kitchen receives that stored string.
 - Admin's demo delivery action creates or updates a Delivery record with
   outcome=DELIVERED and delivered_at. It does not set pickup_at because
-  the project does not implement a real Shipper workflow. Manager counts
-  completed deliveries without requiring pickup_at. Average Delivery Time
-  is calculated only when both timestamps are valid; otherwise it displays —.
-- Authentication accounts and sessions remain in-memory demo implementations.
+  the project does not implement a real Shipper workflow. For Manager
+  Delivery Performance reporting, both DELIVERED and LATE count as
+  completed deliveries when delivered_at exists. LATE represents a
+  successful delivery completed later than expected, not a failed
+  delivery. Average Delivery Time is calculated only when both
+  pickup_at and delivered_at are valid and delivered_at >= pickup_at;
+  otherwise, the record is excluded from the average.
 
 
 

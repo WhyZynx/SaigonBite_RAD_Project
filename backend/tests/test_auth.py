@@ -137,7 +137,8 @@ def test_mock_role_routing_is_server_determined(client):
                 assert '<title>Order Food | SaigonBite</title>' in portal.text
                 assert client.get('/customer/app.js').status_code == 200
             else:
-                assert 'ADMIN PORTAL' in portal.text
+                assert 'aria-label="SaigonBite Admin"' in portal.text
+                assert client.get('/admin/app.js').status_code == 200
             assert client.get('/api/kitchen/orders?hub_id=1').status_code == 403
 
 

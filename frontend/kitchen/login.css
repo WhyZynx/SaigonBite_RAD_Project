@@ -7,6 +7,7 @@ body{min-height:100vh;background:#fff}
 .brand-panel{min-width:0;min-height:100vh;padding:34px clamp(34px,6vw,92px) 25px;background:var(--forest);color:#fff;display:flex;flex-direction:column}
 .brand-lockup{display:flex;align-items:center;gap:12px;font:800 20px Manrope,sans-serif;letter-spacing:-.4px}
 .brand-mark{width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;background:var(--orange);border-radius:11px;color:#fff;font:800 20px Manrope}
+.brand-mark .icon{width:26px;height:26px;stroke-width:1.4}
 .brand-lockup small{display:block;margin-top:4px;color:#afc5b5;font:600 9px 'DM Sans';letter-spacing:1.4px}
 .brand-copy{width:100%;max-width:520px;margin:clamp(48px,8vh,90px) auto 0}
 .overline,.form-eyebrow{font-size:10px;font-weight:700;letter-spacing:1.7px;color:#efb574}

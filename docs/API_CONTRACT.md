@@ -1,8 +1,8 @@
 # SaigonBite — REST API Contract, Authentication & Local Setup Guide
 
-**Version:** 1.2 (TV1 Customer, TV2 Kitchen, TV3 Admin/Manager integration) | **Backend:** Python + FastAPI | **Database:** MySQL 8 | **Architecture:** MVC-inspired Layered Monolith + Repository Pattern
+**Version:** 1.3 (Customer address-based delivery pricing) | **Backend:** Python + FastAPI | **Database:** MySQL 8 | **Architecture:** MVC-inspired Layered Monolith + Repository Pattern
 
-> **Status:** Integrated on `integration/tv3-admin`. Customer order reads/writes, Kitchen order transitions, Admin vouchers, and Manager reports use SQLAlchemy repositories and the shared MySQL models. Authentication accounts and sessions remain local in-memory demo implementations.
+> **Status:** Reflects the current implementation on fix/tv1-customer, pending final integration review. This does not state that PR #4 has been merged into integration/tv3-admin or main. Customer order APIs use SQLAlchemy repositories and shared models; Kitchen, Admin, and Manager APIs are documented from their current implementation. Authentication accounts and sessions remain local in-memory demo implementations.
 
 ---
 
@@ -126,7 +126,8 @@ Invalidates the server-side session and expires the `saigonbite_session` cookie.
 | Auth | POST | `/api/auth/logout` | Shared | Clear session and expire cookie |
 | UC01 | GET | `/api/hubs` | TV1 | List hubs |
 | UC01 | GET | `/api/menu-items?hub_id={id}` | TV1 | List menu items for a hub |
-| UC01 | GET | `/api/delivery-options?hub_id={id}` | TV1 | List fixed demo destinations, route distances, and fees for a hub |
+| UC01 | GET | /api/delivery-options?hub_id={id} | TV1 | Get the selected hub name and address for delivery checkout |
+| UC01 | POST | /api/delivery-quote | TV1 | Calculate driving distance, delivery fee, and surcharge for an address |
 | UC01 | POST | `/api/orders` | TV1 | Place order for the customer bound to the active session |
 | UC01 | POST | `/api/customer/vouchers/validate` | TV1 | Validate a global voucher and preview the discount/total |
 | UC02 | GET | `/api/customer/profile` | TV1 | Resolve current customer profile from the active session |
@@ -163,32 +164,39 @@ Invalidates the server-side session and expires the `saigonbite_session` cookie.
 
 ### 4.2 Order Detail
 
+Example response shape from GET /api/orders/{id}:
+
 ```json
 {
   "id": 101,
   "customer_id": 1,
   "hub_id": 1,
   "status": "PENDING",
+  "total": 103000,
+  "created_at": "2026-11-01T10:30:00+07:00",
+  "completed_at": null,
+  "customer_name": "Nguyen Minh Anh",
+  "customer_phone": "0901234567",
   "items": [
     {"menu_item_id": 1, "name": "Chicken Rice", "quantity": 2, "unit_price": 50000, "line_total": 100000}
   ],
-  "delivery_address": "Apartment 12\nRecipient: Nguyen Minh Anh\nPhone: 0901234567",
+  "delivery_address": "123 Nguyen Hue, District 1\nApartment 12\nRecipient: Nguyen Minh Anh\nPhone: 0901234567\nNote: Call on arrival",
   "delivery_distance_km": 1.0,
   "voucher_code": "WELCOME10",
   "payment_method": "COD",
   "payment_status": "UNPAID",
   "subtotal": 100000,
-  "delivery_fee": 15000,
+  "delivery_fee": 13000,
   "surcharge": 0,
   "discount": 10000,
-  "total": 105000,
   "rejection_reason": null,
-  "created_at": "2026-11-01T10:30:00+07:00",
   "status_history": [
     {"status": "PENDING", "changed_at": "2026-11-01T10:30:00+07:00", "note": null}
   ]
 }
 ```
+
+The example assumes a hypothetical 1 km route: the delivery fee is calculated as 10,000 VND + 2,500 VND/km, rounded up to the nearest 1,000 VND. Surcharge is separate from delivery_fee. The stored delivery_address starts with the route destination and then includes the submitted contact/delivery details.
 
 ---
 
@@ -216,46 +224,102 @@ Required query: `hub_id`.
 ]
 ```
 
-### 5.3 `POST /api/orders`
+### 5.3 POST /api/orders
 
-**Request:**
+The Customer must be authenticated. The backend resolves the Customer profile from the authenticated session email and requires exactly one matching customers.email record. The client does not submit customer_id.
+
+Request fields follow CreateOrderRequest:
 
 ```json
 {
   "hub_id": 1,
-  "destination_id": "nguyen-hue",
+  "destination_address": "123 Nguyen Hue, District 1, Ho Chi Minh City",
   "items": [{"menu_item_id": 1, "quantity": 2}],
-  "delivery_address": "District 1, HCMC",
+  "delivery_address": "Apartment 12\nRecipient: Nguyen Minh Anh\nPhone: 0901234567\nNote: Call on arrival",
   "voucher_code": "WELCOME10",
   "payment_method": "COD"
 }
 ```
 
-`voucher_code` is optional; maximum **one** voucher per order.
+hub_id and menu_item_id must be positive integers. At least one item is required; quantity is 1 to 50. Both address strings must be 5 to 255 characters. voucher_code is optional or null. payment_method currently accepts COD only and defaults to COD. delivery_address must include nonblank Recipient and Phone lines; Note is optional. The server combines destination_address and delivery_address for storage, and the resulting string must fit the database limit of 255 characters.
 
-#### `GET /api/delivery-options?hub_id=1`
+The destination_address is used for route calculation. The client does not set an authoritative delivery distance, delivery fee, surcharge, subtotal, discount, or total; the backend calculates those values from the route, current database menu prices, and optional voucher.
 
-Returns the selected hub as the route origin and available fixed demo street addresses for that hub. Each option includes `destination_id`, a full street address, estimated road `distance_km`, and `delivery_fee`. Destinations beyond the 10 km demo service limit are omitted. Fees are 15,000 VND through 3 km, 20,000 VND through 6 km, and 30,000 VND through 10 km. Distances are editable estimates between listed addresses in `backend/app/delivery.py`, not live navigation distances.
-
-#### `POST /api/customer/vouchers/validate`
-
-Customer-only preview endpoint. Request: `{"code":"WELCOME10","hub_id":1,"destination_id":"nguyen-hue","items":[{"menu_item_id":1,"quantity":2}]}`. The server loads current menu prices, checks availability, gets the fee from the selected fixed route, then verifies that the voucher is active, within its validity dates, meets `min_order`, and has not already been used by this Customer. A voucher can be used once per Customer; creating an order consumes it even if that order is later cancelled. The response includes `code`, `subtotal`, `discount`, `delivery_distance_km`, `delivery_fee`, and `total`. Vouchers are global in the current schema; order creation repeats all checks and calculates persisted totals authoritatively.
-
-**Response 201:**
+Response 201 (CreateOrderResponse):
 
 ```json
 {
   "id": 101,
   "status": "PENDING",
   "subtotal": 100000,
-  "delivery_fee": 15000,
+  "delivery_fee": 13000,
+  "delivery_distance_km": 1.0,
   "surcharge": 0,
   "discount": 10000,
-  "total": 105000
+  "total": 103000
 }
 ```
 
-**Current implementation:** The endpoint resolves the signed-in account's email to exactly one `customers.email` record, then uses that profile ID for the order; the client does not submit a customer ID. It verifies the selected hub-to-destination route, open hub, menu item availability, and optional active voucher; calculates prices from database menu items; and persists the order, items, and initial status history in one transaction. The server sets distance and fee from the fixed route map; client-supplied distance/fee values are ignored. Hub capacity is not currently checked.
+The values above are illustrative for a 1 km route, a 100,000 VND item subtotal, and a 10,000 VND voucher discount. Order creation checks that the hub is open, validates item availability and the optional voucher, recalculates the route and totals, and persists the order, order items, and initial status history.
+
+#### GET /api/delivery-options?hub_id=1
+
+Customer-only. Returns information for the selected hub, not a destination list:
+
+```json
+{"hub_id": 1, "hub_name": "Hub A", "hub_address": "128 Nguyen Hue, District 1, Ho Chi Minh City"}
+```
+
+Returns 404 if the hub does not exist and 400 if it is not open.
+
+#### POST /api/delivery-quote
+
+Customer-only. The frontend calls this when a customer enters or changes the destination address.
+
+Request:
+
+```json
+{"hub_id": 1, "delivery_address": "123 Nguyen Hue, District 1, Ho Chi Minh City"}
+```
+
+Response 200:
+
+```json
+{"delivery_distance_km": 1.0, "delivery_fee": 13000, "surcharge": 0}
+```
+
+The backend geocodes the selected hub address and destination address with Nominatim, then asks OSRM for a driving route. It calculates delivery_fee as ceil((10,000 + route_distance_km * 2,500) / 1,000) * 1,000 VND using the unrounded route distance; the response distance is rounded to three decimal places. A separate 3,000 VND surcharge applies only when the route is longer than 5 km. Routes up to and including 10 km are accepted; longer routes are rejected. The fee and surcharge are separate response fields.
+
+A destination that Nominatim cannot resolve or a route OSRM cannot calculate is rejected. Missing/closed hubs are rejected. Provider/network failures are reported as gateway errors. Nominatim and OSRM are public services; availability, rate limits, and address coverage can affect quote generation. Successful geocodes and routes are cached, and requests to each public service are paced.
+
+#### POST /api/customer/vouchers/validate
+
+Customer-only voucher preview. Request fields follow VoucherPreviewRequest:
+
+```json
+{
+  "code": "WELCOME10",
+  "hub_id": 1,
+  "destination_address": "123 Nguyen Hue, District 1, Ho Chi Minh City",
+  "items": [{"menu_item_id": 1, "quantity": 2}]
+}
+```
+
+Response 200:
+
+```json
+{
+  "code": "WELCOME10",
+  "subtotal": 100000,
+  "discount": 10000,
+  "delivery_distance_km": 1.0,
+  "delivery_fee": 13000,
+  "surcharge": 0,
+  "total": 103000
+}
+```
+
+The backend checks that the hub is open, loads current menu prices, verifies that all requested menu items belong to that hub and are available, calculates the route fee, and validates voucher status, validity dates, minimum item subtotal, and prior use by this Customer. The discount is calculated from the current subtotal and capped at that subtotal. A voucher can be used once per Customer; a later order cancellation does not make it available again. Preview is informational: order creation repeats the checks and recalculates all authoritative order values before saving.
 
 ### 5.4 `GET /api/orders/{id}`
 
@@ -491,7 +555,7 @@ Requires an authenticated `MANAGER` session (`401` if unauthenticated, `403` for
 ### 9.2 Database Dependencies & Integration Rules
 
 - **TV3 Database:** `orders`, `order_items`, `order_status_history`, `menu_items`, `hubs`, `vouchers`, `deliveries`, and supporting tables defined in `database/schema.sql`.
-- **Cross-Module Persistence:** Customer-created orders (`PENDING`) are stored in the shared database and appear in Kitchen with the same ID. Kitchen status changes and history are visible through the shared `/api/orders/{id}` detail endpoint. Voucher and report repositories also use the shared SQLAlchemy models. Customer route distances are fixed estimates between configured landmarks; Manager average-time figures still include fixed demo values as described above.
+- **Cross-Module Persistence:** Customer-created orders (PENDING) are stored in the shared database and appear in Kitchen with the same ID. Kitchen status changes and history are visible through the shared /api/orders/{id} detail endpoint. Voucher and report repositories also use the shared SQLAlchemy models. Customer delivery distance and charges use Nominatim geocoding and an OSRM driving route; public-service availability, rate limits, and address coverage can affect quote generation. Manager delivery-time reporting depends on pickup_at and delivered_at timestamps; see docs/INTEGRATION_ISSUES.md.
 - **Transaction Boundary:** Every status transition must atomically persist both order status and `order_status_history` within a single transaction.
 
 ### 9.3 Team Approval Checklist

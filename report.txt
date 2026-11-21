@@ -1,0 +1,2308 @@
+RAD FINAL PROJECT REPORT TEMPLATE
+Requirements Analysis and Design (RAD) | Semester: Sem01_2627 | Template for the file TeamF3_BRS_SRS_for_SaigonBite.pdf
+
+Marking of Part 2 (the report)
+Component Executive Summary (1.25) and Conclusions / Recommendations (1.25) I. Business Requirements II. System Requirements Analysis (each sub item is 5 marks) III. System Requirements Design (each sub item is 5 marks) IV. System Requirements Implementation (include source code and modelling source files) V. System Testing, Deployment and Demonstration Total
+
+Marks 2.5 marks 5 marks 15 marks 15 marks 10 marks
+7.5 marks 55 marks (capped at 50, which is 50% of the final project)
+
+How to use this template
+· Keep all titles and numbering. Fill in every section. Replace every blue [bracketed placeholder] with your own content, and delete all grey "Guidance" paragraphs, unused pictures and this instruction page before you submit.
+· Keep the headings as real Word headings, so that the navigation pane on the left-hand side of Word works. Update the table of contents before exporting to PDF (right-click the table, then Update Field), and export the PDF with bookmarks.
+· Each student selects 2 main use cases. A team of 2 students therefore has 4 main use cases, and a team of 3 students has 6 main use cases. Sections II and III are repeated for each use case: delete the unused Use Case 5 and Use Case 6 headings if your team has 2 students.
+· Every use case, diagram and model must show its author (student ID) so that individual work is visible.
+· Use whatever modelling tool you prefer (for example PowerDesigner, Visual Paradigm, StarUML, draw.io or PlantUML), and include the source files of your models with your submission. Generating SQL and C#/Java code from your UML class diagram earns implementation points.
+· Use the textbook techniques taught in the course. The examples in the guidance are only hints about format; do not copy them.
+· File names, deadlines and the grading rubric are in the "Final Project Requirements" document.
+
+SaigonBite ­ Cloud-Kitchen Food Delivery Hub
+Requirements Analysis & Design (RAD) ­ Sem01_2627
+
+By Students: 1. 524H0040 : Vo Ngoc Thanh Vy 2. 524H0130 : Nguyen Ly Bao Tran 3. 524H0021 : Tran Thi Ngoc Nhu
+
+Reference
+
+Audience
+
+TeamF3_BRS_SRS_for_SaigonBite Mr. Pham Thai Ky Trung
+
+Document version Outcome
+
+Version 1.0 (13/10/2026)
+
+SaigonBite ­ Cloud-Kitchen Food Delivery Hub
+
+Abstract
+This document presents the requirements analysis and system design of SaigonBite, a restaurant order management system. It describes the system's business processes, functional and non-functional requirements, and system architecture. The requirements and design models are represented using UML diagrams to provide a clear understanding of the system's structure and behavior. This document is collaboratively developed by the members of Team F3 as part of the Requirements Analysis and Design (RAD) course.
+
+Intellectual Property
+Copyright 2026 Team F3.
+The following documentation, the content therein and/or the presentation of its information is proprietary to and embodies the confidential processes, designs, technologies and otherwise of Team F3. All copyright, trademarks, trade names, patents, industrial designs, and other intellectual property rights contained herein are, unless otherwise specified, the exclusive property of Team F3.
+The ideas, concepts and/or their application, embodied within this documentation remain and constitute items of intellectual property which nevertheless belong to Team F3.
+The information (including, but by no means limited to, data, drawings, specification, documentation, software listings, source and/or object code) shall not be disclosed, manipulated, disseminated or otherwise in any manner inconsistent with the nature and/or conditions under which this documentation has been issued.
+The information contained herein is believed to be accurate and reliable. Team F3 accepts no responsibility for its use in any way whatsoever. Team F3 shall not be liable for any expenses, damages and/or related costs which may result from the use of the information contained herein.
+The information contained herein is subject to change without notice.
+All Rights Reserved. Copyright herein is expressly protected at common law, statute and under various International and Multi-National Treatises (including, but by no means limited to, the Berne Convention for the Protection of Literary and Artistic Works).
+
+Table of Contents
+Intellectual Property................................................................................................................................................3 Table of Contents.....................................................................................................................................................4 Executive Summary (0.25 point).............................................................................................................................. 7 I. Business Requirements (1 point)...........................................................................................................................8
+1.1 System Vision and Approval Record (author: 524H0040).............................................................................8 1.1.1 Problem Description................................................................................................................................. 8 1.1.2 System Capabilities................................................................................................................................... 8 1.1.3 Business Benefits...................................................................................................................................... 8 1.1.4 Approval Record....................................................................................................................................... 8
+1.2 Organization Chart / Project Chart / Gantt Chart (author: 524H0130)..........................................................9 1.2.1 Client Stakeholder Chart...........................................................................................................................9 1.2.2 Project Team Roles and Responsibilities...................................................................................................9 1.2.3 Project Schedule ­ Gantt Chart...............................................................................................................10
+1.3 Iteration Plan, User Story Backlog and Risks..............................................................................................11 1.3.1 Iteration Plan.......................................................................................................................................... 11 1.3.2 User Story Backlog..................................................................................................................................11 1.3.3 Risks........................................................................................................................................................ 12
+1.4 Business Modelling / Requirements.......................................................................................................... 12 1.4.1 Business Narrative.................................................................................................................................. 12 1.4.2 Assumption Log...................................................................................................................................... 13
+1.5 Business Processes / Flowchart of Requirements (author: 524H0040)....................................................... 13 1.6 Activity Diagram (author: 524H0130)........................................................................................................ 14 1.7 List of Requirements................................................................................................................................. 14 II. System Requirements Analysis (15 marks)......................................................................................................... 16 2.1 Translate from Business Use Case............................................................................................................. 16
+2.1.1 System Narrative.....................................................................................................................................16 2.1.2 Users and Their Goals............................................................................................................................. 16 2.1.3 List of Events...........................................................................................................................................17 2.1.4 List of Actors........................................................................................................................................... 18 2.1.5 List of Use Cases and Ownership............................................................................................................ 18 2.1.6 Use Case Diagram (author: 524H0130).................................................................................................. 18 2.1.7 Domain Class Model Diagram (author: 524H0021)................................................................................ 19 2.2 Use Case Descriptions............................................................................................................................... 20 2.2.1 Use Case 1: Place an Order (author: 524H0040).................................................................................... 20 2.2.2 Use Case 2: Track an Order (author: 524H0040).................................................................................... 22 2.2.3 Use Case 3: Confirm/Reject Incoming Order (author: 524H0130)......................................................... 23 2.2.4 Use Case 4: Prepare Order and Mark Ready (author: 524H0130).......................................................... 26 2.2.5 Use Case 5: Manage Vouchers (author: 524H0021)............................................................................... 28 2.2.6 Use Case 6: Produce Management Reports (author: 524H0021)...........................................................30 2.3 Verifying Use Cases for Actor (CRUD)........................................................................................................ 33 2.3.1 Verifying use cases for Customer............................................................................................................33 2.3.2 Verifying use cases for Kitchen Staff....................................................................................................... 33 2.3.3 Verifying use cases for Admin.................................................................................................................33 2.3.4 Verifying use cases for Manager.............................................................................................................33 III. System Requirements Design (15 marks)...........................................................................................................34 3.1 Design for Use Case 1: Place an Order (author: 524H0040)........................................................................34
+
+3.1.1 Design Classes in Detailed Design...........................................................................................................34 3.1.2 Design Class Diagram..............................................................................................................................34 3.1.3 OOD with CRC Cards or Communication Diagram.................................................................................. 36 3.1.4 OOD with Sequence Diagram................................................................................................................. 38 3.1.5 Final Design Class Diagram..................................................................................................................... 39 3.2 Design for Use Case 2: Track an Order (author: 524H0040)........................................................................ 39 3.2.1 Design Classes in Detailed Design...........................................................................................................39 3.2.2 Design Class Diagram..............................................................................................................................40 3.2.3 OOD with CRC Cards or Communication Diagram.................................................................................. 42 3.2.4 OOD with Sequence Diagram................................................................................................................. 43 3.2.5 Final Design Class Diagram..................................................................................................................... 43 3.3 Design for Use Case 3: Confirm/Reject Incoming Order (author: 524H0130)..............................................44 3.3.1 Design Classes in Detailed Design...........................................................................................................44 3.3.2 Design Class Diagram..............................................................................................................................45 3.3.3 OOD with CRC Cards or Communication Diagram.................................................................................. 46 3.3.4 OOD with Sequence Diagram................................................................................................................. 47 3.3.5 Final Design Class Diagram..................................................................................................................... 48 3.4 Design for Use Case 4: Prepare Order and Mark Ready (author: 524H0130).............................................. 49 3.4.1 Design Classes in Detailed Design...........................................................................................................49 3.4.2 Design Class Diagram..............................................................................................................................49 3.4.3 OOD with CRC Cards or Communication Diagram.................................................................................. 51 3.4.4 OOD with Sequence Diagram................................................................................................................. 52 3.4.5 Final Design Class Diagram..................................................................................................................... 52 3.5 Design for Use Case 5: Manage Vouchers (author: 524H0021)................................................................... 53 3.5.1 Design Classes in Detailed Design...........................................................................................................53 3.5.2 Design Class Diagram..............................................................................................................................53 3.5.3 OOD with CRC Cards or Communication Diagram.................................................................................. 55 3.5.4 OOD with Sequence Diagram................................................................................................................. 56 3.5.5 Final Design Class Diagram..................................................................................................................... 56 3.6 Design for Use Case 6: Produce Management Reports (author: 524H0021)............................................... 56 3.6.1 Design Classes in Detailed Design...........................................................................................................56 3.6.2 Design Class Diagram..............................................................................................................................57 3.6.3 OOD with CRC Cards or Communication Diagram.................................................................................. 59 3.6.4 OOD with Sequence Diagram................................................................................................................. 59 3.6.5 Final Design Class Diagram..................................................................................................................... 60 IV. System Requirements Implementation (10 marks)............................................................................................ 61 4.1 Design Classes for the Subsystem..............................................................................................................61 4.2 Package Diagram for the Subsystem..........................................................................................................61 4.3 Implementation........................................................................................................................................ 61 4.3.1 Map Persistent Objects to the Tables in a Database...............................................................................61 4.3.2 Modifying Sequence Diagrams............................................................................................................... 61 4.3.3 UI Design.................................................................................................................................................64 4.3.4 SQL Codei. Create database ii. Create tables iii. Sample data.................................................... 68 4.3.5 Software Classes Method Code.............................................................................................................. 68 4.3.6 Integration of Use Cases......................................................................................................................... 68 V. System Testing, Deployment and Demonstration (7.5 marks)............................................................................. 69 5.1 Testing: Test Plan and Test Cases............................................................................................................... 69
+
+5.2 Deployment..............................................................................................................................................69 5.3 Demonstration..........................................................................................................................................69 Conclusions / Recommendations (0.25 point)........................................................................................................ 70 References.............................................................................................................................................................70 Appendix............................................................................................................................................................... 71
+
+Executive Summary (0.25 point)
+SaigonBite is a centralized cloud-kitchen food delivery platform designed to bridge the operational gap between customers, cloud-kitchen hubs, shippers, administrators, and business managers. Currently, reliance on manual communication and disconnected tools across order placement, kitchen preparation, delivery coordination, and payment tracking leads to delayed updates, item unavailability conflicts, and inconsistent operational records.
+To address these challenges, Team F3 (comprising Vo Ngoc Thanh Vy, Nguyen Ly Bao Tran, and Tran Thi Ngoc Nhu) conducted a comprehensive Requirements Analysis and Design (RAD) study following an iterative six-iteration methodology. In the Business Requirements phase, the team defined the system vision, identified five core stakeholder groups, established a 25-requirement backlog (22 Functional and 3 Non-Functional Requirements), and modeled end-to-end business workflows alongside a Risk and Assumption Log.
+During System Requirements Analysis, 16 candidate use cases were identified and scoped down to six core use cases for detailed specification: UC01 ­ Place an Order, UC02 ­ Track an Order, UC03 ­ Confirm/Reject Incoming Order, UC04 ­ Prepare Order and Mark Ready, UC05 ­ Manage Vouchers, and UC06 ­ Produce Management Reports. These workflows were rigorously analyzed using fully developed use case descriptions, Activity Diagrams, System Sequence Diagrams (SSDs), State Machine Diagrams, a generalized Domain Class Model, and CRUD verification matrices.
+In the System Requirements Design phase, the team translated the analytical models into a decoupled, multi-layered object-oriented architecture (Boundary/UI, Controller, Service, Domain/DTO, and Data Access layers). Complete First-Cut Design Class Diagrams, CRC Cards, OOD Sequence Diagrams, and Final Design Class Diagrams were produced for all six use cases, incorporating design principles such as High Cohesion, Low Coupling, and Dependency Injection via repository interfaces (IOrderRepository, IVoucherRepository, IReportRepository, etc.). Collectively, these artifacts establish a consistent, traceable technical blueprint ready for database mapping, software implementation, and system testing
+
+I. Business Requirements (1 point)
+1.1 System Vision and Approval Record (author: 524H0040)
+
+1.1.1 Problem Description
+SaigonBite is an online food delivery platform that connects customers with cloud kitchens through a centralized system. In the current business process, order coordination, kitchen updates, delivery arrangements, and payment records may rely on manual communication and separate tools. This can make it difficult to track order progress, coordinate activities between stakeholders, and maintain consistent information. In addition, problems such as unavailable food items, payment discrepancies, and customer complaints may require extra time to resolve. Therefore, a centralized platform is needed to improve order coordination, information transparency, and operational management.
+
+1.1.2 System Capabilities
+SaigonBite will provide the following capabilities:  Order Management: Allow customers to browse available menus, select food items, enter delivery information, choose a payment method, and place orders.  Kitchen Order Processing: Allow kitchen staff to review incoming orders, confirm or reject them, and update accepted orders as they are prepared and marked READY.  Order Tracking and Delivery Coordination: Provide order status information and support coordination between kitchen staff, shippers, and customers.  Payment Recording: Record payment information and support the tracking of payment status.  Voucher Management: Allow administrators to create, view, update, and archive promotional vouchers.  Complaint and Refund Recording: Support the recording and handling of customer complaints and refund requests.  Management Reporting: Provide business reports on sales, hub workload, and delivery performance.
+
+1.1.3 Business Benefits
+SaigonBite is expected to provide the following business benefits:  Improved Operational Efficiency: Reduce manual coordination and help stakeholders manage orders more efficiently.  Greater Order Transparency: Make order status information easier for customers and staff to access.  Reduced Processing Errors: Centralize order and payment records to reduce inconsistencies and recording mistakes.  Better Customer Service: Help customers follow order progress and provide a clearer process for handling complaints.  Improved Management Oversight: Help managers monitor sales and operational performance through centralized reports.
+
+1.1.4 Approval Record
+
+Feedback received on Part 1
+
+What we changed
+
+Some business rules, such as delivery fees and Added an Assumption Log to document unclear rules and pending
+
+hub capacity, needed further clarification.
+
+questions.
+
+The business process needed more details about alternative scenarios.
+
+Updated the business process and activity diagrams to include order rejection and validation scenarios.
+
+1.2 Organization Chart / Project Chart / Gantt Chart (author: 524H0130)
+1.2.1 Client Stakeholder Chart
+SaigonBite is an online food delivery platform that connects customers, restaurant operations, and business management. The system involves five main stakeholder groups: Customers, Kitchen Staff, Shippers, Administrators, and Managers/Business Owners.
+Each stakeholder has a different role in the food ordering and delivery process. The stakeholder chart shows the main groups involved in SaigonBite and their relationships with the platform.
+
+The main responsibilities of each stakeholder are described below.
+
+Stakeholder Customer Kitchen Staff Shipper Administrator Manager / Business Owner
+
+Main Responsibilities Places food orders, tracks order status, and reports issues when needed. Confirms or rejects incoming orders and prepares food for delivery. Picks up prepared orders and delivers them to customers. Manages promotional vouchers and system settings. Reviews management reports and monitors business performance.
+
+The stakeholder chart helps the project team understand the needs of different users and identify their roles in the SaigonBite system.
+
+1.2.2 Project Team Roles and Responsibilities
+The SaigonBite project is developed by a team of three students. Each member is responsible for two main use cases and several project activities.
+The responsibilities are divided based on the main functions of the system: Customer Operations, Kitchen Operations, and Administration.
+
+Team Member Student ID
+
+Project Role
+
+Member 1 - Vo Ngoc Thanh Vy
+
+524H0040
+
+Customer & Business Analyst
+
+Main Responsibilities
+Business requirements, business process, stakeholder analysis, UC01 ­ Place an Order, and UC02 ­ Track an Order.
+
+Member 2 Nguyen Ly Bao Tran
+
+524H0130
+
+Member 3 - Tran 524H0021 Thi Ngoc Nhu
+
+Kitchen & System Architecture
+Administration & Reports Analyst
+
+Project Gantt Chart, iteration planning, system architecture, UC03 ­ Confirm/Reject Incoming Order, and UC04 ­ Prepare Order and Mark Ready.
+Risk and assumption analysis, database design, report integration, UC05 ­ Manage Vouchers, and UC06 ­ Produce Management Reports.
+
+All team members participate in requirements analysis, system design, implementation, testing, documentation, and project review. The team works together to ensure that the system components are consistent and can be integrated successfully.
+1.2.3 Project Schedule ­ Gantt Chart
+The SaigonBite project follows an iterative development approach. The project is divided into six iterations, covering project planning, requirements analysis, system design, implementation, testing, and finalization.
+Each iteration has specific objectives, planned activities, and expected deliverables. The project schedule is shown in the following Gantt Chart.
+
+[Link of Gantt Chart]
+The project also includes five important milestones: The Gantt Chart helps the team organize project activities, monitor progress, and manage deadlines. It also supports coordination among team members throughout the six iterations.
+
+1.3 Iteration Plan, User Story Backlog and Risks
+
+1.3.1 Iteration Plan Iteration
+
+Main Activities
+
+Start Date
+
+End Date
+
+Iteration 1
+
+Project preparation; define project scope and vision; create project roadmap, risk list and assumption log; analyze business processes, requirements and use cases (UC01-UC06).
+
+16/10/2026
+
+30/10/2026
+
+Iteration 2
+
+Design and implement customer ordering functions (UC01, UC02); develop Customer UI, order placement and order tracking; prepare Customer report.
+
+31/10/2026
+
+16/11/2026
+
+Iteration 3
+
+Design and implement kitchen fulfilment functions (UC03, UC04); develop Kitchen UI, order confirmation and order preparation; prepare Kitchen report.
+
+31/10/2026 23/11/2026
+
+Iteration 4
+
+Design and implement administration functions (UC05, UC06); develop voucher management and management reports; prepare Admin report.
+
+31/10/2026
+
+29/11/2026
+
+Iteration 5 Integrate all functions (UC01-UC06); integrate databases and subsystems; verify that the integrated system works correctly.
+
+30/11/2026 04/12/2026
+
+Iteration 6 Test the complete system; execute test cases, record results and fix 05/12/2026 10/12/2026 bugs; prepare deployment, demo and final submission package.
+
+1.3.2 User Story Backlog
+
+ID
+
+User story
+
+Priority
+
+US-01
+
+As a Customer, I want to place an order by High selecting a hub, choosing food items, entering my delivery address, and selecting a payment method so that I can order food conveniently.
+
+US-02
+
+As a Customer, I want to track my order status High so that I can know the progress of my order from confirmation to delivery.
+
+US-03
+
+As Kitchen Staff, I want to review and confirm High or reject incoming orders so that the kitchen can manage orders based on its operational capacity.
+
+US-04
+
+As Kitchen Staff, I want to prepare accepted High orders and mark them as READY so that shippers can collect them for delivery.
+
+US-05
+
+As an Administrator, I want to create, view, update, and archive promotional vouchers so that voucher information can be managed consistently.
+
+Medium
+
+Iteration Iteration 2
+
+Use case UC01
+
+Iteration 2
+
+UC02
+
+Iteration 3
+
+UC03
+
+Iteration 3
+
+UC04
+
+Iteration 4
+
+UC05
+
+ID US-06
+
+User story
+
+Priority
+
+As a Manager, I want to view sales, hub workload, and delivery performance reports so that I can monitor business operations and make informed decisions.
+
+Medium
+
+Iteration Iteration 4
+
+Use case UC06
+
+1.3.3 Risks
+Risk Description
+R-01 Business rules remain unclear (delivery distance/fee, hub workload, voucher details, cancellation, refunds).
+Potential effect: Requirements or implementation may be inconsistent or need rework. R-02 Peak demand or unavailable ingredients disrupt hub operations.
+Potential effect: Orders may be delayed, rejected, or prepared inconsistently.
+R-03 Order status becomes inconsistent across Customer, Kitchen, Shipper, and reporting functions.
+Potential effect: Users may see conflicting progress; reports may be inaccurate. R-04 Independently developed modules do not integrate cleanly.
+Potential effect: API, identifiers, or database mismatches can block the integrated demo. R-05 The three-person team has limited time for analysis, implementation, integration, and documentation.
+Potential effect: Some required use cases or proposal artifacts may be incomplete.
+
+Likelihood / impact High / High Medium / High
+Medium / High Medium / High High / High
+
+Mitigation
+Ask up to five prioritized Client questions; keep an Assumption Log; do not present unconfirmed values as requirements.
+Confirm workload/availability rules; model exception paths; test overload and unavailable-item cases after confirmation.
+Agree one status-transition model and who records each change; test the end-to-end flow.
+Agree shared data/API conventions early and integrate small slices throughout development.
+Follow iteration milestones, keep ownership clear, review progress frequently, and reserve integration/final-check time.
+
+1.4 Business Modelling / Requirements
+1.4.1 Business Narrative
+SaigonBite is an online food delivery platform that connects customers with cloud kitchens through a centralized ordering system. Customers can browse available hubs, explore menus, select food items, provide delivery information, and choose a payment method when placing an order.
+After an order is submitted, kitchen staff review the order and decide whether to accept or reject it. For accepted orders, the kitchen prepares the food and marks the order as READY for pickup. A shipper then collects the order and delivers it to the customer. Throughout this process, order status and payment information are recorded to support order tracking and operational coordination.
+
+In addition to order fulfillment, SaigonBite supports promotional voucher management, customer complaint and refund request handling, and business reporting. Administrators maintain voucher information, while managers use reports on sales, hub workload, and delivery performance to monitor business operations. By bringing these activities together, SaigonBite aims to improve coordination among stakeholders, increase order transparency, and support more efficient food delivery operations.
+
+1.4.2 Assumption Log
+
+ID
+
+Assumption
+
+Reason
+
+Confirmed by / date
+
+A-01 The case study says an overloaded hub stops Affects hub selection and UC01. Pending Client Q&A accepting orders and customers are encouraged to choose quieter hubs. The threshold and exact handling are not specified.
+
+A-02 Delivery fee depends on distance and a
+
+Affects order price and delivery Pending Client Q&A
+
+maximum distance applies; the formula and eligibility in UC01.
+
+limit remain unknown.
+
+A-03 Order-state transitions, cancellation cut-off, Affects UC01 ­ UC04 and overall Pending Client Q&A and payment/refund outcomes for rejection complaints/refund handling. or delivery failure need clarification.
+
+A-04 At most one voucher may be used per order Affects UC05 and price (confirmed by the case study). Other eligibility validation in UC01. conditions and usage limits remain unspecified.
+
+Partly confirmed by Case Study
+
+A-05 Management reports cover sales, hub
+
+Affects report design and UC06 Pending Client Q&A
+
+workload, and delivery performance; detailed acceptance criteria.
+
+measures and time filters are not specified.
+
+1.5 Business Processes / Flowchart of Requirements (author: 524H0040)
+The following flowchart illustrates SaigonBite's overall business process, from order placement to delivery, including key decisions and alternative scenarios.
+
+The diagram illustrates the main order fulfillment workflow and the responsibilities of each participant, including order validation, kitchen decisions, food preparation, and delivery confirmation.
+1.6 Activity Diagram (author: 524H0130)
+The diagram includes four participants: Customer, SaigonBite System, Kitchen Staff, and Shipper. It shows the responsibilities of each participant, from placing an order to completing the delivery.
+
+This diagram focuses on the order fulfillment activities. Detailed online and cash-on-delivery payment handling is covered in the overall business process in Section 1.5.
+
+1.7 List of Requirements
+
+ID
+
+Requirement ("The system shall...")
+
+FR-01.1 The system shall allow customers to browse hubs, brands, and menu items based on availability.
+
+FR-01.2
+
+The system shall allow customers to place an order, enter a delivery address, apply a maximum of one voucher, and choose a payment method.
+
+FR-01.3
+
+The system shall calculate and display the full order price (subtotal, delivery fee, discount, surcharge, total) before confirmation.
+
+FR-01.4 The system shall validate hub availability and delivery eligibility before accepting an order.
+
+FR-01.5
+
+The system shall prevent overloaded hubs from accepting new orders and suggest other eligible hubs based on a configured workload threshold.
+
+FR-02.1 The system shall allow customers to view the details of their current and past orders.
+
+Type (FR / NFR) Priority
+
+FR
+
+High
+
+FR
+
+High
+
+FR
+
+High
+
+FR
+
+High
+
+FR
+
+High
+
+FR
+
+High
+
+Use case UC01 UC01
+UC01
+UC01 UC01
+UC02
+
+ID
+
+Requirement ("The system shall...")
+
+Type (FR / NFR) Priority
+
+FR-02.2 The system shall display the current status of a customer's FR
+
+High
+
+order.
+
+FR-03.1 The system shall allow kitchen staff to view a list of pending FR
+
+High
+
+orders assigned to their hub.
+
+FR-03.2 The system shall allow kitchen staff to view incoming orders FR
+
+High
+
+and explicitly confirm or reject them.
+
+FR-03.3 The system shall allow kitchen staff to confirm a pending
+
+FR
+
+High
+
+order to accept it for preparation.
+
+FR-03.4 The system shall allow kitchen staff to explicitly reject a
+
+FR
+
+High
+
+pending order and record the reason for rejection.
+
+FR-03.5 The system shall record kitchen order decisions and status FR
+
+High
+
+changes in the order status history.
+
+FR-03.6 The system shall notify the customer when an incoming order FR
+
+High
+
+is rejected.
+
+FR-04.1 The system shall allow kitchen staff to update an accepted FR
+
+High
+
+order's status to PREPARING.
+
+FR-04.2 The system shall allow kitchen staff to mark a prepared order FR
+
+High
+
+as READY for shipper pickup.
+
+FR-04.3 The system shall prevent kitchen staff from skipping
+
+FR
+
+High
+
+sequential order states (e.g., jumping from PENDING directly
+
+to READY).
+
+FR-04.4 The system shall record preparation status changes in the
+
+FR
+
+High
+
+order status history.
+
+FR-05.1 The system shall allow the Admin to create, view, update, and FR
+
+High
+
+archive promotional vouchers.
+
+FR-05.2 The system shall validate voucher eligibility (e.g., minimum FR
+
+High
+
+order, active dates, usage limits) before applying it to an
+
+order.
+
+FR-05.3 The system shall reject invalid voucher information, including FR
+
+High
+
+duplicate codes or an end date earlier than the start date.
+
+FR-06.1 The system shall allow Managers to generate reports on
+
+FR
+
+High
+
+sales, hub workload, and delivery performance.
+
+FR-06.2 The system shall allow Managers to filter all reports by a
+
+FR
+
+High
+
+specific time range.
+
+NFR-01 The system shall enforce role-based access control
+
+NFR
+
+High
+
+(Customer, Kitchen Staff, Admin, Manager) for all operations.
+
+NFR-02 The system shall persist orders, vouchers, and order status NFR
+
+High
+
+history in the database so that data remains available after an
+
+application restart.
+
+NFR-03 The system shall maintain data consistency when concurrent NFR
+
+High
+
+requests attempt to update the same order.
+
+Use case UC02 UC03 UC03 UC03 UC03 UC03 UC03 UC04 UC04 UC04
+UC04 UC05 UC05
+UC05 UC06 UC06 All UC01 UC05 UC03, UC04
+
+II. System Requirements Analysis (15 marks)
+2.1 Translate from Business Use Case
+2.1.1 System Narrative
+SaigonBite is an online food delivery system that supports order placement, kitchen order processing, order tracking, delivery coordination, voucher management, and business reporting. Customers can browse available hubs and menus, select food items, enter delivery information, apply a voucher if applicable, choose a payment method, and submit an order. Before creating the order, the system validates the order information, item availability, and delivery coverage.
+If the order information is invalid, the system informs the customer so that the information can be corrected and resubmitted. If the selected items are unavailable or the delivery address is outside the supported area, the system notifies the customer and prevents the order from proceeding. For valid orders, the system records the order with a PENDING status and sends it to the kitchen staff for review.
+Kitchen staff can accept or reject an incoming order. If the order is rejected, the system records the rejection and notifies the customer. If it is accepted, the system updates the order status to CONFIRMED. Kitchen staff then prepare the food and mark the order as READY. The system records status changes so customers can track their orders. A shipper collects the ready order and delivers it to the customer, after which the system records the delivery outcome and updates the order status.
+The system also records payment information according to the selected payment method. For online payments, payment status is recorded based on the payment result. For cash on delivery (COD), the payment remains pending until the cash collection is recorded. If a customer submits a complaint or refund request, the system supports recording the request and its resolution. Administrators can manage promotional vouchers, while managers can access reports on sales, hub workload, and delivery performance to monitor business operations.
+2.1.2 Users and Their Goals
+This section identifies the main users of the SaigonBite system and describes their goals when interacting with the system. Each user's goals reflect their responsibilities in the food ordering, order fulfillment, delivery, voucher management, and business reporting processes.
+
+User Customer Kitchen Staff Shipper Administrator Manager / Business Owner
+
+Goals
+Browse available hubs and menus, select food items, place orders, choose payment methods, and track order status.
+Review incoming orders, confirm or reject orders, prepare accepted orders, and mark orders as READY for pickup.
+Collect READY orders, deliver orders to the specified addresses, and report delivery outcomes.
+Create, view, update, and archive promotional vouchers to maintain accurate voucher information.
+View sales, hub workload, and delivery performance reports to monitor business operations and support management decisions.
+
+2.1.3 List of Events
+The List of Events identifies the main events that require a response from the SaigonBite system. These events are classified into three types: external events, temporal events, and state events. Each event is linked to a related use case to show how the system responds to business activities and changes.
+
+Event
+
+Trigger
+
+Source
+
+Use case
+
+Response
+
+Destination
+
+External Events
+
+E01. Customer places an order
+
+Customer submits an order
+
+Customer
+
+UC01 ­ Place an Validate order
+
+Order
+
+information and
+
+create an order
+
+Customer, Kitchen Staff
+
+E02. Customer checks order status
+E03. Kitchen staff reviews an incoming order
+
+Customer requests order details
+Staff selects an incoming order
+
+Customer Kitchen Staff
+
+UC02 ­ Track an Display the current Customer
+
+Order
+
+order status
+
+UC03 ­ Confirm/Reject Incoming Order
+
+Record the decision and update the order status
+
+Kitchen Staff, Customer
+
+E04. Kitchen staff marks an order as ready
+
+Staff completes food preparation
+
+Kitchen Staff
+
+UC04 ­ Prepare Update the order
+
+Order and Mark status to Ready for
+
+Ready
+
+Pickup
+
+Kitchen Staff, Shipper
+
+E05. Administrator manages vouchers
+
+Admin submits voucher changes
+
+Administrator UC05 ­ Manage Save and update
+
+Administrator
+
+Vouchers
+
+voucher information
+
+E06. Manager requests a management report
+
+Manager selects report criteria
+
+Manager / Business Owner
+
+UC06 ­ Produce Generate and Management display the report Reports
+
+Manager / Business Owner
+
+Temporal Events
+
+T01. Voucher reaches its expiration date
+
+Voucher expiration time is reached
+
+System Clock UC05 ­ Manage Mark the voucher as Administrator
+
+Vouchers
+
+expired
+
+State Events
+
+S01. A new order Order status becomes available changes to for kitchen review Pending
+
+SaigonBite System
+
+UC03 ­ Confirm/Reject Incoming Order
+
+Display the new order in the kitchen queue
+
+Kitchen Staff
+
+S02. An order is confirmed by kitchen staff
+
+Order status changes to Confirmed
+
+SaigonBite System
+
+UC04 ­ Prepare Make the order
+
+Order and Mark available for
+
+Ready
+
+preparation
+
+Kitchen Staff
+
+S03. An order becomes ready for pickup
+
+Order status changes to Ready for Pickup
+
+SaigonBite System
+
+UC02 ­ Track an Display the updated Customer
+
+Order
+
+order status
+
+2.1.4 List of Actors
+
+The following table presents the main actors of the SaigonBite system and describes their roles in the system's key business processes, from order placement and delivery to voucher management and business reporting.
+
+User
+
+Description
+
+Customer
+
+An external human actor who browses available menus, places food orders, selects payment methods, and monitors order progress through the system.
+
+Kitchen Staff
+
+An external human actor responsible for reviewing incoming orders, deciding whether to accept or reject them, and updating the preparation status of accepted orders.
+
+Shipper
+
+An external human actor who collects prepared orders, delivers them to the specified addresses, and reports the delivery results.
+
+Administrator
+
+An external human actor who maintains promotional voucher information by creating, viewing, updating, and archiving vouchers.
+
+Manager / Business Owner An external human actor who reviews sales, hub workload, and delivery performance reports to evaluate business operations and support management decisions.
+
+2.1.5 List of Use Cases and Ownership
+The following table presents the six main use cases of the SaigonBite system, including their main actors, short descriptions, and assigned team members. Each team member is responsible for analyzing and designing two use cases.
+
+No. Use case UC1 Place an Order
+
+Main actor Customer
+
+UC2 Track an Order
+
+Customer
+
+UC3 Confirm/Reject Incoming Order
+UC4 Prepare Order and Mark Ready
+UC5 Manage Vouchers
+
+Kitchen Staff Kitchen Staff Administrator
+
+UC6 Produce Management Manager /
+
+Reports
+
+Business Owner
+
+Short description
+
+Owner (ID)
+
+Allows customers to select food, place an order, and choose a payment method.
+
+524H0040
+
+Allows customers to view their order status and track order progress.
+
+524H0040
+
+Allows kitchen staff to review incoming orders 524H0130 and accept or reject them.
+
+Allows kitchen staff to prepare confirmed orders and mark them as ready for pickup.
+
+524H0130
+
+Allows administrators to create, update, and manage discount vouchers.
+
+524H0021
+
+Allows managers to generate and view reports 524H0021 about orders and business performance.
+
+2.1.6 Use Case Diagram (author: 524H0130)
+The following use case diagram illustrates the main functions of the SaigonBite system and the interactions between the system and its actors.
+
+The system includes 16 candidate use cases. Among them, the team selected six use cases (Candidate UC03, UC04, UC07, UC08, UC15, and UC16) for detailed Requirements Analysis and System Design. These selected use cases were renumbered as UC01 to UC06 in this report for consistency.
+2.1.7 Domain Class Model Diagram (author: 524H0021)
+The following Domain Class Model Diagram illustrates the core data entities of the SaigonBite system, their attributes, and their structural relationships. It incorporates generalization for customer types, composition for order details, and precise multiplicities to fully support the defined business rules.
+
+2.2 Use Case Descriptions
+
+2.2.1 Use Case 1: Place an Order (author: 524H0040)
+
+i. Fully developed use case description
+
+Item
+
+Content
+
+Use case name
+
+Place an Order
+
+Scenario / trigger
+
+A customer selects meals from an available menu and submits an order for delivery.
+
+Actors
+
+Primary actor: Customer. Supporting participants: SaigonBite System, Kitchen Staff.
+
+Related use cases
+
+UC02 ­ Track an Order; UC03 ­ Confirm or Reject an Incoming Order; UC04 ­ Prepare Order and Mark Ready.
+
+Stakeholders and interests
+
+Customer: Wants to place an order accurately and understand the total cost. Kitchen Staff: Needs valid order details to review and process the order. Shipper: Needs correct delivery information for a ready order. Business Owner: Wants orders to be recorded accurately and processed efficiently.
+
+Pre-conditions
+
+The customer can access the SaigonBite platform. The menu and item information are available. The customer has selected at least one item to order.
+
+Post-conditions
+
+Success: The system creates the order, records order details and payment method, and sets the status to Pending. Failure: No order is created, and an error message is displayed.
+
+Flow of activities
+
+Customer Action
+
+System
+
+1. Browses menus and selects meals and 1.1 Displays available menus and
+
+quantities.
+
+calculates the order subtotal.
+
+2. Enters delivery details.
+
+2.1 Validates the delivery information.
+
+3. Applies a voucher, if desired.
+
+3.1 Validates the voucher and calculates the discount.
+
+4. Selects a payment method and confirms the order.
+
+4.1 Validates item availability and order information.
+4.2 Calculates the final amount, including fees and discounts.
+
+Exception conditions
+
+5. Waits for order confirmation.
+
+5.1 Creates the order, records its details, and sets the status to Pending.
+5.2 Displays the order confirmation and reference.
+
+1.2.1 - Selected item is unavailable. 2.1 - Delivery information is invalid or incomplete. 3.1 - Voucher is invalid or expired. 4.1 - Payment method cannot be processed. 5.1 - Order creation fails.
+
+ii. Activity diagram for Use Case 1 iii. System sequence diagram for Use Case 1 iv. State machine diagram for Use Case 1
+
+2.2.2 Use Case 2: Track an Order (author: 524H0040)
+
+i. Fully developed use case description
+
+Item
+
+Content
+
+Use case name
+
+Track an Order
+
+Scenario / trigger
+
+The customer selects an order to view its details and track its current status.
+
+Actors
+
+Primary: Customer. Supporting: SaigonBite System.
+
+Related use cases
+
+UC01 ­ Place an Order; UC03 ­ Confirm or Reject an Incoming Order; UC04 ­ Prepare an Order and Mark It Ready.
+
+Stakeholders and interests
+
+Customer: Wants to view order details, current status, and status update history. Business Owner: Wants customers to receive accurate order progress information.
+
+Pre-conditions
+
+The customer has access to SaigonBite and has at least one order associated with their account.
+
+Post-conditions
+
+Success: The system displays the selected order's details, current status, and status update history.
+Failure: The system displays an appropriate message if the order cannot be found or its information cannot be loaded.
+
+Flow of activities
+
+Customer Action
+
+System
+
+1. Opens the order list.
+
+1.1 Retrieves and displays the customer's orders.
+
+2. Selects an order.
+
+2.1 Retrieves and displays the selected order's details.
+
+Exception conditions
+
+3. Requests to track the order.
+
+3.1 Displays the current order status.
+
+4. Views the status update history.
+
+4.1 Displays the order's status history in chronological order.
+
+1.1 - The order list cannot be loaded. 2.1 - The selected order cannot be found or does not belong to the customer. 3.1 - The current order status cannot be retrieved. 4.1 - The status update history cannot be loaded.
+
+ii. Activity diagram for Use Case 2
+
+iii. System sequence diagram for Use Case 2
+
+iv. State machine diagram for Use Case 2
+
+2.2.3 Use Case 3: Confirm/Reject Incoming Order (author: 524H0130) i. Fully developed use case description
+
+Item Use case name Scenario / trigger
+Actors Related use cases
+
+Content Confirm/Reject Incoming Order A new valid order is sent to the kitchen. Kitchen Staff reviews the order and decides whether to accept or reject it. Kitchen Staff UC1 ­ Place an Order; UC2 ­ Track an Order; UC4 ­ Prepare Order and Mark Ready
+
+Item
+
+Content
+
+Stakeholders and interests
+
+Kitchen Staff: Wants to review and respond to incoming orders efficiently. Customer: Wants to know whether the order is accepted or rejected. Business Owner: Wants orders to be processed correctly.
+
+Pre-conditions
+
+Kitchen Staff is logged into the system. A valid order has been created. The order status is Pending.
+
+Post-conditions
+
+Accepted: The order status is Confirmed, and the order is available for preparation. Rejected: The order status is Rejected, the rejection reason is saved, and the customer is notified.
+
+Flow of activities
+
+Actor
+
+System
+
+1. Opens the incoming order list.
+
+1.1 Displays orders waiting for confirmation.
+
+2. Selects an order to review.
+
+2.1 Displays order details, including food items, quantities, and customer notes.
+
+3. Reviews the order.
+
+3.1 Displays Accept and Reject options.
+
+If Accept
+
+4A. Selects Accept to confirm the order.
+
+4A.1 Checks whether the order is still Pending.
+4A.2 Updates the order status to Confirmed and records the status change in OrderStatusHistory.
+4A.3 Displays a success message and makes the order available for preparation.
+
+If Reject
+
+4B. Selects Reject.
+
+4B.1 Requests a rejection reason.
+
+Exception conditions
+
+5B. Enters the rejection reason and confirms rejection.
+
+5B.1 Validates the rejection reason and checks whether the order is still Pending.
+5B.2 Updates the order status to Rejected and records the status change with the rejection reason in OrderStatusHistory.
+5B.3 Notifies the customer and displays a confirmation.
+
+2.1 - Order details cannot be loaded. 4A.1 / 5B.1 - Order is no longer Pending. 5B.1 - Rejection reason is missing. 4A.2 / 5B.2 - Order status update fails.
+
+ii. Activity diagram for Use Case 3 iii. System sequence diagram for Use Case 3
+
+iv. State machine diagram for Use Case 3
+
+2.2.4 Use Case 4: Prepare Order and Mark Ready (author: 524H0130) i. Fully developed use case description
+
+Item
+
+Content
+
+Use case name
+
+Prepare Order and Mark Ready
+
+Scenario / trigger
+
+A confirmed order is available for preparation. Kitchen Staff prepares the food and marks the order as ready for pickup.
+
+Actors
+
+Kitchen Staff
+
+Related use cases
+
+UC1 ­ Place an Order; UC2 ­ Track an Order; UC3 ­ Confirm/Reject Incoming Order
+
+Stakeholders and interests
+
+Kitchen Staff: Wants to prepare orders accurately and update their status easily. Customer: Wants to receive the correct food on time and track the order status. Business Owner: Wants orders to be prepared efficiently and delivered on time.
+
+Pre-conditions
+
+Kitchen Staff is logged into the system. The order has been accepted in UC3. The order status is Confirmed.
+
+Post-conditions
+
+Success: The order status is Ready for Pickup, and the order is available for pickup by a shipper. Failure: The order is not marked ready, and its previous status is retained.
+
+Flow of activities
+
+Actor
+
+System
+
+Item Exception conditions
+
+Content 1. Opens the confirmed order list.
+
+1.1 Displays orders waiting for preparation.
+
+2. Selects an order to review.
+
+2.1 Displays order details, including food items, quantities, and customer notes.
+
+3. Selects Start Preparing.
+4. Prepares the food according to the order details.
+
+3.1 Checks whether the order is still Confirmed.
+3.2 Updates the order status to Preparing and records the status change in OrderStatusHistory.
+
+5. Selects Mark Ready after preparation is complete.
+
+5.1 Checks whether the order is still Preparing.
+5.2 Updates the order status to Ready for Pickup and records the status change in OrderStatusHistory.
+5.3 Displays a success message and makes the order available for pickup.
+
+2.1 - Order details cannot be loaded. 3.1 - Order is no longer Confirmed. 3.2 - Order status update to Preparing fails. 5.1 - Order is no longer Preparing. 5.2 - Order status update to Ready for Pickup fails..
+
+ii. Activity diagram for Use Case 4
+
+iii. System sequence diagram for Use Case 4
+
+iv. State machine diagram for Use Case 4
+
+2.2.5 Use Case 5: Manage Vouchers (author: 524H0021)
+
+i. Fully developed use case description
+
+Item
+
+Content
+
+Use case name
+
+Manage Vouchers
+
+Scenario / trigger
+
+The Admin needs to create a new promotional voucher, update an existing one, or archive a voucher in the system.
+
+Actors
+
+Admin
+
+Related use cases
+
+UC01 - Place an Order (Uses voucher data to validate eligibility and calculate discounts).
+
+Item Stakeholders and interests
+Pre-conditions Post-conditions
+Flow of activities
+
+Content
+
+- Admin: Wants to manage, add, and deactivate promotional codes quickly and accurately.
+- Manager: Wants to ensure promotional campaigns have correct conditions (e.g., minimum order, discount value) to attract customers without negatively impacting profit margins.
+- Customer: Wants to apply valid vouchers to receive discounts on their orders.
+
+The Admin is successfully authenticated and logged into the Admin Dashboard.
+
+The voucher information is successfully saved or updated in the database (vouchers table). The voucher status is accurately set (e.g., ACTIVE or ARCHIVED).
+
+Actor (Admin)
+
+System (SaigonBite)
+
+1. Request Voucher Management page.
+3. Select "Create New Voucher".
+5. Input details (code, discount, dates) and submit.
+
+2. Display existing vouchers. 4. Display voucher form. 6. Validate input data. 7. Save new voucher as ACTIVE. 8. Display success message.
+
+Exception conditions
+
+3a. Archive an existing voucher: 1. Admin selects an ACTIVE voucher and clicks "Archive". 2. System updates voucher status to ARCHIVED. 3. System displays success message. (End of use case)
+
+6a. Invalid input data: 1. System detects invalid data (e.g., duplicate code, end date before start date). 2. System displays error message. 3. Flow returns to Step 5 of the Main Flow.
+
+ii. Activity diagram for Use Case 5
+
+iii. System sequence diagram for Use Case 5
+
+iv. State machine diagram for Use Case 5
+
+ACTIVE: The initial state when a voucher is successfully created by the Admin. It is available for customers to apply to their orders.
+EXPIRED: The system automatically transitions the voucher to this state when the current system date exceeds the voucher's end_date. It can no longer be used.
+ARCHIVED: The terminal state of a voucher. A voucher transitions to ARCHIVED under three conditions: (1) An Admin manually archives an ACTIVE or EXPIRED voucher, or (2) the system automatically archives it after a customer successfully consumes it in a confirmed order, as physical deletion is restricted.
+
+2.2.6 Use Case 6: Produce Management Reports (author: 524H0021)
+
+i. Fully developed use case description
+
+Item
+
+Content
+
+Use case name
+
+Produce Management Reports
+
+Scenario / trigger
+
+The Manager needs to view business performance metrics (sales revenue, hub workload, and delivery performance) for a specific time period to evaluate operations.
+
+Item Actors Related use cases
+Stakeholders and interests
+
+Content Manager (Primary) Relies on data generated by UC01 (Place an Order), UC03, and UC04 (Order state transitions).
+- Manager: Wants accurate, up-to-date reports with visual charts to evaluate business health, kitchen capacity, and shipper efficiency.
+- Admin: Wants to ensure the reporting system does not overload the database during peak hours.
+
+Pre-conditions Post-conditions Flow of activities
+
+The Manager is successfully authenticated and logged into the Management Dashboard.
+
+The requested reports (data tables and charts) are successfully generated and displayed on the screen without modifying any system data.
+
+Actor (Manager)
+
+System (SaigonBite)
+
+Exception conditions
+
+1. Request to access the Reports module.
+3. Select a report type (Sales, Hub Workload, Delivery) and specify a time range (e.g., weekly, monthly).
+4. Click the "Generate Report" button.
+
+2. Display the report dashboard with default time filters (e.g., current day).
+5. Query the database (orders, deliveries, order_status_history) based on the selected filters.
+6. Calculate the required metrics (total revenue, order count per hub, average delivery time).
+
+3a. Invalid Date Range:
+
+7. Display the aggregated results using formatted data tables and visual charts.
+
+- 3a.1 (System): Detect if the 'Start Date' is after the 'End Date'.
+
+- 3a.2 (System): Display an error message ("Invalid time range").
+
+- 3a.3: Return to Step 3 to prompt for correction.
+
+6a. No Data Available: - 6a.1 (System): Detect no recorded transactions within the selected time range. - 6a.2 (System): Display a notification ("No data available for the selected period"). - 6a.3 (System): Render empty data tables and charts. (End of flow).
+
+ii. Activity diagram for Use Case 6
+iii. System sequence diagram for Use Case 6
+iv. State machine diagram for Use Case 6 N/A (Not Applicable) The "Produce Management Reports" use case performs strictly read-only operations to aggregate and display historical metrics. It does not create or modify any persistent domain entities that possess a state-driven lifecycle.
+
+2.3 Verifying Use Cases for Actor (CRUD)
+
+2.3.1 Verifying use cases for Customer
+
+Data entity / domain class
+
+CRUD
+
+Verified use case
+
+Order
+
+Create
+
+UC01
+
+Order
+
+Read
+
+UC02
+
+OrderItem
+
+Create
+
+UC01
+
+OrderItem
+
+Read
+
+UC02
+
+OrderStatusHistory
+
+Read
+
+UC02
+
+2.3.2 Verifying use cases for Kitchen Staff
+
+Data entity / domain class
+
+CRUD
+
+Order
+
+Read
+
+Order
+
+Update
+
+OrderItem
+
+Read
+
+MenuItem
+
+Read
+
+OrderStatusHistory
+
+Create
+
+Hub
+
+Read
+
+Customer
+
+Read
+
+Notification
+
+Create
+
+Notification
+
+Read
+
+Verified use case UC03, UC04 UC03, UC04 UC03, UC04 UC03, UC04 UC03, UC04 UC03, UC04 UC03, UC04 UC03 UC03
+
+2.3.3 Verifying use cases for Admin
+
+Data entity / domain class
+
+CRUD
+
+Verified use case
+
+Voucher
+
+Create
+
+UC05
+
+Voucher
+
+Read / report
+
+UC05
+
+Voucher
+
+Update
+
+UC05
+
+Voucher
+
+Delete (or archive) UC05
+
+2.3.4 Verifying use cases for Manager
+
+Data entity / domain class C R U D
+
+Order
+
+Read / report
+
+OrderStatusHistory
+
+Read / report
+
+Delivery
+
+Read / report
+
+Hub
+
+Read / report
+
+Verified use case UC06 UC06 UC06 UC06
+
+III. System Requirements Design (15 marks)
+3.1 Design for Use Case 1: Place an Order (author: 524H0040)
+3.1.1 Design Classes in Detailed Design
+This section describes the design classes required for UC01 ­ Place an Order, including their responsibilities and interactions across the view, controller, domain, and data access layers.
+
+Layer UI (View)
+
+Design Class PlaceOrderView
+
+Controller Domain Domain Domain Domain
+
+OrderController Customer Hub MenuItem Order
+
+Domain Domain Service
+
+OrderItem Voucher DeliveryChecker
+
+Service
+
+PricingCalculator
+
+Data Access HubRepository Data Access MenuRepository Data Access VoucherRepository Data Access OrderRepository
+
+Responsibility
+Displays menus, collects order information, and shows the order summary and confirmation result.
+Validates order information and coordinates order creation.
+Stores customer information associated with the order.
+Stores hub information and availability status.
+Stores menu item information, price, and availability.
+Stores order information, delivery details, payment method, and calculated amounts.
+Stores selected items, quantities, and unit prices.
+Stores voucher information and discount rules.
+Checks whether the delivery address is within the supported delivery area.
+Calculates subtotal, delivery fee, surcharge, discount, and total amount.
+Retrieves hub information.
+Retrieves menu items and their availability.
+Retrieves voucher information.
+Saves the order and its associated items, including payment method and calculated amounts.
+
+The design separates the main responsibilities of order placement. The controller coordinates validation and order creation, while service and data access classes handle delivery checks, price calculations, and data storage.
+3.1.2 Design Class Diagram
+i. Domain design class
+
+ii. Controller
+<<controller>> OrderController
+- hubRepository: IHubRepository - menuRepository: IMenuRepository - voucherRepository: IVoucherRepository - orderRepository: IOrderRepository - deliveryChecker: DeliveryChecker - pricingCalculator: PricingCalculator
++ getAvailableHubs(): List<Hub> + getMenuItems(hubId: Integer): List<MenuItem> + validateDelivery(address: String): Boolean + validateVoucher(code: String, subtotal: Integer): Voucher + calculateOrderTotal(order: Order): Integer + validateOrder(order: Order): Boolean + placeOrder(order: Order): Order
+iii. UI (view)
+<<view>> PlaceOrderView
+- selectedHub: Hub - selectedItems: List<OrderItem> - deliveryAddress: String - voucherCode: String - paymentMethod: String - currentOrder: Order
++ displayMenus(items: List<MenuItem>): void + collectOrderInformation(): Order + displayDeliveryValidationResult(isValid: Boolean): void + displayVoucherValidationResult(isValid: Boolean): void + displayOrderSummary(order: Order): void + displayOrderError(message: String): void + displayOrderConfirmation(order: Order): void + placeOrder(order: Order): Order
+
+iv. Data access v. Design class (all layers together)
+
+3.1.3 OOD with CRC Cards or Communication Diagram
+PlaceOrderView  Display menus, validation results, order summary,
+confirmation, and error messages.  Collect order information from user.  Initiate order placement request.
+OrderController
+ Retrieve available hubs and menu items.  Validate delivery address and voucher codes.  Calculate order totals and validate order details.
+
+OrderController
+PlaceOrderView IHubRepository IMenuRepository
+
+ Coordinate order placement across repositories and services.
+HubRepository  Fetch list of available hubs from database.  Find hub by its ID.
+MenuRepository  Retrieve menu items associated with a specific hub.  Find menu item by ID and check item availability.
+VoucherRepository  Find and retrieve voucher details by voucher code.
+OrderRepository  Save order details and order items into database.  Find order by order ID.
+DeliveryChecker  Validate if a given delivery address is serviceable.
+PricingCalculator  Calculate subtotal for ordered items.  Calculate final order total including discounts and fees.
+Hub  Store hub profile, address, capacity, and operational status.  Check if hub can accept incoming orders.
+
+IVoucherRepository IOrderRepository DeliveryChecker PricingCalculator
+Hub
+MenuItem
+Voucher
+Order OrderItem
+Order OrderItem
+Order
+
+Customer
+ Store customer identity and contact information.  Associate customer with placed orders.
+
+Order
+
+Order
+ Maintain order states, delivery details, amounts, and fees.  Provide actions to confirm or reject order.
+
+Customer Hub Voucher OrderItem OrderStatusHistory
+
+OrderItem
+ Represent individual items in an order with quantity and unit price.  Calculate subtotal for the line item.
+
+Order MenuItem
+
+MenuItem  Store menu item details, price, and availability status.
+
+OrderItem
+
+Voucher
+ Store voucher information, discount value, conditions, and validity period.
+
+Order
+
+OrderStatusHistory  Track and record historical status changes for an order.
+
+Order
+
+3.1.4 OOD with Sequence Diagram
+The OOD Sequence Diagram illustrates how the Customer, UI, Controller, Domain, Service, and Repository components collaborate to process a customer's order. It includes hub and menu retrieval, delivery information validation, item availability checking, voucher validation, order total calculation, and order creation. The diagram focuses on the main ordering flow and alternative validation scenarios while excluding technical exceptions for simplicity.
+
+3.1.5 Final Design Class Diagram
+The Final Design Class Diagram refines the First-Cut Design Class Diagram based on the CRC Cards and OOD Sequence Diagram. Two methods, openOrderingPage() and clickPlaceOrder(), are added to PlaceOrderView to support customer interactions. The remaining classes, attributes, methods, and relationships are preserved.
+3.2 Design for Use Case 2: Track an Order (author: 524H0040)
+3.2.1 Design Classes in Detailed Design
+This section describes the design classes required for UC02 ­ Track an Order, including their responsibilities across the UI, Controller, Domain, and Data Access layers.
+
+Layer
+
+Design Class
+
+Responsibility
+
+UI (View)
+
+TrackOrderView
+
+Displays the customer's order list, selected order details, current status, and status update history.
+
+Controller
+
+TrackOrderController
+
+Handles customer requests to retrieve orders, order details, current status, and status history.
+
+Domain
+
+Customer
+
+Stores customer information associated with the orders.
+
+Domain
+
+Order
+
+Stores order information, including delivery details, payment information, and current status.
+
+Domain
+
+OrderItem
+
+Stores the food items, quantities, and unit prices belonging to an order.
+
+Domain
+
+MenuItem
+
+Stores menu item information displayed in the selected order details.
+
+Domain
+
+Hub
+
+Stores hub information associated with the order.
+
+Domain
+
+OrderStatusHistory
+
+Stores the status changes of an order, including old status, new status, reason, and change time.
+
+Data Access OrderRepository
+
+Retrieves the customer's orders and the details of a selected order.
+
+Data Access
+
+OrderStatusHistoryRepository
+
+Retrieves the status update history of an order in chronological order.
+
+3.2.2 Design Class Diagram
+i. Domain design class
+
+ii. Controller
+
+<<controller>> TrackOrderController - orderRepository: IOrderRepository - historyRepository: IOrderStatusHistoryRepository + getCustomerOrders(customerId: Integer): List<Order> + getOrderDetails(orderId: Integer): Order + getOrderStatus(orderId: Integer): String + getOrderStatusHistory(orderId: Integer): List<OrderStatusHistory>
+iii. UI (view) <<view>>
+TrackOrderView - customerId: Integer - orders: List<Order> - selectedOrder: Order - orderStatusHistory: List<OrderStatusHistory> + displayOrderList(orders: List<Order>): void + selectOrder(orderId: Integer): void + displayOrderDetails(order: Order): void + displayOrderStatus(status: String): void + displayOrderStatusHistory(history: List<OrderStatusHistory>): void
+iv. Data access
+v. Design class (all layers together)
+
+3.2.3 OOD with CRC Cards or Communication Diagram
+TrackOrderView
+ Display list of customer orders and order status history.  Allow selecting an order to view details.  Display order details, status, and status timeline.
+
+TrackOrderController
+
+TrackOrderController
+ Handle requests to retrieve customer orders and order details.  Fetch status and status history for a given order.  Coordinate data flow between View and Repositories.
+
+TrackOrderView IOrderRepository IOrderStatusHistoryRepository
+
+OrderRepository
+ Query customer orders from database by customerId.  Fetch detailed order info by orderId.  Retrieve current status of an order.
+
+Order
+
+OrderStatusHistoryRepository
+
+ Fetch status change history logs for an order by orderId.
+
+OrderStatusHistory
+
+Order
+ Maintain order details, delivery distance, fees, and total price calculation.
+ Manage order state transitions (pending, confirmed, rejected).
+
+Customer Hub OrderItem OrderStatusHistory
+
+ Store customer profile and identity details.  Maintain association with placed orders.
+
+Customer
+
+Order
+
+Hub
+ Manage fulfillment hub information, capacity, and operational status.
+
+Order
+
+OrderItem
+ Represent individual line items in an order, tracking quantity and unit price.
+
+Order MenuItem
+
+MenuItem  Store product/item menu details, pricing, and availability.
+
+OrderItem
+
+OrderStatusHistory
+
+ Record history log of order status transitions, timestamp, and reasons.
+
+Order
+
+3.2.4 OOD with Sequence Diagram
+
+3.2.5 Final Design Class Diagram
+The Final Design Class Diagram refines the First-Cut Design Class Diagram based on the CRC Cards and OOD Sequence Diagram. Four interaction methods, openOrderList(), selectOrder(), requestOrderStatus(), and viewStatusHistory(), are added to TrackOrderView to support customer interactions. The displayErrorMessage() method is also added to handle unsuccessful data retrieval scenarios. The remaining classes, attributes, methods, and relationships are preserved.
+
+3.3 Design for Use Case 3: Confirm/Reject Incoming Order (author: 524H0130)
+3.3.1 Design Classes in Detailed Design
+The following design classes are identified for UC03 ­ Confirm/Reject Incoming Order. The classes are organized into different layers to support High Cohesion, Low Coupling, Indirection, and Protected Variations.
+
+Layer
+
+Design Class
+
+Responsibility
+
+UI
+
+IncomingOrderView
+
+Displays incoming orders and allows kitchen staff to review
+
+order details, confirm orders, or reject orders with a reason.
+
+Controller
+
+IncomingOrderController
+
+Handles requests, validates input, and coordinates order operations.
+
+Domain
+
+Order
+
+Manages order information and status changes.
+
+Domain
+
+OrderItem
+
+Stores ordered items, quantities, and prices.
+
+Domain
+
+MenuItem
+
+Provides menu item information.
+
+Domain
+
+OrderStatusHistory
+
+Records order status changes and rejection reasons.
+
+Data Access IOrderRepository
+
+Defines operations for retrieving and updating orders.
+
+Data Access OrderRepository
+
+Implements order data access operations.
+
+Data Access IOrderStatusHistoryRepository Defines operations for saving order status history.
+
+Data Access OrderStatusHistoryRepository Implements status history persistence.
+
+Service
+
+INotificationService
+
+Defines customer notification operations.
+
+Service
+
+NotificationService
+
+Sends rejection notifications to customers.
+
+The design separates user interaction, business logic, and data access. The controller coordinates operations, while repository and notification interfaces reduce dependencies and support future changes without affecting the main business logic.
+3.3.2 Design Class Diagram
+i. Domain design class
+
+The domain design classes represent order information, ordered items, menu items, and order status history. ii. Controller
+
+<<controller>> IncomingOrderController
+- orderRepository: IOrderRepository - historyRepository: IOrderStatusHistoryRepository - notificationService: INotificationService
++ getIncomingOrders(): List<Order> + getOrderDetails(orderId: Integer): Order + acceptOrder(orderId: Integer): Boolean + rejectOrder(orderId: Integer, reason: String): Boolean
+
+iii. UI (View)
+
+<<boundary>> IncomingOrderView
+
+- incomingOrderController: IncomingOrderController - incomingOrders: List<Order> - selectedOrder: Order - rejectionReason: String
+
++ displayIncomingOrders(orders: List<Order>): void + displayOrderDetails(order: Order): void + showRejectDialog(): void + showSuccess(message: String): void + showError(message: String): void
+
+iv. Data Access
+
+v. Design class (all layers together)
+
+The combined design class diagram shows the relationships among UI, Controller, Domain, Data Access, and Service classes.
+
+3.3.3 OOD with CRC Cards or Communication Diagram
+IncomingOrderView
+ Display pending orders and order details.  Collect Accept/Reject actions and rejection reasons.  Show results and errors.
+
+OrderController
+
+IncomingOrderController
+ Handle kitchen staff requests.  Validate order status and rejection reasons.  Coordinate order updates, history recording, and notifications.
+
+IncomingOrderView Order IOrderRepository IOrderStatusHistoryRepository INotificationService
+
+Order
+ Store order information and current status.  Check whether an order is Pending.  Change order status to Confirmed or Rejected.
+
+OrderController OrderItem OrderStatusHistory
+
+OrderItem  Store ordered items, quantities, and unit prices.
+
+Order MenuItem
+
+ Provide menu item details.
+
+MenuItem
+
+OrderItem
+
+OrderStatusHistory
+ Store previous status, new status, rejection reason, and change time.
+
+Order IOrderStatusHistoryRepository
+
+OrderRepository  Retrieve and update order data in the database.
+
+IOrderRepository Order
+
+OrderStatusHistoryRepository
+
+ Save order status history in the database.
+
+IOrderStatusHistoryRepository OrderStatusHistory
+
+NotificationService  Send rejection notifications to customers.
+
+INotificationService
+
+3.3.4 OOD with Sequence Diagram
+The OOD Sequence Diagram illustrates how the UI, Controller, Domain, Repository, and Notification Service collaborate to confirm or reject an incoming order. It includes status validation, order updates, status history recording, and customer notification for rejected orders. The diagram focuses on the main business flows and excludes technical exceptions for simplicity.
+
+3.3.5 Final Design Class Diagram
+The Final Design Class Diagram refines the First-Cut Design Class Diagram based on the CRC Cards and OOD Sequence Diagram. Two methods, openIncomingOrders() and selectOrder(), are added to IncomingOrderView to support user interactions. The remaining classes, attributes, methods, and relationships are preserved.
+
+3.4 Design for Use Case 4: Prepare Order and Mark Ready (author: 524H0130)
+3.4.1 Design Classes in Detailed Design
+The design classes for UC04 - Prepare Order and Mark Ready are identified based on the use case requirements and object-oriented design principles. The design reuses existing domain and data access classes from UC03 while introducing UI and controller classes for kitchen preparation activities.
+
+Layer
+
+Design Class
+
+Responsibility
+
+UI
+
+OrderPreparationView
+
+Displays confirmed orders and order details. Allows kitchen
+
+staff to start preparation and mark orders as ready.
+
+Controller OrderPreparationController
+
+Handles preparation requests, validates order status, and coordinates order updates and status history recording.
+
+Domain
+
+Order
+
+Stores order information and manages status transitions from Confirmed to Preparing and Ready for Pickup.
+
+Domain
+
+OrderItem
+
+Stores ordered items, quantities, and unit prices.
+
+Domain
+
+MenuItem
+
+Provides menu item details needed for food preparation.
+
+Domain
+
+OrderStatusHistory
+
+Records order status changes and their timestamps.
+
+Data Access IOrderRepository
+
+Defines operations to retrieve confirmed orders, find orders by ID, and update orders.
+
+Data Access OrderRepository
+
+Retrieves and updates order information in the database.
+
+Data Access IOrderStatusHistoryRepository Defines operations to save order status history.
+
+Data Access OrderStatusHistoryRepository Saves order status history records in the database.
+
+3.4.2 Design Class Diagram
+i. Domain design class The Domain Design Class Diagram for UC04 reuses four domain classes: Order, OrderItem, MenuItem, and OrderStatusHistory. The Order class manages the status transitions from Confirmed to Preparing and Ready for Pickup, while OrderStatusHistory records these changes.
+
+ii. Controller The OrderPreparationController handles requests from kitchen staff to view confirmed orders, start preparing an order, and mark an order as ready for pickup. It validates order status and coordinates database updates and status history recording through repository interfaces.
+<<controller>> OrderPreparationController - orderRepository: IOrderRepository - historyRepository: IOrderStatusHistoryRepository + getConfirmedOrders(): List<Order> + getOrderDetails(orderId: Integer): Order + startPreparing(orderId: Integer): Boolean + markReady(orderId: Integer): Boolean
+iii. UI (view) The OrderPreparationView displays confirmed orders and order details for kitchen staff. It allows staff to start preparing orders and mark them as ready for pickup. The view also displays success and error messages after each operation.
+<<boundary>> OrderPreparationView - preparationController: OrderPreparationController - confirmedOrders: List<Order> - selectedOrder: Order + displayConfirmedOrders(orders: List<Order>): void + displayOrderDetails(order: Order): void + showSuccess(message: String): void + showError(message: String): void
+iv. Data access The Data Access Design Class Diagram for UC04 reuses the repository interfaces and implementations from UC03. The findConfirmedOrders() method is added to retrieve confirmed orders for kitchen preparation. The existing methods for retrieving, updating, and recording order status history are preserved.
+v. Design class (all layers together)
+
+The First-Cut Design Class Diagram combines the UI, Controller, Domain, and Data Access layers for UC04 ­ Prepare Order and Mark Ready. The OrderPreparationView interacts with the OrderPreparationController, which validates order status and coordinates updates through repository interfaces. The domain classes manage order information and status changes, while the data access classes retrieve and save the required data.
+
+3.4.3 OOD with CRC Cards or Communication Diagram
+CRC Cards are used to identify the responsibilities, collaborators, and required attributes of the design classes involved in UC04 ­ Prepare Order and Mark Ready. Each card has two sides: the front shows the responsibilities and collaborators, while the back lists the attributes needed by the class.
+
+OrderPreparationView
+ Display confirmed orders and order details.  Collect Start Preparing and Mark Ready actions.  Show results and errors.
+
+OrderPreparationController
+
+OrderPreparationController
+ Handle kitchen preparation requests.  Validate order status before updates.  Coordinate status updates and history recording.
+
+OrderPreparationView Order IOrderRepository IOrderStatusHistoryRepository
+
+Order
+ Store order information and current status.  Check whether an order is Confirmed or Preparing.  Change order status to Preparing or Ready for Pickup.
+
+OrderPreparationController OrderItem OrderStatusHistory
+
+OrderItem  Store ordered items, quantities, and unit prices.
+
+Order MenuItem
+
+ Provide menu item details.
+
+MenuItem
+
+OrderItem
+
+OrderStatusHistory
+ Record order status changes and their timestamps.  Store previous status, new status, rejection reason, and change time.
+
+Order IOrderStatusHistoryRepository
+
+OrderRepository  Retrieve and update order data in the database.  Update order status in the database.
+OrderStatusHistoryRepository  Save order status history in the database.
+
+IOrderRepository Order
+IOrderStatusHistoryRepository OrderStatusHistory
+
+3.4.4 OOD with Sequence Diagram
+The OOD Sequence Diagram illustrates how the Kitchen Staff, UI, Controller, Domain, and Repository components collaborate to prepare an order and mark it as ready for pickup. The diagram includes order retrieval, status validation, status updates, and history recording. It focuses on the main business flows and invalid status conditions.
+
+3.4.5 Final Design Class Diagram
+The Final Design Class Diagram refines the First-Cut Design Class Diagram based on the CRC Cards and OOD Sequence Diagram. Four methods, openConfirmedOrders(), selectOrder(), clickStartPreparing(), and clickMarkReady(), are added to OrderPreparationView to support kitchen staff interactions. The remaining classes, attributes, methods, and relationships are preserved.
+3.5 Design for Use Case 5: Manage Vouchers (author: 524H0021)
+3.5.1 Design Classes in Detailed Design
+
+This section describes the design classes required for UC05 - Manage Vouchers, including their responsibilities and interactions across the view, controller, domain, and data access layers.
+
+Layer
+
+Design Class
+
+Responsibility
+
+Boundary
+
+VoucherManagementView
+
+Displays the voucher dashboard, collects input for new vouchers, and handles the archive action.
+
+Controller
+
+VoucherController
+
+Handles administrative requests, validates voucher rules, and coordinates database operations.
+
+Domain
+
+Voucher
+
+Stores promotional voucher information and discount rules.
+
+Data Access IVoucherRepository
+
+Defines operations to retrieve, create, and archive vouchers.
+
+Data Access VoucherRepository
+
+Implements voucher data access operations in the database.
+
+3.5.2 Design Class Diagram i. Domain design class
+<<entity>> Voucher
+- voucherId: Integer (key) - code: String - discountType: String - discountValue: Integer
+
+- minOrder: Integer - startDate: DateTime - endDate: DateTime - status: String
++ isValid(orderTotal: Integer): Boolean + isExpired(): Boolean + archive(): void
+ii. Controller
+<<controller>> VoucherController
+- voucherRepository: IVoucherRepository
++ requestVoucherManagementPage(): List<Voucher> + submitVoucherDetails(code: String, discountType: String, discountValue: Integer, dates: DateTime): Boolean + archiveVoucher(voucherID: Integer): Boolean
+iii. UI (view)
+<<boundary>> VoucherManagementView
+- voucherController: VoucherController - existingVouchers: List<Voucher> - selectedVoucher: Voucher
++ displayExistingVouchers(vouchers: List<Voucher>): void + displayVoucherForm(): void + displaySuccessMessage(): void + displayErrorMessage(): void
+iv. Data access
+
+v. Design class (all layers together)
+
+3.5.3 OOD with CRC Cards or Communication Diagram
+CRC Cards are used to identify the responsibilities, collaborators, and required attributes of the design classes involved in UC05 - Manage Vouchers. Each card has two sides: the front shows the responsibilities and collaborators, while the back lists the attributes needed by the class.
+
+VoucherManagementView
+ Display existing vouchers and voucher form.  Collect create new and archive actions.  Show results and errors.
+
+VoucherController
+
+VoucherController
+ Handle Admin voucher management requests.  Validate voucher details and date logic.  Coordinate voucher creation and archiving.
+
+VoucherManagementView Voucher IVoucherRepository
+
+Voucher
+ Store voucher information and discount rules.  Check whether a voucher is valid or expired.  Change voucher status to Archived.
+
+VoucherController
+
+VoucherRepository
+ Retrieve and save voucher data in the database.  Update voucher status to ARCHIVED in the database.
+
+IVoucherRepository Voucher
+
+IVoucherRepository
+
+ Define operations to retrieve, save, and update voucher data.
+
+Voucher
+
+3.5.4 OOD with Sequence Diagram
+The OOD Sequence Diagram illustrates how the Admin, UI, Controller, Domain, and Repository components collaborate to validate and create a new promotional voucher. The diagram includes object creation, data validation, database saving, and success/error notifications. It focuses on the main business flows and invalid input conditions.
+
+3.5.5 Final Design Class Diagram
+The Final Design Class Diagram refines the First-Cut Design Class Diagram based on the CRC Cards and OOD Sequence Diagram. Two methods, clickCreateVoucher() and clickArchiveVoucher(), are added to VoucherManagementView to support Admin interactions. The remaining classes, attributes, methods, and relationships are preserved.
+
+3.6 Design for Use Case 6: Produce Management Reports (author: 524H0021)
+3.6.1 Design Classes in Detailed Design
+This section describes the design classes required for UC06 - Produce Management Reports, including their responsibilities across the view, controller, domain, and data access layers.
+
+Layer UI
+
+Design Class ManagementReportView
+
+Controller
+
+ReportController
+
+Domain
+
+Order
+
+Domain
+
+Hub
+
+Domain
+
+Delivery
+
+Domain
+
+ReportMetrics
+
+Data Access IReportRepository
+
+Data Access ReportRepository
+
+3.6.2 Design Class Diagram i. Domain design class
+
+Responsibility
+Displays the report dashboard, collects time filters, and renders charts and data tables.
+Validates date ranges, coordinates database queries, and calculates required business metrics.
+Reused persistent entity providing core order details (total, fee, status) to calculate revenue and volume.
+Reused persistent entity providing cloud kitchen hub details to group order workload.
+Reused persistent entity providing pickup/delivery timestamps and outcomes to calculate delivery performance.
+A structured class (DTO) to hold aggregated results (revenue, order counts, delivery times) for the view.
+Defines specialized operations to fetch aggregated data from the database.
+Implements the complex SQL queries to retrieve historical order and delivery data.
+
+ii. Controller
+<<controller>> ReportController
+- reportRepository: IReportRepository
++ validateDateRange(startDate: DateTime, endDate: DateTime): Boolean + generateReport(reportType: String, startDate: DateTime, endDate: DateTime): ReportMetrics
+
+- calculateMetrics(orders: List<Order>, deliveries: List<Delivery>): ReportMetrics iii. UI (view)
+<<boundary>> ManagementReportView - reportController: ReportController - currentMetrics: ReportMetrics + requestReportsModule(): void + displayReportDashboard(): void + clickGenerateReport(reportType: String, startDate: DateTime, endDate: DateTime): void + displayErrorMessage(): void + displayNoDataNotification(): void + displayDataTablesAndCharts(metrics: ReportMetrics): void iv. Data access
+v. Design class (all layers together)
+
+3.6.3 OOD with CRC Cards or Communication Diagram
+CRC Cards are used to identify the responsibilities, collaborators, and required attributes of the design classes involved in UC06 - Produce Management Reports. Each card has two sides: the front shows the responsibilities and collaborators, while the back lists the attributes needed by the class. Note that the reused persistent domain entities (Order, Hub, and Delivery) are omitted here to avoid redundancy, as their complete CRC cards have already been defined in UC01­UC04
+
+ManagementReportView
+ Display the reporting module interface and filter controls  Capture selected report type and date range from Manager  Render data tables, charts, or empty/error notifications
+
+ReportController ReportMetrics
+
+ReportController
+ Validate the requested start and end dates  Request historical operational data from repository  Aggregate revenue, order volume, and delivery durations into a DTO
+
+ManagementReportView IReportRepository Order, Hub, Delivery, ReportMetrics
+
+ReportMetrics
+
+ Encapsulate aggregated KPIs (revenue, order count, average delivery time)
+ Transfer computed report results to the view layer  Render data tables, charts, or empty/error notifications
+
+ReportController ManagementReportView
+
+ReportRepository
+ Execute read-only SQL queries filtered by date range  Retrieve historical orders, hub workloads, and delivery records
+3.6.4 OOD with Sequence Diagram
+
+IReportRepository Order, Hub, Delivery
+
+3.6.5 Final Design Class Diagram
+
+IV. System Requirements Implementation (10 marks)
+4.1 Design Classes for the Subsystem
+The integrated design class diagram illustrates the main classes and their relationships across the SaigonBite subsystem. It covers four functional areas: Customer Ordering, Kitchen Operations, Voucher Management, and Management Reporting. The design is organized into several class types:
+ Boundary classes: Handle user interactions through the system views.  Controller classes: Manage the logic of each use case.  Service classes: Handle supporting operations such as delivery validation, price calculation, and
+notifications.  Repository classes: Manage data access and database operations.  Entity classes: Represent core business data, including Customer, Order, OrderItem, Voucher, and Delivery. The diagram also shows how these classes interact to support the system's main functions.
+4.2 Package Diagram for the Subsystem
+The SaigonBite subsystem is divided into four main packages:  Customer Ordering: Allows customers to place orders and track their orders.  Kitchen Operations: Allows kitchen staff to receive, confirm, reject, and prepare orders.  Voucher Management: Handles discount vouchers, including creating and archiving vouchers.  Management Reporting: Creates reports to help managers monitor business activities.
+The Customer Ordering package uses voucher functions from the Voucher Management package when customers enter a voucher code.
+
+This package structure helps organize the system into separate functional areas. It also makes the system easier to understand and maintain.
+4.3 Implementation
+
+4.3.1 Map Persistent Objects to the Tables in a Database
+To transform the object-oriented Design Class Diagram into a relational database schema, classes are first categorized into transient and persistent objects. All interface, control, service, data access, and data transfer classes (<<boundary>>, <<controller>>, <<service>>, <<interface>>, <<dataAccess>>, and ReportMetrics <<DTO>>) exist only in memory during runtime and are excluded from database persistence. The remaining 9 persistent entity classes (<<entity>>) are mapped to relational tables using the following Object-to-Relational (O/R) mapping rules:
+ Naming & Data Type Conversion: PascalCase class names and camelCase attributes are converted to snake_case plural table names and column names. UML data types are mapped to standard SQL types (Integer  INT, String  VARCHAR, Float  FLOAT, Boolean  BOOLEAN, DateTime  DATETIME).
+ Inheritance Mapping (Single Table Strategy): The generalization hierarchy of Customer (LocalCustomer and TouristCustomer) is flattened into a single customers table using a customer_type discriminator column (LOCAL or TOURIST), allowing subtype-specific attributes (phone, email, passport_number) to be nullable.
+ Association & Key Mapping: For one-to-many relationships (1 to 0..* or 1..*), the Primary Key (PK) of the parent table is propagated as a Foreign Key (FK) in the child table (orders.voucher_id remains nullable to reflect the optional 0..1 multiplicity). For the one-to-zero-or-one relationship (1 to 0..1) between Order and Delivery, order_id is placed in deliveries as a Foreign Key with a UNIQUE constraint.
+
+Persistent Class
+
+Relational Table
+
+Primary Key (PK)
+
+Foreign Keys (FK) & References
+
+Mapped Attributes & Constraints
+
+Customer customers customer_id -- (LocalCusto mer, TouristCust omer)
+
+customer_type (NOT NULL), name, email, phone, passport_number
+
+Hub
+
+hubs
+
+hub_id
+
+--
+
+name, address, capacity, status
+
+Brand
+
+brands
+
+brand_id
+
+--
+
+name, status
+
+MenuItem menu_items menu_item_id hub_id  hubs(hub_id) brand_id  brands(brand_id)
+
+name, price, is_available
+
+Voucher vouchers voucher_id
+
+--
+
+code (UNIQUE), discount_type, discount_value, min_order, start_date, end_date, status
+
+Order
+
+orders
+
+order_id
+
+customer_id  customers(customer_id) hub_id  hubs(hub_id)
+
+status, delivery_address, delivery_distance_km, payment_method,
+
+voucher_id  vouchers(voucher_id) (NULL)
+
+payment_status, subtotal, delivery_fee, surcharge, discount, total, created_at
+
+OrderItem
+
+order_items order_item_id
+
+order_id  orders(order_id menu_item_id  menu_items(menu_item_id)
+
+quantity, unit_price
+
+OrderStatus order_statu history_id
+
+History
+
+s_history
+
+order_id  orders(order_id)
+
+old_status, new_status, reason, changed_at
+
+Delivery
+
+deliveries delivery_id
+
+order_id  orders(order_id) (UNIQUE) pickup_at, delivered_at, outcome
+
+4.3.2 Modifying Sequence Diagrams 4.3.2.1 UC01 ­ Place an Order (author: 524H0040)
+
+The modified sequence diagram includes database access for retrieving available hubs and menu items, validating voucher information, and saving orders and order items using SELECT and INSERT operations.
+4.3.2.1 UC02 ­ Track an Order (author: 524H0040)
+
+The modified sequence diagram shows database access for retrieving customer orders, order details, current status, and order status history using SELECT statements.
+4.3.2.3 UC03 ­ Confirm/Reject Incoming Order (author: 524H0130)
+The modified sequence diagram includes database access for retrieving pending orders, updating order statuses, and saving status history using SELECT, UPDATE, and INSERT operations.
+4.3.2.4 UC04 ­ Prepare Order and Mark Ready (author: 524H0130)
+The modified sequence diagram includes database access for retrieving confirmed orders, updating preparation statuses, and recording status changes using SELECT, UPDATE, and INSERT operations.
+4.3.2.5 UC05 ­ Manage Voucher (author: 524H0021)
+
+The modified sequence diagram includes database access for retrieving existing vouchers, verifying and creating new vouchers, and updating voucher statuses to archived using SELECT, INSERT, and UPDATE operations.
+4.3.2.6 UC06 ­ View Management Reports (author: 524H0021)
+The modified sequence diagram includes database access for retrieving orders within a specified date range, fetching delivery records, and aggregating order counts by hub using SELECT operations.
+4.3.3 UI Design 4.3.3.1 UC01 ­ Place an Order (524H0040)
+
+Stage
+
+Design Decisions and Improvements
+
+SSD to UI
+
+Map system interactions to the Hub and Menu selection screen, Cart, Delivery Information form, Voucher and Payment options, and Order Confirmation screen.
+
+Sketch
+
+Create basic layouts for browsing hubs and menus, selecting food items, entering delivery details, and confirming orders.
+
+Wireframe Organize menu items into clear cards, add quantity controls, and separate delivery and payment information into structured sections.
+
+Mockup
+
+Apply consistent colors, food images, buttons, and order status indicators. Improve spacing and visual hierarchy for easier navigation.
+
+Prototype Connect the ordering screens in Figma to demonstrate the complete flow, from selecting food items to submitting an order and viewing the confirmation.
+
+[Prototype Link]
+
+4.3.3.2 UC02 ­ Track an Order (author: 524H0040)
+
+Stage
+
+Design Decisions and Improvements
+
+SSD to UI
+
+Map system interactions to the My Orders screen, Order Details screen, Track Current Order screen, and Order Status History screen.
+
+Sketch
+
+Create basic layouts for displaying customer orders, viewing order details, tracking current order progress, and viewing status updates.
+
+Wireframe Organize orders into clear cards with order IDs and status labels. Use a visual progress tracker for current order status and a chronological list for status history.
+
+Mockup Prototype
+
+Apply consistent colors, typography, status indicators, icons, and timeline components. Improve spacing and visual hierarchy to make order information easy to understand.
+Connect the order screens in Figma to demonstrate the complete flow, from viewing the order list and selecting an order to checking its details, tracking progress, and viewing status history.
+
+[Prototype Link]
+
+4.3.3.3 UC03 ­ Confirm/Reject Incoming Order (524H0130)
+
+Stage
+
+Design Decisions and Improvements
+
+SSD to UI
+
+Map system interactions to the Incoming Orders list, Order Details panel, Accept/Reject buttons, rejection dialog, and result messages.
+
+Sketch
+
+Create basic order list, order details, and acceptance/rejection flows.
+
+Wireframe Replace tables with selectable order cards and a side-by-side details panel to reduce navigation.
+
+Mockup
+
+Apply consistent colors, status badges, and bottom action buttons. Remove unnecessary information.
+
+Prototype Connect five screens to demonstrate the Accept and Reject flows in Figma.
+
+[Prototype Link]
+
+4.3.3.4 UC04 ­ Prepare Order and Mark Ready (author: 524H0130)
+
+Stage
+
+Design Decisions and Improvements
+
+SSD to UI
+Sketch Wireframe Mockup
+Prototype
+
+Map system interactions to the Confirmed Orders list, Order Details panel, Start Preparing button, Mark Ready button, and status updates.
+Create basic screens for confirmed orders, preparation, and ready-for-pickup results.
+Organize the workflow into four screens with a shared order management layout.
+Standardize the sidebar, order cards, details panels, and bottom action buttons. Remove unnecessary elements.
+Connect four screens to demonstrate Confirmed -> Preparing -> Ready for Pickup.
+
+[Prototype Link]
+
+4.3.3.5 UC05 ­ Manage Voucher (author: 524H0021)
+
+Stage
+
+Design Decisions and Improvements
+
+SSD to UI Sketch Wireframe Mockup Prototype
+
+Map system interactions to the Voucher List table, status filter tabs, Create New Voucher modal, validation error state, Archive Confirmation dialog, and Archived result view.
+Create hand-drawn user flows for viewing existing vouchers, creating a new voucher, handling validation errors, and archiving active vouchers.
+Structure the workflow into five monochrome desktop screens with an Admin sidebar, filterable voucher table, and overlay modal dialogs.
+Apply SaigonBite's dark forest-green sidebar, warm cream canvas, semantic status badges (ACTIVE, EXPIRED, ARCHIVED), and clear confirmation/destructive buttons.
+Connect five screens in Figma to demonstrate voucher creation, input validation error handling, and two-step voucher archiving flows.
+
+[Prototype Link]
+
+4.3.3.6 UC06­ View Management Reports (author: 524H0021)
+
+Stage
+
+Design Decisions and Improvements
+
+SSD to UI
+
+Map system interactions to the report filter bar, Generate Report button, KPI summary cards, data charts, breakdown tables, and error/empty-state alerts.
+
+Sketch
+
+Create hand-drawn user flows for switching report types (Sales, Hub Workload, Delivery Performance), filtering by date range, and handling invalid or empty states.
+
+Wireframe
+
+Organize the reporting workspace into five monochrome screens featuring a Manager sidebar, top filter controls, three KPI cards, chart area, and breakdown table.
+
+Mockup
+
+Apply consistent SaigonBite colors, clean data visualization charts, readable metric cards, and distinct visual alerts for invalid date ranges and no-data periods.
+
+Prototype
+
+Connect five screens in Figma to demonstrate switching between report categories, date validation, and empty-period reporting flows.
+
+[Prototype Link]
+4.3.4 SQL Code i. Create database
+ii. Create tables
+iii. Sample data
+4.3.5 Software Classes Method Code
+Guidance (delete before submitting): Code of the design classes in your language (for example C#, VB.NET or Java). Show key methods of each use case with the author's ID. Source code goes in a tagged GitHub release. [Code excerpts and GitHub link]
+4.3.6 Integration of Use Cases
+Guidance (delete before submitting): Show that the use cases of all students work together in one system (for example the main flow of a business scenario that crosses use cases). [Integration evidence]
+
+V. System Testing, Deployment and Demonstration (7.5 marks)
+
+5.1 Testing: Test Plan and Test Cases
+Guidance (delete before submitting): Propose your test plan and develop test cases for every use case. Derive them from the post-conditions in 2.2.
+
+Test ID Use case
+
+Post-condition tested
+
+Input / steps
+
+Expected result Actual result
+
+Pass / fail
+
+T-01
+
+[UC ]
+
+[]
+
+[]
+
+[]
+
+[]
+
+[]
+
+5.2 Deployment
+Guidance (delete before submitting): How the subsystem is deployed and how to run it (environment, installation steps, and the link or the executable). [Deployment plan]
+5.3 Demonstration
+Guidance (delete before submitting): Steps to use the subsystem, or screen captures of your software. Add the link to your video demonstration. [Demonstration]
+
+Conclusions / Recommendations (0.25 point)
+Guidance (delete before submitting): What you achieved, known limitations, and recommendations for the next iterations. [Conclusions]
+References
+1. [Textbook: Satzinger, Jackson & Burd, Systems Analysis and Design in a Changing World, 7th ed.] 2. [Other books, articles and links]
+
+Appendix
+Appendix 1: Full-size use case diagram Appendix 2: Full-size communication and sequence diagrams Appendix 3: Full-size domain and design class diagrams
+
+Appendix 4: Contribution Statement (one page, signed by all members: who owns which use cases and components)
+
+Appendix 5: Generative AI Usage Log
+
+Tool and date
+
+Purpose
+
+Prompt (summary)
+
+[]
+
+[]
+
+[]
+
+What you kept or changed
+[]
+
+How you verified it []
+
+

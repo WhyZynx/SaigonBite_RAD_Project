@@ -4,21 +4,24 @@
 
 | Nội dung | Kết quả |
 |---|---|
-| Nhánh tích hợp | `integration/tv3-admin` |
-| HEAD rà soát | `cd12cbb94c7916c04e1b6989497f6f631f2da0a2` (`integration/tv3-admin`; merge PR #4 Customer) |
-| Ngày rà soát/cập nhật | 21-11-2026 — rà soát sau merge PR #4; kiểm thử lần này ghi tại phần G |
-| Commit API Contract | `a106c6e` cập nhật `docs/API_CONTRACT.md`; commit tài liệu nằm trong lịch sử tích hợp |
-| Customer | TV1 — 524H0040 |
-| Kitchen | TV2 — 524H0130 |
-| Admin/Manager | TV3 — 524H0021 |
-| Tổng mã vấn đề đang theo dõi | 24: 18 còn mở, 6 đã sửa/đóng trong phạm vi demo |
-| Lỗi mã nguồn còn mở | 2 (hai lỗi Manager) |
-| Vấn đề tích hợp còn mở | 4 |
-| Tính năng chưa triển khai còn mở | 5 |
-| Giới hạn demo còn mở | 2 |
-| Chưa xác minh còn mở | 5 |
-| Cần nhóm thống nhất | 9 chủ đề; liệt kê tại phần F |
-| Kết luận | **PARTIALLY WORKING** — các test Backend/SQLite hiện tại đạt; chưa kiểm tra MySQL ghi dữ liệu, trình duyệt đầy đủ hoặc toàn bộ luồng liên module trên cùng một đơn |
+| Integration branch | `integration/tv3-admin` |
+| Customer Module | TV1 |
+| Kitchen Module | TV2 |
+| Admin/Manager Module | TV3 |
+| Admin Voucher | Đã có chức năng xem, tạo, chỉnh sửa và archive Voucher |
+| Admin Delivery | Đã có chức năng xem đơn READY và mô phỏng xác nhận giao hàng |
+| Manager Reports | Đã có Sales Report, Hub Workload và Delivery Performance |
+| Admin Dashboard | Coming Soon – sẽ phát triển trong tương lai |
+| Admin Hubs & Menu | Coming Soon – sẽ phát triển trong tương lai |
+| Admin Users | Coming Soon – sẽ phát triển trong tương lai |
+| Manager Dashboard | Coming Soon – sẽ phát triển trong tương lai |
+| Manager Hub Operations | Coming Soon – sẽ phát triển trong tương lai |
+| Manager Order History | Coming Soon – sẽ phát triển trong tương lai |
+| Delivery Simulation | Chỉ mô phỏng Admin xác nhận đơn đã giao; dự án chưa có Shipper thật |
+| Average Delivery Time | Chỉ tính được khi có đủ thời gian pickup và delivered hợp lệ; nếu thiếu hiển thị `—` |
+| Automated Tests | Chỉ ghi PASS sau khi chạy test thành công trên code hiện tại |
+| MySQL Integration Test | Chưa xác nhận nếu chưa kiểm thử trực tiếp với MySQL |
+| Browser UI Test | Chưa xác nhận nếu chưa kiểm thử trực tiếp trên trình duyệt |
 
 | Module | Code/API hiện có theo mã nguồn | Giới hạn được ghi nhận |
 |---|---|---|
@@ -56,19 +59,20 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | KIT-03 | Cập nhật đồng thời chưa kiểm tra trên MySQL | Hai nhân viên cùng đổi trạng thái một đơn | Repository có `with_for_update` và UPDATE có điều kiện; kiểm thử hiện chạy SQLite, chưa có MySQL kiểm thử riêng | Thử hai transaction đồng thời trên database riêng; xác nhận một chuyển tiếp hợp lệ và một history đúng | TV2; phối hợp người cấp MySQL kiểm thử | Trung bình trước khi khẳng định bảo đảm đồng thời trên MySQL | CHƯA XÁC MINH |
 | AUTH-01 | Login và session là giả lập trong bộ nhớ | Khởi động lại backend hoặc chạy nhiều tiến trình | Tài khoản demo; session lưu trong bộ nhớ | Chấp nhận nếu đúng phạm vi demo; thống nhất yêu cầu identity trước khi làm auth thật | TV2; TV1/TV3 phối hợp | Thấp cho demo một tiến trình; cao cho triển khai thật | GIỚI HẠN DEMO |
 
+
 ### 3. Admin/Manager — TV3
 
-| ID | Vấn đề | Tình huống dễ hiểu | Nguyên nhân | Cách sửa/đề xuất | Người phụ trách | Mức độ | Trạng thái |
+| ID | Vấn đề | Tình huống dễ hiểu | Nguyên nhân / phạm vi hiện tại | Cách xử lý | Người phụ trách | Mức độ | Trạng thái |
 |---|---|---|---|---|---|---|---|
-| ADM-01 | Admin Dashboard chưa hoạt động | Chọn Dashboard | Giao diện hiện chỉ có trang Voucher và chặn điều hướng mục khác | Xác nhận Dashboard có trong phạm vi không; nếu có, bổ sung màn hình/API | TV3 | Theo tiêu chí nghiệm thu | THIẾU TÍNH NĂNG |
-| ADM-02 | Hub và Menu chưa có trang quản trị | Chọn Hubs & Menu | Không có API quản trị; API Customer chỉ đọc hub/menu | Xác nhận phạm vi và quyền quản trị với TV1/shared | TV3; TV1/shared phối hợp | Theo tiêu chí nghiệm thu | THIẾU TÍNH NĂNG |
-| ADM-03 | User Management chưa triển khai | Chọn Users | Không có kho tài khoản/API quản lý; đăng nhập còn giả lập | Xác nhận yêu cầu với TV2 trước khi triển khai | TV3; TV2 phối hợp | Theo tiêu chí nghiệm thu | THIẾU TÍNH NĂNG |
-| ADM-04 | Chưa sửa được trường Voucher đã tạo | Sửa mã, mức giảm hoặc thời hạn | API có GET, POST và PATCH archive; không có API cập nhật trường Voucher | Chỉ bổ sung nếu nhóm xác nhận chức năng bắt buộc | TV3 | Theo tiêu chí nghiệm thu | THIẾU TÍNH NĂNG |
-| INT-ADMIN-01 | Hub chọn cho Voucher không được lưu | Tạo Voucher theo một Hub rồi tải lại | API nhận nhãn `hub`, nhưng repository không lưu; schema không có quan hệ Voucher-Hub; GET trả nhãn mặc định All hubs | Xác nhận Voucher toàn cục hay theo Hub; chỉnh nhãn/API hoặc thống nhất schema theo quyết định | TV3; shared nếu cần schema | Trung bình nếu người dùng hiểu nhãn là giới hạn áp dụng thật | VẤN ĐỀ TÍCH HỢP |
-| MAN-01 | Manager Dashboard, Hub Operations, Order History chưa triển khai | Chọn mục ngoài Reports | Giao diện chỉ có Reports và chặn các mục khác | Xác nhận phạm vi; không xem các mục menu là tính năng hoàn thành | TV3 | Theo tiêu chí nghiệm thu | THIẾU TÍNH NĂNG |
-| MAN-02 | Lỗi API Reports bị trình bày như dữ liệu rỗng | `frontend/manager/app.js` | `fetchReport()` ném lỗi khi HTTP không thành công; `renderReport()` phân biệt lỗi tải với dữ liệu rỗng và hiển thị thông báo lỗi | Cần kiểm tra regression với API 200 rỗng và lỗi HTTP; chưa có browser E2E | TV3 | Trung bình | ĐÃ SỬA TRONG CODE; CẦN REGRESSION TEST |
-| MAN-03 | Thời gian trung bình có giá trị cố định | `backend/app/routers/reports.py`, `backend/app/repositories/report_repository.py` | Tính thời lượng từ pickup_at và delivered_at hợp lệ; không dùng giá trị phút cố định; thiếu timestamp thì hiển thị — | Bổ sung test Delivery có đủ timestamp, thiếu timestamp và timestamp không hợp lệ | TV3 | Trung bình | ĐÃ SỬA TRONG CODE; CẦN REGRESSION TEST |
-| MAN-04 | Cột Pending Orders không đếm riêng trạng thái PENDING | `backend/app/routers/reports.py`, `frontend/manager/app.js` | Đổi cách thể hiện thành Not Delivered; API tính tổng đơn trừ đơn DELIVERED, không gọi nhầm là Pending | Test Hub Workload với nhiều trạng thái để xác nhận KPI và bảng theo Hub | TV3 | Trung bình | ĐÃ SỬA NHÃN; CẦN REGRESSION TEST |
+| ADM-01 | Admin Dashboard chưa triển khai chức năng | Chọn Dashboard | Trang hiện là UI placeholder, chưa có KPI hoặc Dashboard API | Giữ Coming Soon; phát triển trong tương lai nếu được yêu cầu | TV3 | Theo phạm vi nghiệm thu | FUTURE SCOPE |
+| ADM-02 | Hubs & Menu chưa có chức năng quản trị | Chọn Hubs & Menu | Trang hiện là UI placeholder; chưa có API quản trị Hub/Menu | Giữ Coming Soon; không tác động dữ liệu Hub/Menu hiện tại | TV3; TV1/shared phối hợp khi phát triển | Theo phạm vi nghiệm thu | FUTURE SCOPE |
+| ADM-03 | Users chưa có chức năng quản trị tài khoản | Chọn Users | Trang hiện là UI placeholder; authentication vẫn dùng mock accounts và in-memory sessions | Giữ Coming Soon; không tuyên bố đã có User Management | TV3; TV2/shared phối hợp khi phát triển | Theo phạm vi nghiệm thu | FUTURE SCOPE |
+| ADM-04 | Voucher chưa có chức năng chỉnh sửa | Sửa mã, mức giảm hoặc thời hạn | Backend hiện có PUT `/api/vouchers/{id}` và frontend có chức năng Edit | Đã bổ sung API cập nhật và chức năng chỉnh sửa Voucher | TV3 | Trung bình | ĐÃ SỬA TRONG CODE; CẦN KIỂM THỬ |
+| INT-ADMIN-01 | Hub chọn cho Voucher không được lưu | Tạo Voucher theo một Hub rồi tải lại | Database hiện không có quan hệ Voucher-Hub; API trả nhãn mặc định All hubs | Ghi rõ Voucher hiện áp dụng toàn hệ thống; không hiển thị lựa chọn Hub như một điều kiện áp dụng thực tế | TV3; shared nếu thay đổi schema | Trung bình | GIỚI HẠN HIỆN TẠI; CẦN THỐNG NHẤT UI |
+| MAN-01 | Manager Dashboard, Hub Operations, Order History chưa triển khai chức năng | Chọn các mục ngoài Reports | Các trang hiện là UI placeholder, chưa có nghiệp vụ hoặc API tương ứng | Giữ Coming Soon; không tính là chức năng đã hoàn thành | TV3 | Theo phạm vi nghiệm thu | FUTURE SCOPE |
+| MAN-02 | API Reports lỗi có thể bị hiển thị như dữ liệu rỗng | API trả HTTP error | Frontend có xử lý phân biệt lỗi tải dữ liệu và dữ liệu rỗng | Kiểm tra regression với API 200 rỗng và HTTP error | TV3 | Trung bình | ĐÃ SỬA TRONG CODE; CẦN REGRESSION TEST |
+| MAN-03 | Average Delivery Time có thể thiếu timestamp | Delivery không có pickup_at hoặc delivered_at | Không thể tính thời lượng thực tế nếu thiếu một trong hai mốc thời gian | Chỉ tính từ cặp timestamp hợp lệ; thiếu dữ liệu hiển thị `—` | TV3 | Trung bình | ĐÃ SỬA LOGIC; CẦN REGRESSION TEST |
+| MAN-04 | Nhãn Pending Orders không khớp cách tính | Hub có nhiều đơn chưa DELIVERED ở các trạng thái khác nhau | API tính tổng đơn chưa DELIVERED, không chỉ riêng PENDING | Dùng nhãn Not Delivered để phản ánh đúng phép tính | TV3 | Trung bình | ĐÃ SỬA NHÃN; CẦN REGRESSION TEST |
 
 ### 4. Backend / Shared
 
@@ -79,7 +83,8 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | DATA-DB-01 | Số dòng Orders và lịch sử cao hơn seed dự kiến | Đối chiếu dữ liệu database với seed | Lần đọc trước có customers 4, hubs 4, brands 3, menu_items 8, vouchers 5, orders 11, order_items 20, order_status_history 37, deliveries 4; nguồn của 2/4/5 dòng vượt seed trong ba bảng đơn hàng chưa rõ | Chủ sở hữu dữ liệu xác nhận bằng cách chỉ đọc; không xóa/reseed | Backend/shared; chủ sở hữu DB nhóm | Thấp khi chỉ đọc; cần rõ nguồn trước reset | CHƯA XÁC MINH |
 | VER-DB-01 | Chưa thử luồng ghi trên MySQL riêng | Tạo đơn → Kitchen cập nhật → Customer/Manager đọc lại | Không có database MySQL thử nghiệm được phép dùng; database nhóm không dùng để thử ghi | Cấp MySQL test riêng, chạy cùng một order_id và kiểm tra history/rollback/đồng thời | Backend/shared và từng chủ module | Cao trước khi tuyên bố MySQL E2E đạt | CHƯA XÁC MINH |
 | VER-UI-01 | Chưa nghiệm thu giao diện toàn bộ bằng trình duyệt | Đăng nhập và thao tác các màn hình chính | Chưa có bằng chứng đầy đủ về render, điều hướng, console và network | TV1/TV2/TV3 kiểm tra module mình, sau đó chạy luồng liên module | Mỗi thành viên; shared hỗ trợ route | Trung bình trước nghiệm thu giao diện | CHƯA XÁC MINH |
-| INT-REPORT-01 | Delivery Report thiếu cặp timestamp để tính thời lượng | `backend/app/routers/admin.py`, `backend/app/routers/reports.py`, `backend/tests/test_reports.py` | Admin demo ghi `outcome=DELIVERED` và `delivered_at`, không ghi `pickup_at`. Manager đếm Completed Deliveries dựa trên `outcome=DELIVERED` và `delivered_at IS NOT NULL`; Average Delivery Time chỉ tính khi có đủ hai timestamp hợp lệ | Test Admin Delivered → Manager Delivery Report trên cùng order_id; test Delivery thiếu pickup_at và Delivery có đủ timestamp | TV3 | Trung bình | ĐÃ SỬA LOGIC; CHỜ CHẠY TEST |
+| INT-REPORT-01 | Delivery Report thiếu cặp timestamp để tính thời lượng | `backend/app/routers/admin.py`, `backend/app/routers/reports.py`, `backend/tests/test_reports.py` | Admin demo ghi `outcome=DELIVERED` và `delivered_at`, không ghi `pickup_at`. Manager đếm Completed Deliveries khi có `outcome=DELIVERED` và `delivered_at`. Average Delivery Time chỉ tính khi cả hai timestamp hợp lệ | Đã có test kiểm tra Admin Delivered và Manager Delivery Report; cần chạy lại test trên HEAD hiện tại để xác nhận | TV3 | Trung bình | ĐÃ CÓ TEST CODE; CHỜ XÁC NHẬN KẾT QUẢ CHẠY |
+
 
 ## C. Lỗi liên module và luồng chính
 
@@ -140,7 +145,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | 3 | Vòng đời trạng thái đơn | Kitchen xử lý đến READY; enum còn DELIVERED, FAILED, CANCELLED | Giao hàng module khác quản lý; hoặc mở rộng người phụ trách/endpoint | Chốt trạng thái hợp lệ, vai trò chuyển trạng thái và history cho từng bước | TV1, TV2, TV3, Backend |
 | 4 | Nguồn ghi pickup_at và cách tính thời lượng giao | Dự án chưa có Shipper; Admin chỉ mô phỏng xác nhận giao hàng | Không ghi pickup_at giả; hoặc bổ sung sự kiện pickup nếu sau này triển khai Shipper | Hiện tại giữ pickup_at NULL với Admin demo. Completed Deliveries không phụ thuộc pickup_at; Average Delivery Time chỉ tính khi có đủ hai timestamp hợp lệ | TV3, backend/shared và delivery owner |
 | 5 | Voucher áp dụng toàn hệ thống hay theo Hub | API nhận nhãn hub nhưng database không lưu quan hệ | Voucher global; hoặc thêm quan hệ theo Hub sau khi duyệt | Nếu global, bỏ/đổi nhãn Applicable Hub; nếu theo Hub, thống nhất schema/API và áp dụng voucher | TV1, TV3, Backend |
-| 6 | Định nghĩa Pending trong Hub Workload | UI gọi cột là Pending nhưng API tính mọi đơn chưa DELIVERED | Chỉ status PENDING; hoặc mọi đơn chưa giao với nhãn khác | Dùng status PENDING nếu giữ nhãn hiện tại | TV3 |
+| 6 | Định nghĩa Pending trong Hub Workload | API tính mọi đơn chưa DELIVERED, không chỉ status PENDING | Đổi nhãn thành Not Delivered hoặc đổi phép tính chỉ lấy PENDING | Giữ nhãn Not Delivered vì phản ánh đúng phép tính hiện tại | TV3 |
 | 7 | Định nghĩa On-Time Rate | Code đếm outcome DELIVERED; schema có DELIVERED/LATE nhưng không thấy writer cập nhật outcome hoặc ETA | Dựa vào outcome do delivery owner ghi; hoặc thêm quy tắc ETA/giờ hẹn | Chốt ý nghĩa, nguồn dữ liệu và cách ghi trước khi gọi là on-time thực tế | TV3, Backend/Shared, delivery owner |
 | 8 | Login/Customer identity | Session còn giả lập; Customer đã ánh xạ theo email phiên đăng nhập tới đúng một hồ sơ DB | Chấp nhận cấu hình mock cho demo; hoặc triển khai identity/account store và session bền vững | Luồng hiện tại không còn cố định Customer ID; xác nhận giới hạn mock trước nghiệm thu thật | TV1, TV2, TV3 |
 | 9 | Phạm vi Admin/Manager demo | Dashboard, Hub/Menu/Users, Hub Operations/Order History và update Voucher còn thiếu | Bắt buộc hoàn thiện; hoặc đánh dấu ngoài phạm vi demo | Đối chiếu tiêu chí đồ án trước khi giao làm tính năng | TV3 và nhóm |
@@ -188,8 +193,8 @@ Các kết quả trong bảng đầu là log kiểm thử đã ghi nhận trư�
 |---|---|---|
 | Customer hoạt động | PARTIAL | Voucher preview/order dùng giá trị backend; identity ánh xạ theo email trong giới hạn mock; khoảng cách dùng Nominatim/OSRM, nhưng độ chính xác tới số nhà phụ thuộc dữ liệu OSM; browser chưa xác minh |
 | Kitchen hoạt động | PARTIAL | SQLite statuses/history và hub API đạt; browser, MySQL/concurrency chưa xác minh |
-| Admin hoạt động | PARTIAL | Voucher list/create/archive có code; các màn hình khác chưa triển khai |
-| Manager Reports hoạt động | PARTIAL | Có API/ giao diện Reports nhưng Pending label/count sai khác; lỗi API bị hiểu như rỗng; một số metrics giả lập |
+| Admin hoạt động | PARTIAL | Voucher GET/POST/PUT/archive và mô phỏng READY → DELIVERED đã có; Dashboard, Hubs & Menu, Users là UI placeholders; chưa có browser E2E |
+| Manager Reports hoạt động | PARTIAL | Có Sales, Hub Workload và Delivery Reports; Delivery completion không cần pickup_at; Average Delivery Time cần đủ timestamp; cần xác nhận regression test và browser UI |
 | API contract thống nhất | NOT YET | Giao hàng còn là chuỗi có nhãn; nhóm cần quyết định field contract |
 | Database tương thích | PARTIAL | `delivery_address` API/model/SQL cùng giới hạn 255 sau sửa; MySQL runtime chưa thử |
 | Luồng tạo và xử lý đơn hoàn chỉnh | NOT TESTED | Chưa chạy cùng order_id trên toàn hệ thống/MySQL test |

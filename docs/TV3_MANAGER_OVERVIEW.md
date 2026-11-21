@@ -74,18 +74,30 @@ The report includes:
 
 The current report includes hubs that have associated orders in the reporting data.
 
+
 ### 3.3 Delivery Performance Report
 
 Provides delivery completion information for the selected date range.
 
 The report includes:
 
-- Completed deliveries.
-- Average delivery time.
+- Total Deliveries.
+- Completed Deliveries.
+- Average Delivery Time.
 - Daily delivery performance chart.
 - Delivery performance breakdown table.
 
-Some values may be unavailable when the required delivery timestamps are missing.
+**Calculation rules:**
+
+- Total Deliveries counts Delivery records associated with orders created within the selected date range.
+- Completed Deliveries counts records whose `outcome` is `DELIVERED` and whose `delivered_at` timestamp exists.
+- `pickup_at` is not required to count a completed delivery because the current project does not implement a real Shipper workflow.
+- Average Delivery Time is calculated only when both `pickup_at` and `delivered_at` exist and `delivered_at` is not earlier than `pickup_at`.
+- Records without a valid pickup/delivery timestamp pair do not contribute to the average.
+- If no valid duration can be calculated, the report displays `—`.
+
+The Admin Mark as Delivered function is a simulation. It records the delivery completion timestamp but does not create a real pickup event. Therefore, a simulated delivery can count as completed while its delivery duration remains unavailable.
+
 
 ## 4. Report Filters and Display
 
@@ -187,6 +199,9 @@ Dashboard, Hub Operations and Order History are currently interface placeholders
 Their appearance in the sidebar does not mean that the corresponding business functionality or backend APIs have been implemented.
 
 Additional API endpoints, business logic, database operations and testing will be required when these features are developed.
+
+| Completed Deliveries without Shipper | Supported through Admin delivery simulation |
+| Actual Delivery Time without pickup_at | Not measurable; displayed as — |
 
 ## 9. Summary
 

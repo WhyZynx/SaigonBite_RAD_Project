@@ -24,7 +24,7 @@ def _parse_discount_input(raw: str) -> tuple[str, int]:
         if not number.isdigit() or not 1 <= int(number) <= 100:
             raise HTTPException(400, "Percentage discount must be between 1% and 100%.")
         return "PERCENT", int(number)
-    digits = re.sub(r"[^\\d]", "", cleaned)
+    digits = re.sub(r"[^\d]", "", cleaned)
     if not digits or int(digits) <= 0:
         raise HTTPException(400, "Invalid discount value. Use e.g. '20%' or '30000'.")
     return "FIXED", int(digits)

@@ -43,7 +43,7 @@ const REPORT_CONFIGS = {
         unitLabel: "Completed deliveries",
         yMax: 1,
         yTicks: ["", "", "", "0"],
-        headers: ["Date", "Completed Deliveries", "Avg. Delivery Time"]
+        headers: ["Date", "Total Deliveries", "Avg. Delivery Time"]
     }
 };
 

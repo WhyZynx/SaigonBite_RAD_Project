@@ -193,6 +193,7 @@ The table displays:
 
 Orders are retrieved from the shared database. The list can be refreshed to load the latest eligible orders.
 
+
 ### 4.3 Mark Order as Delivered
 
 When Admin confirms the action, the backend:
@@ -205,12 +206,22 @@ When Admin confirms the action, the backend:
 6. Creates or updates the corresponding Delivery record.
 7. Saves the changes to the database.
 
-The Delivery record is updated with:
+The Delivery record stores:
 
-- `delivered_at`: the time the order is marked as delivered.
+- `delivered_at`: the time Admin confirms the simulated delivery completion.
 - `outcome`: `DELIVERED`.
+- `pickup_at`: remains `NULL` when no pickup event is recorded.
 
-The operation uses a database transaction and a conditional status update to prevent an order from being delivered twice through competing requests.
+**Simulation limitation:**
+
+The project does not implement a real Shipper role, assignment process, pickup confirmation or live delivery tracking.
+
+The Admin action is a demonstration shortcut that simulates delivery completion after Kitchen marks an order as `READY`. It must not be interpreted as evidence that a real delivery person picked up or delivered the order.
+
+Manager can count this record as a completed delivery because it has `outcome = DELIVERED` and a valid `delivered_at`.
+
+However, the system cannot calculate the actual delivery duration when `pickup_at` is missing. In that case, Manager displays `—` for Average Delivery Time instead of inventing a duration.
+
 
 ### 4.4 Order Status Transition
 

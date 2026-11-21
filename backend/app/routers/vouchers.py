@@ -3,36 +3,34 @@ from datetime import date, datetime, time
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+
 from ..database import get_db
 from ..models import Voucher
 from app.repositories import voucher_repository
 
 router = APIRouter(prefix="/api/vouchers", tags=["Admin Vouchers"])
-
-MONTH_NAMES = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-]
+MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
-def _format_display_date(d: date) -> str:
-    return f"{d.day:02d} {MONTH_NAMES[d.month - 1]} {d.year}"
+def _format_display_date(value: date) -> str:
+    return f"{value.day:02d} {MONTH_NAMES[value.month - 1]} {value.year}"
 
 
 def _parse_discount_input(raw: str) -> tuple[str, int]:
     cleaned = raw.strip().upper()
     if cleaned.endswith("%"):
-        num_str = cleaned[:-1].strip()
-        if not num_str.isdigit() or not (1 <= int(num_str) <= 100):
-            raise HTTPException(status_code=400, detail="Percentage discount must be between 1% and 100%.")
-        return "PERCENT", int(num_str)
-    digits = re.sub(r"[^\d]", "", cleaned)
+        number = cleaned[:-1].strip()
+        if not number.isdigit() or not 1 <= int(number) <= 100:
+            raise HTTPException(400, "Percentage discount must be between 1% and 100%.")
+        return "PERCENT", int(number)
+    digits = re.sub(r"[^\\d]", "", cleaned)
     if not digits or int(digits) <= 0:
-        raise HTTPException(status_code=400, detail="Invalid discount value. Use e.g. '20%' or '30000'.")
+        raise HTTPException(400, "Invalid discount value. Use e.g. '20%' or '30000'.")
     return "FIXED", int(digits)
 
 
-class VoucherCreate(BaseModel):
+class VoucherWrite(BaseModel):
     code: str = Field(..., min_length=2, max_length=32)
     hub: str = Field(default="All hubs", max_length=64)
     discount: str = Field(..., min_length=1, max_length=32)
@@ -50,20 +48,35 @@ class VoucherOut(BaseModel):
     valid_from: str
     valid_to: str
     status: str
+    start_date: str
+    end_date: str
 
 
-def _to_voucher_out(v: Voucher, hub_label: str = "All hubs") -> dict:
-    discount_str = f"{v.discount_value}%" if v.discount_type == "PERCENT" else f"{v.discount_value:,} VND"
+def _to_voucher_out(voucher: Voucher) -> dict:
+    discount = (f"{voucher.discount_value}%" if voucher.discount_type == "PERCENT"
+                else f"{voucher.discount_value:,} VND")
     return {
-        "id": v.voucher_id,
-        "code": v.code,
-        "hub": hub_label,
-        "discount": discount_str,
-        "min_order": f"{v.min_order:,} VND",
-        "valid_from": f"{_format_display_date(v.start_date.date())} –",
-        "valid_to": _format_display_date(v.end_date.date()),
-        "status": v.status,
+        "id": voucher.voucher_id,
+        "code": voucher.code,
+        "hub": "All hubs",
+        "discount": discount,
+        "min_order": f"{voucher.min_order:,} VND",
+        "valid_from": _format_display_date(voucher.start_date.date()),
+        "valid_to": _format_display_date(voucher.end_date.date()),
+        "status": voucher.status,
+        "start_date": voucher.start_date.date().isoformat(),
+        "end_date": voucher.end_date.date().isoformat(),
     }
+
+
+def _validated_payload(payload: VoucherWrite):
+    code = payload.code.strip().upper()
+    if not code:
+        raise HTTPException(400, "Voucher code is required.")
+    if payload.end_date < payload.start_date:
+        raise HTTPException(400, "Invalid time range")
+    discount_type, discount_value = _parse_discount_input(payload.discount)
+    return code, discount_type, discount_value
 
 
 @router.get("", response_model=list[VoucherOut])
@@ -72,54 +85,48 @@ def list_vouchers(
     search: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    vouchers = voucher_repository.get_vouchers(db, status_filter=status_filter, search=search)
-    return [_to_voucher_out(v) for v in vouchers]
+    rows = voucher_repository.get_vouchers(db, status_filter, search)
+    return [_to_voucher_out(row) for row in rows]
 
 
 @router.post("", response_model=VoucherOut, status_code=status.HTTP_201_CREATED)
-def create_voucher(payload: VoucherCreate, db: Session = Depends(get_db)):
-    normalized_code = payload.code.strip().upper()
-    if not normalized_code:
-        raise HTTPException(status_code=400, detail="Voucher code is required.")
-
-    if payload.end_date < payload.start_date:
-        raise HTTPException(
-            status_code=400,
-            detail="Valid until date cannot be earlier than valid from date.",
-        )
-
-    if voucher_repository.get_voucher_by_code(db, normalized_code):
-        raise HTTPException(
-            status_code=409,
-            detail=f"Voucher code '{normalized_code}' already exists.",
-        )
-
-    discount_type, discount_value = _parse_discount_input(payload.discount)
-
-    new_voucher = voucher_repository.create_voucher(
-        db=db,
-        code=normalized_code,
-        discount_type=discount_type,
-        discount_value=discount_value,
-        min_order=payload.min_order,
-        start_date=datetime.combine(payload.start_date, time.min),
-        end_date=datetime.combine(payload.end_date, time(23, 59, 59)),
+def create_voucher(payload: VoucherWrite, db: Session = Depends(get_db)):
+    code, discount_type, discount_value = _validated_payload(payload)
+    if voucher_repository.get_voucher_by_code(db, code):
+        raise HTTPException(409, f"Voucher code '{code}' already exists.")
+    voucher = voucher_repository.create_voucher(
+        db, code, discount_type, discount_value, payload.min_order,
+        datetime.combine(payload.start_date, time.min),
+        datetime.combine(payload.end_date, time.max),
     )
+    return _to_voucher_out(voucher)
 
-    return _to_voucher_out(new_voucher, hub_label=payload.hub.strip() or "All hubs")
+
+@router.put("/{voucher_id}", response_model=VoucherOut)
+def update_voucher(voucher_id: int, payload: VoucherWrite, db: Session = Depends(get_db)):
+    voucher = voucher_repository.get_voucher_by_id(db, voucher_id)
+    if voucher is None:
+        raise HTTPException(404, "Voucher not found.")
+    if voucher.status == "ARCHIVED":
+        raise HTTPException(409, "ARCHIVED vouchers cannot be updated.")
+    code, discount_type, discount_value = _validated_payload(payload)
+    duplicate = voucher_repository.get_voucher_by_code(db, code)
+    if duplicate is not None and duplicate.voucher_id != voucher_id:
+        raise HTTPException(409, f"Voucher code '{code}' already exists.")
+    updated = voucher_repository.update_voucher(
+        db, voucher, code=code, discount_type=discount_type,
+        discount_value=discount_value, min_order=payload.min_order,
+        start_date=datetime.combine(payload.start_date, time.min),
+        end_date=datetime.combine(payload.end_date, time.max),
+    )
+    return _to_voucher_out(updated)
 
 
 @router.patch("/{voucher_id}/archive", response_model=VoucherOut)
 def archive_voucher(voucher_id: int, db: Session = Depends(get_db)):
     voucher = voucher_repository.get_voucher_by_id(db, voucher_id)
-    if not voucher:
-        raise HTTPException(status_code=404, detail="Voucher not found.")
-
-    if voucher.status != "ACTIVE":
-        raise HTTPException(
-            status_code=400,
-            detail="Only ACTIVE vouchers can be archived.",
-        )
-
-    updated_voucher = voucher_repository.archive_voucher(db, voucher)
-    return _to_voucher_out(updated_voucher)
+    if voucher is None:
+        raise HTTPException(404, "Voucher not found.")
+    if voucher.status not in {"ACTIVE", "EXPIRED"}:
+        raise HTTPException(409, "Only ACTIVE or EXPIRED vouchers can be archived.")
+    return _to_voucher_out(voucher_repository.archive_voucher(db, voucher))

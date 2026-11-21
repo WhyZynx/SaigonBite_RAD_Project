@@ -1,162 +1,163 @@
-from datetime import date, datetime
+from collections import defaultdict
+from datetime import date, datetime, time
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+
 from ..database import get_db
 from app.repositories import report_repository
 
 router = APIRouter(prefix="/api/reports", tags=["Manager Reports"])
 
 
-def _validate_dates(start_date: date, end_date: date) -> None:
-    if end_date < start_date:
-        raise HTTPException(
-            status_code=400,
-            detail="End date cannot be earlier than start date.",
-        )
+def _period(start_date: date, end_date: date):
+    if start_date > end_date:
+        raise HTTPException(status_code=400, detail="Invalid time range")
+    return datetime.combine(start_date, time.min), datetime.combine(end_date, time.max)
+
+
+def _minutes(value: float | None) -> str:
+    return "—" if value is None else f"{round(value)} mins"
 
 
 @router.get("/sales")
 def get_sales_report(
-    start_date: date = Query(default=date(2026, 11, 1)),
-    end_date: date = Query(default=date(2026, 11, 15)),
+    start_date: date = Query(...),
+    end_date: date = Query(...),
     db: Session = Depends(get_db),
 ):
-    _validate_dates(start_date, end_date)
-    start_dt = datetime.combine(start_date, datetime.min.time())
-    end_dt = datetime.combine(end_date, datetime.max.time())
-
+    start_dt, end_dt = _period(start_date, end_date)
     orders = report_repository.get_orders_in_range(db, start_dt, end_dt)
-    total_revenue = sum(o.total for o in orders if o.status == "DELIVERED")
-    total_orders = len(orders)
+    deliveries = report_repository.get_deliveries_by_order_range(db, start_dt, end_dt)
+    avg_delivery = report_repository.average_delivery_minutes(deliveries)
 
-    deliveries = report_repository.get_completed_deliveries_in_range(db, start_dt, end_dt)
-    avg_minutes = 24
-    if deliveries:
-        durations = [(d.delivered_at - d.pickup_at).total_seconds() / 60 for d in deliveries]
-        avg_minutes = int(sum(durations) / len(durations))
-
-    daily_data = {}
-    for o in orders:
-        day_key = o.created_at.strftime("%Y-%m-%d")
-        if day_key not in daily_data:
-            daily_data[day_key] = {"orders": 0, "revenue": 0}
-        daily_data[day_key]["orders"] += 1
-        if o.status == "DELIVERED":
-            daily_data[day_key]["revenue"] += o.total
+    # Keep the existing project's revenue rule: only DELIVERED orders contribute.
+    revenue = sum(order.total for order in orders if order.status == "DELIVERED")
+    daily = defaultdict(lambda: {"orders": 0, "revenue": 0})
+    for order in orders:
+        key = order.created_at.date()
+        daily[key]["orders"] += 1
+        if order.status == "DELIVERED":
+            daily[key]["revenue"] += order.total
 
     rows = []
-    for d_str, stats in sorted(daily_data.items()):
-        dt = datetime.strptime(d_str, "%Y-%m-%d")
+    for day, values in sorted(daily.items()):
+        day_deliveries = [
+            delivery for delivery in deliveries
+            if delivery.delivered_at and delivery.delivered_at.date() == day
+        ]
         rows.append({
-            "label": dt.strftime("%d"),
-            "date": dt.strftime("%d %b %Y"),
-            "orders": stats["orders"],
-            "revenue": stats["revenue"],
-            "chartVal": float(stats["revenue"] / 1000000),
-            "delivery": f"{avg_minutes} mins",
+            "label": day.strftime("%d"),
+            "date": day.strftime("%d %b %Y"),
+            "orders": values["orders"],
+            "revenue": values["revenue"],
+            "chartVal": values["revenue"] / 1_000_000,
+            "delivery": _minutes(report_repository.average_delivery_minutes(day_deliveries)),
         })
 
     return {
         "kpis": [
-            {"label": "Total Revenue", "value": f"{total_revenue:,} VND"},
-            {"label": "Total Orders", "value": f"{total_orders:,}"},
-            {"label": "Avg. Delivery Time", "value": f"{avg_minutes} mins"},
+            {"label": "Total Revenue", "value": f"{revenue:,} VND"},
+            {"label": "Total Orders", "value": f"{len(orders):,}"},
+            {"label": "Avg. Delivery Time", "value": _minutes(avg_delivery)},
         ],
-        "totalSummary": f"Total: {total_revenue:,} VND · {total_orders:,} orders",
+        "totalSummary": f"Total: {revenue:,} VND · {len(orders):,} orders",
         "rows": rows,
     }
 
 
 @router.get("/hub-workload")
 def get_hub_workload_report(
-    start_date: date = Query(default=date(2026, 11, 1)),
-    end_date: date = Query(default=date(2026, 11, 15)),
+    start_date: date = Query(...),
+    end_date: date = Query(...),
     db: Session = Depends(get_db),
 ):
-    _validate_dates(start_date, end_date)
-    start_dt = datetime.combine(start_date, datetime.min.time())
-    end_dt = datetime.combine(end_date, datetime.max.time())
-
+    start_dt, end_dt = _period(start_date, end_date)
     hubs = report_repository.get_all_hubs(db)
-    total_hub_orders = 0
+    history = report_repository.get_status_history_in_range(db, start_dt, end_dt)
+
+    # History is queried as specified in UC06. The report uses the current order
+    # state for workload counts; no extra status SLA or prep-time rule is invented.
+    history_order_ids = {entry.order_id for entry in history}
+    total_orders = 0
     completed_orders = 0
     rows = []
+    hubs_with_orders = 0
 
-    for h in hubs:
-        hub_orders = report_repository.get_hub_orders_in_range(db, h.hub_id, start_dt, end_dt)
-        count_all = len(hub_orders)
-        count_completed = sum(1 for o in hub_orders if o.status == "DELIVERED")
-        count_active = count_all - count_completed
-
-        total_hub_orders += count_all
-        completed_orders += count_completed
-
-        rows.append({
-            "label": f"Hub {h.hub_id}",
-            "col1": h.name,
-            "col2": f"{count_all:,}",
-            "col3": f"{count_completed:,}",
-            "col4": f"{count_active:,}",
-            "chartVal": count_all,
-        })
-
-    completion_rate = (completed_orders / total_hub_orders * 100) if total_hub_orders > 0 else 0
+    for hub in hubs:
+        orders = report_repository.get_hub_orders_in_range(db, hub.hub_id, start_dt, end_dt)
+        total = len(orders)
+        completed = sum(1 for order in orders if order.status == "DELIVERED")
+        not_delivered = total - completed
+        total_orders += total
+        completed_orders += completed
+        if total:
+            hubs_with_orders += 1
+        if total:
+            rows.append({
+                "label": f"Hub {hub.hub_id}",
+                "col1": hub.name,
+                "col2": f"{total:,}",
+                "col3": f"{completed:,}",
+                "col4": f"{not_delivered:,}",
+                "chartVal": total,
+            })
 
     return {
         "kpis": [
-            {"label": "Total Hub Orders", "value": f"{total_hub_orders:,}"},
+            {"label": "Total Hub Orders", "value": f"{total_orders:,}"},
             {"label": "Completed Orders", "value": f"{completed_orders:,}"},
-            {"label": "Avg. Prep Time", "value": "11 mins"},
+            {"label": "Hubs with Orders", "value": f"{hubs_with_orders:,}"},
         ],
-        "totalSummary": f"Total: {total_hub_orders:,} orders · {completion_rate:.1f}% completion rate",
+        "totalSummary": f"Total: {total_orders:,} orders",
         "rows": rows,
+        "statusHistoryRecords": len(history_order_ids),
     }
 
 
 @router.get("/delivery")
 def get_delivery_report(
-    start_date: date = Query(default=date(2026, 11, 1)),
-    end_date: date = Query(default=date(2026, 11, 15)),
+    start_date: date = Query(...),
+    end_date: date = Query(...),
     db: Session = Depends(get_db),
 ):
-    _validate_dates(start_date, end_date)
-    start_dt = datetime.combine(start_date, datetime.min.time())
-    end_dt = datetime.combine(end_date, datetime.max.time())
-
+    start_dt, end_dt = _period(start_date, end_date)
     deliveries = report_repository.get_deliveries_by_order_range(db, start_dt, end_dt)
-    total_deliveries = len(deliveries)
-    on_time_count = sum(1 for d in deliveries if d.outcome == "DELIVERED")
-    on_time_rate = (on_time_count / total_deliveries * 100) if total_deliveries > 0 else 0
-
-    daily_deliv = {}
-    for d in deliveries:
-        if d.delivered_at:
-            day_key = d.delivered_at.strftime("%Y-%m-%d")
-            if day_key not in daily_deliv:
-                daily_deliv[day_key] = {"total": 0, "ontime": 0}
-            daily_deliv[day_key]["total"] += 1
-            if d.outcome == "DELIVERED":
-                daily_deliv[day_key]["ontime"] += 1
+    completed = [
+        row for row in deliveries
+        if row.delivered_at is not None and row.pickup_at is not None
+        and row.delivered_at >= row.pickup_at
+    ]
+    avg_delivery = report_repository.average_delivery_minutes(deliveries)
+    daily = defaultdict(list)
+    for row in deliveries:
+        # The selected report period is based on order creation time (the common
+        # date field available for all delivery records in this schema).
+        daily[row.order.created_at.date()].append(row)
 
     rows = []
-    for idx, (d_str, stats) in enumerate(sorted(daily_deliv.items()), start=1):
-        dt = datetime.strptime(d_str, "%Y-%m-%d")
-        rate = (stats["ontime"] / stats["total"] * 100) if stats["total"] > 0 else 0
+    for day, day_deliveries in sorted(daily.items()):
+        day_completed = [
+            row for row in day_deliveries
+            if row.pickup_at is not None and row.delivered_at is not None
+            and row.delivered_at >= row.pickup_at
+        ]
         rows.append({
-            "label": f"{idx:02d}",
-            "col1": dt.strftime("%d %b %Y"),
-            "col2": str(stats["total"]),
-            "col3": f"{stats['ontime']} ({rate:.1f}%)",
-            "col4": "24 mins",
-            "chartVal": round(rate, 1),
+            "label": day.strftime("%d"),
+            "col1": day.strftime("%d %b %Y"),
+            "col2": str(len(day_deliveries)),
+            "col3": _minutes(report_repository.average_delivery_minutes(day_completed)),
+            "chartVal": len(day_completed),
         })
 
     return {
         "kpis": [
-            {"label": "Total Deliveries", "value": f"{total_deliveries:,}"},
-            {"label": "On-Time Rate", "value": f"{on_time_rate:.1f}%"},
-            {"label": "Avg. Delivery Time", "value": "24 mins"},
+            {"label": "Total Deliveries", "value": f"{len(deliveries):,}"},
+            {"label": "Completed Deliveries", "value": f"{len(completed):,}"},
+            {"label": "Avg. Delivery Time", "value": _minutes(avg_delivery)},
         ],
-        "totalSummary": f"Total: {total_deliveries:,} deliveries · {on_time_rate:.1f}% on-time",
+        "totalSummary": (
+            f"Total: {len(deliveries):,} deliveries · "
+            f"{len(completed):,} with recorded pickup and delivery times"
+        ),
         "rows": rows,
     }

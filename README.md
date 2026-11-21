@@ -85,7 +85,11 @@ The backend validates credentials and assigns one of the supported roles: CUSTOM
 - Customer hub/menu reads, order creation, order history, and order detail use SQLAlchemy repositories and the shared database models. The signed-in Customer email must match exactly one Customer profile in the database.
 - Customer delivery addresses are geocoded through Nominatim and routed through OSRM. The backend recalculates the route quote and order totals. Admin's voucher hub label is display-only because the shared schema has no voucher-to-hub relationship.
 - The schema has no separate recipient, delivery-phone, special-note, or item-options fields. Customer currently stores recipient, phone, note, and address together in the order's delivery_address; Kitchen receives that stored string.
-- Admin's demo delivery action creates or updates a Delivery record and sets delivered_at; it does not set pickup_at. Manager delivery-time calculations require both timestamps, so those report values need verification against the intended workflow and data.
+- Admin's demo delivery action creates or updates a Delivery record with
+  outcome=DELIVERED and delivered_at. It does not set pickup_at because
+  the project does not implement a real Shipper workflow. Manager counts
+  completed deliveries without requiring pickup_at. Average Delivery Time
+  is calculated only when both timestamps are valid; otherwise it displays —.
 - Authentication accounts and sessions remain in-memory demo implementations.
 
 

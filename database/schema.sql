@@ -131,6 +131,25 @@ CREATE TABLE deliveries (
     CONSTRAINT chk_delivery_outcome CHECK (outcome IN ('IN_TRANSIT', 'DELIVERED', 'LATE', 'FAILED'))
 ) ENGINE=InnoDB;
 
+-- 10. Customer Notifications (Kitchen rejection updates)
+CREATE TABLE notifications (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    order_id INT NOT NULL,
+    notification_type VARCHAR(30) NOT NULL DEFAULT 'ORDER_REJECTED',
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_notifications_order_type UNIQUE (order_id, notification_type),
+    KEY ix_notifications_customer_created (customer_id, created_at),
+    KEY ix_notifications_customer_read (customer_id, is_read),
+    CONSTRAINT fk_notifications_customer FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_notifications_order FOREIGN KEY (order_id)
+        REFERENCES orders(order_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 -- Performance Indexes for Management Reports & Kitchen Queue
 CREATE INDEX idx_orders_created_at ON orders(created_at);
 CREATE INDEX idx_orders_hub_status ON orders(hub_id, status);

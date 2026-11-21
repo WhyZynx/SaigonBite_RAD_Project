@@ -1,8 +1,11 @@
+import logging
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.repositories.order import OrderRepository
+from app.notification_service import NotificationService
 from app.schemas import (
     DecisionRequest,
     DecisionResponse,
@@ -13,6 +16,7 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/api/kitchen", tags=["Kitchen"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/hubs")
@@ -44,7 +48,14 @@ def list_kitchen_orders(
 
 @router.patch("/orders/{order_id}/decision", response_model=DecisionResponse)
 def decide_order(order_id: int, request: DecisionRequest, db: Session = Depends(get_db)):
-    return OrderRepository(db).decide(order_id, request.decision.value, request.reason)
+    result = OrderRepository(db).decide(order_id, request.decision.value, request.reason)
+    if request.decision.value == "REJECT":
+        try:
+            NotificationService(db).notify_order_rejected(order_id, result["rejection_reason"])
+        except Exception:
+            db.rollback()
+            logger.exception("Failed to create customer notification for rejected order %s", order_id)
+    return result
 
 
 @router.patch("/orders/{order_id}/status", response_model=StatusResponse)

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -15,6 +15,12 @@ class Customer(Base):
     passport_number = Column(String(30), nullable=True)
 
     orders = relationship("Order", back_populates="customer")
+    notifications = relationship(
+        "Notification",
+        back_populates="customer",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class Hub(Base):
@@ -115,6 +121,12 @@ class Order(Base):
     order_items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     status_history = relationship("OrderStatusHistory", back_populates="order", cascade="all, delete-orphan")
     delivery = relationship("Delivery", back_populates="order", uselist=False, cascade="all, delete-orphan")
+    notifications = relationship(
+        "Notification",
+        back_populates="order",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class OrderItem(Base):
@@ -170,3 +182,42 @@ class Delivery(Base):
     outcome = Column(String(30), default="IN_TRANSIT", nullable=False)
 
     order = relationship("Order", back_populates="delivery")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    __table_args__ = (
+        UniqueConstraint("order_id", "notification_type", name="uq_notifications_order_type"),
+        Index("ix_notifications_customer_created", "customer_id", "created_at"),
+        Index("ix_notifications_customer_read", "customer_id", "is_read"),
+    )
+
+    notification_id = Column(Integer, primary_key=True, autoincrement=True)
+    customer_id = Column(
+        Integer,
+        ForeignKey(
+            "customers.customer_id",
+            name="fk_notifications_customer",
+            ondelete="CASCADE",
+            onupdate="CASCADE",
+        ),
+        nullable=False,
+    )
+    order_id = Column(
+        Integer,
+        ForeignKey(
+            "orders.order_id",
+            name="fk_notifications_order",
+            ondelete="CASCADE",
+            onupdate="CASCADE",
+        ),
+        nullable=False,
+    )
+    notification_type = Column(String(30), default="ORDER_REJECTED", nullable=False)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    customer = relationship("Customer", back_populates="notifications")
+    order = relationship("Order", back_populates="notifications")

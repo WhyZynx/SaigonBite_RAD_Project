@@ -24,7 +24,7 @@
 | Customer | Đọc Hub/Menu, tạo đơn, danh sách/chi tiết/lịch sử đơn; voucher preview và đặt đơn dùng kết quả backend; Customer ánh xạ theo email phiên đăng nhập; Nominatim geocode và OSRM tính tuyến lái xe | Địa chỉ OSM có thể chỉ geocode tới đoạn đường thay vì đúng số nhà; tài khoản/session vẫn là mock |
 | Kitchen | Hub list/filter; confirm/reject; PREPARING/READY; ghi status history | Đã kiểm thử SQLite; MySQL đồng thời và giao diện chưa kiểm chứng |
 | Admin | Voucher GET/filter/create/archive | Dashboard, Hub/Menu/Users và update Voucher chưa có luồng hoàn chỉnh; Hub label không được lưu |
-| Manager | Sales, Hub Workload, Delivery Reports; repository truy vấn Order/Delivery/Hub | Hai lỗi trình bày/tính Pending; Delivery producer chưa có; một số thời gian demo |
+| Manager | Sales, Hub Workload, Delivery Reports; repository truy vấn Order/Delivery/Hub | Hai lỗi trình bày/tính Pending; Admin ghi delivered_at nhưng chưa ghi pickup_at; cần kiểm tra lại phép tính thời lượng của Manager Report và một số chỉ số demo |
 
 Các con số là mã vấn đề duy nhất, không tính lặp các mục liên module ở phần C. Sáu mục đã sửa/đóng là KIT-01, KIT-02, INT-DATA-02 và CUS-01–03. CUS-02/03 được đóng trong phạm vi demo đã ghi rõ; không đồng nghĩa auth hay định tuyến thực tế đã hoàn thiện.
 
@@ -78,7 +78,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | DATA-DB-01 | Số dòng Orders và lịch sử cao hơn seed dự kiến | Đối chiếu dữ liệu database với seed | Lần đọc trước có customers 4, hubs 4, brands 3, menu_items 8, vouchers 5, orders 11, order_items 20, order_status_history 37, deliveries 4; nguồn của 2/4/5 dòng vượt seed trong ba bảng đơn hàng chưa rõ | Chủ sở hữu dữ liệu xác nhận bằng cách chỉ đọc; không xóa/reseed | Backend/shared; chủ sở hữu DB nhóm | Thấp khi chỉ đọc; cần rõ nguồn trước reset | CHƯA XÁC MINH |
 | VER-DB-01 | Chưa thử luồng ghi trên MySQL riêng | Tạo đơn → Kitchen cập nhật → Customer/Manager đọc lại | Không có database MySQL thử nghiệm được phép dùng; database nhóm không dùng để thử ghi | Cấp MySQL test riêng, chạy cùng một order_id và kiểm tra history/rollback/đồng thời | Backend/shared và từng chủ module | Cao trước khi tuyên bố MySQL E2E đạt | CHƯA XÁC MINH |
 | VER-UI-01 | Chưa nghiệm thu giao diện toàn bộ bằng trình duyệt | Đăng nhập và thao tác các màn hình chính | Chưa có bằng chứng đầy đủ về render, điều hướng, console và network | TV1/TV2/TV3 kiểm tra module mình, sau đó chạy luồng liên module | Mỗi thành viên; shared hỗ trợ route | Trung bình trước nghiệm thu giao diện | CHƯA XÁC MINH |
-| INT-REPORT-01 | Delivery Report không có luồng tạo/cập nhật Delivery từ Kitchen | Kitchen đưa đơn đến READY; Manager xem Delivery Report | Mã ứng dụng hiện đọc bảng `deliveries` để báo cáo nhưng không có đoạn code tạo/cập nhật Delivery; Kitchen chỉ cập nhật Order status | Nhóm xác định ai quản lý giao hàng và thời điểm ghi Delivery; nối lifecycle sau khi thống nhất | Backend/shared; TV2/TV3 phối hợp | Cao nếu yêu cầu báo cáo phản ánh đơn vừa xử lý | VẤN ĐỀ TÍCH HỢP — thiếu điểm nối dữ liệu đã xác nhận |
+| INT-REPORT-01 | Delivery Report thiếu cặp timestamp để tính thời lượng | Admin đánh dấu đơn READY thành DELIVERED rồi Manager xem Delivery Report | backend/app/routers/admin.py tạo/cập nhật Delivery và ghi delivered_at nhưng không ghi pickup_at; Manager Report chỉ tính thời lượng khi có cả hai timestamp hợp lệ | TV3 kiểm tra phép tính và ý nghĩa report; nhóm xác định owner/sự kiện ghi pickup_at; kiểm thử Delivery có đủ hai timestamp | TV3; backend/shared phối hợp owner luồng giao hàng | Trung bình; thời lượng có thể rỗng hoặc khác ý nghĩa mong đợi | CẦN KIỂM TRA — code ghi Delivery đã xác nhận; report chưa kiểm thử với đủ timestamp |
 
 ## C. Lỗi liên module và luồng chính
 
@@ -106,7 +106,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | Kitchen cập nhật trạng thái | SQLite tests xác nhận PENDING → CONFIRMED/REJECTED, CONFIRMED → PREPARING, PREPARING → READY và history | PASS; chưa xác minh khóa đồng thời trên MySQL |
 | Customer đọc trạng thái | Kiểm thử Kitchen gọi Order Detail sau khi cập nhật trạng thái và thấy status mới | PASS trong fixture SQLite; không phải cùng đơn vừa POST trong test Customer mới |
 | Manager Sales/Hub Workload | API truy vấn bảng Orders theo thời gian; code có thể đọc Order do Customer tạo | Chưa chạy báo cáo trên cùng order_id |
-| Manager Delivery Report | Báo cáo truy vấn bảng Deliveries; không tìm thấy code tạo/cập nhật Delivery | Luồng giao hàng/báo cáo chưa nối; xem INT-REPORT-01 |
+| Manager Delivery Report | Admin tạo/cập nhật Delivery khi đánh dấu đơn đã giao; luồng này ghi delivered_at nhưng không ghi pickup_at | Chưa xác minh phép tính thời lượng với đủ timestamp; xem INT-REPORT-01 |
 | Toàn bộ E2E | Chưa chạy một order_id xuyên suốt cả bốn vai trò | NOT TESTED |
 
 ## D. Các lỗi đã sửa hoặc xử lý trong phạm vi demo
@@ -137,7 +137,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | 1 | Recipient, Delivery Phone, Address, Special Note | Hiện gộp trong một chuỗi; Kitchen phải tách theo nhãn | Giữ chuỗi gắn nhãn; hoặc thêm trường cấu trúc ở API/model/schema | Tạm giữ contract hiện có đến khi chọn; nếu đổi phải giữ tương thích Customer/Kitchen và duyệt schema | TV1, TV2, TV3, Backend/Shared |
 | 2 | API Order Detail cho giao hàng | API hiện trả `delivery_address`, Customer Name/Phone và khoảng cách; không có field riêng cho giao hàng | Tiếp tục parse chuỗi; hoặc thêm field API riêng (có thể additive) | Ưu tiên contract tường minh; không tự đổi khi chưa có đồng thuận | TV1, TV2, Backend |
 | 3 | Vòng đời trạng thái đơn | Kitchen xử lý đến READY; enum còn DELIVERED, FAILED, CANCELLED | Giao hàng module khác quản lý; hoặc mở rộng người phụ trách/endpoint | Chốt trạng thái hợp lệ, vai trò chuyển trạng thái và history cho từng bước | TV1, TV2, TV3, Backend |
-| 4 | Thời điểm tạo/cập nhật Delivery | Manager Delivery Report đọc `deliveries`, hiện không có đoạn code ghi bảng này | Tạo Delivery khi READY; khi giao nhận bắt đầu; hoặc giao cho module/ứng dụng khác | Chỉ định owner và sự kiện ghi; không tạo record ngầm trong Kitchen trước khi thống nhất | TV2, TV3, Backend |
+| 4 | Nguồn ghi pickup_at và cách tính thời lượng giao | Admin hiện ghi delivered_at khi đánh dấu DELIVERED; report lấy hiệu giữa pickup_at và delivered_at | Endpoint Admin không ghi pickup_at; report chỉ tính duration khi có đủ hai mốc | TV3 xác minh công thức/nhãn; nhóm chỉ định owner và sự kiện ghi pickup_at; kiểm thử dữ liệu đủ mốc trước khi kết luận | TV3, backend/shared và delivery owner |
 | 5 | Voucher áp dụng toàn hệ thống hay theo Hub | API nhận nhãn hub nhưng database không lưu quan hệ | Voucher global; hoặc thêm quan hệ theo Hub sau khi duyệt | Nếu global, bỏ/đổi nhãn Applicable Hub; nếu theo Hub, thống nhất schema/API và áp dụng voucher | TV1, TV3, Backend |
 | 6 | Định nghĩa Pending trong Hub Workload | UI gọi cột là Pending nhưng API tính mọi đơn chưa DELIVERED | Chỉ status PENDING; hoặc mọi đơn chưa giao với nhãn khác | Dùng status PENDING nếu giữ nhãn hiện tại | TV3 |
 | 7 | Định nghĩa On-Time Rate | Code đếm outcome DELIVERED; schema có DELIVERED/LATE nhưng không thấy writer cập nhật outcome hoặc ETA | Dựa vào outcome do delivery owner ghi; hoặc thêm quy tắc ETA/giờ hẹn | Chốt ý nghĩa, nguồn dữ liệu và cách ghi trước khi gọi là on-time thực tế | TV3, Backend/Shared, delivery owner |
@@ -163,7 +163,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | MySQL — kết quả đọc trước đây | MySQL 8.0.46, chỉ đọc | Đã kiểm tra trước đó | Đủ 9 bảng, đã đếm 9 khóa ngoại; order 111 từng thấy ở hub 2. Không kết nối lại lượt này; đây không phải kiểm thử ghi |
 
 | Browser UI/E2E | Chưa có browser evidence | NOT TESTED | JavaScript syntax và parser unit probe không chứng minh render, thao tác, console hoặc network |
-| Manager API và Reports trên DB kiểm thử | Chưa chạy riêng | NOT TESTED | Cần test Pending, lỗi API, Delivery records và dữ liệu cùng order_id |
+| Manager API and Reports trên DB test | Chưa chạy riêng | NOT TESTED | Cần test Pending, API error, Delivery có cả pickup_at và delivered_at, duration và dữ liệu cùng order_id |
 | Toàn luồng Customer → Kitchen → Customer → Manager | Chưa chạy cùng một order_id | NOT TESTED | Các đoạn riêng có test SQLite, nhưng không phải end-to-end |
 
 ## H. Checklist trước khi tạo PR vào main

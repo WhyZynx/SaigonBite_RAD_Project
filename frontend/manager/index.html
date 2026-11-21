@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#173d32">
     <title>SaigonBite | Management Reports</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,116 +14,167 @@
 
 <body>
     <div class="portal-layout">
-        <aside class="sidebar">
-            <div class="brand-header">
-                <span class="brand-title">SaigonBite</span>
-                <span class="portal-label">MANAGER PORTAL</span>
-            </div>
 
-            <nav class="navigation">
-                <a href="#dashboard" class="nav-item" data-nav="dashboard">Dashboard</a>
-                <a href="#reports" class="nav-item active" data-nav="reports">Reports</a>
-                <a href="#hub-operations" class="nav-item" data-nav="hub-operations">Hub Operations</a>
-                <a href="#order-history" class="nav-item" data-nav="order-history">Order History</a>
+        <aside class="sidebar">
+            <a class="brand" href="#reports" aria-label="SaigonBite Manager">
+                <span class="brand-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                            d="M6 19h12M8 19v3h8v-3M5 11a4 4 0 0 1 2.4-7.2A5.5 5.5 0 0 1 17.8 5 3.5 3.5 0 0 1 19 12H5z" />
+                    </svg>
+                </span>
+                <strong>SaigonBite</strong>
+                <small>GOOD FOOD, CLOSE BY</small>
+            </a>
+
+            <nav class="side-nav" aria-label="Manager navigation">
+                <a href="#dashboard" class="nav-item" data-nav="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect x="3" y="3" width="8" height="8" rx="1" />
+                        <rect x="13" y="3" width="8" height="5" rx="1" />
+                        <rect x="13" y="10" width="8" height="11" rx="1" />
+                        <rect x="3" y="13" width="8" height="8" rx="1" />
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="#hub-operations" class="nav-item" data-nav="hub-operations">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+                        <path d="M9 9h.01M15 9h.01" />
+                    </svg>
+                    <span>Hub Operations</span>
+                </a>
+
+                <a href="#order-history" class="nav-item" data-nav="order-history">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M3 3v5h5M3.5 8a9 9 0 1 1-.5 5" />
+                        <path d="M12 7v5l3 2" />
+                    </svg>
+                    <span>Order History</span>
+                </a>
+
+                <a href="#reports" class="nav-item active" data-nav="reports">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M4 19V5m0 14h17M8 15v-4m5 4V7m5 8V9" />
+                    </svg>
+                    <span>Reports</span>
+                </a>
             </nav>
 
-            <div class="sidebar-footer">
-                <button class="logout-button" id="logoutButton" type="button">Log Out</button>
+            <div class="sidebar-bottom">
+                <button class="side-nav-logout" id="logoutButton" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7" />
+                    </svg>
+                    <span>Log out</span>
+                </button>
             </div>
         </aside>
 
         <main class="main-area">
             <header class="user-header">
-                <div class="user-info">
-                    <span class="user-name">Minh Nguyen</span>
-                    <span class="user-role">Manager</span>
+                <div class="user-info"><span class="user-name">Minh Nguyen</span><span class="user-role">Manager</span>
                 </div>
-                <div class="user-avatar" aria-hidden="true">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                </div>
+                <div class="user-avatar" aria-hidden="true">MN</div>
             </header>
+            <section class="page-section hidden" id="dashboardPage">
+                <div class="page-heading">
+                    <h1>Manager Dashboard</h1>
+                    <p>Overview of SaigonBite business performance.</p>
+                </div>
 
+                <div class="coming-soon-card">
+                    <div class="coming-soon-icon">▦</div>
+                    <span class="coming-soon-badge">COMING SOON</span>
+                    <h2>Dashboard is under development</h2>
+                    <p>
+                        This section will provide an overview of business performance,
+                        orders, revenue and operational activities in a future update.
+                    </p>
+                </div>
+            </section>
+
+            <section class="page-section hidden" id="hubOperationsPage">
+                <div class="page-heading">
+                    <h1>Hub Operations</h1>
+                    <p>Monitor and manage SaigonBite hub operations.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <div class="coming-soon-icon">⌂</div>
+                    <span class="coming-soon-badge">COMING SOON</span>
+                    <h2>Hub Operations is under development</h2>
+                    <p>
+                        This section will support hub monitoring, operational status,
+                        staff activities and hub performance management in a future update.
+                    </p>
+                </div>
+            </section>
+
+            <section class="page-section hidden" id="orderHistoryPage">
+                <div class="page-heading">
+                    <h1>Order History</h1>
+                    <p>Review historical orders across SaigonBite.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <div class="coming-soon-icon">↻</div>
+                    <span class="coming-soon-badge">COMING SOON</span>
+                    <h2>Order History is under development</h2>
+                    <p>
+                        This section will provide order history search,
+                        order details, status tracking and historical transaction review
+                        in a future update.
+                    </p>
+                </div>
+            </section>
             <section class="page-section" id="reportsPage">
                 <div class="page-heading">
-                    <div>
-                        <h1>Management Reports</h1>
-                        <p>Review sales, hub operations and delivery performance.</p>
-                    </div>
+                    <h1>Management Reports</h1>
+                    <p>Review sales, hub operations and delivery performance.</p>
                 </div>
-
                 <div class="report-filter-card">
-                    <div class="form-field report-type-field">
-                        <label for="reportType">Report Type</label>
-                        <select id="reportType">
+                    <div class="form-field"><label for="reportType">Report Type</label><select id="reportType">
                             <option value="sales">Sales Report</option>
                             <option value="hub-workload">Hub Workload Report</option>
                             <option value="delivery">Delivery Performance Report</option>
-                        </select>
+                        </select></div>
+                    <div class="form-field"><label for="startDate">Start Date</label><input type="date" id="startDate">
                     </div>
-                    <div class="form-field">
-                        <label for="startDate">Start Date</label>
-                        <input type="date" id="startDate" value="2026-11-01">
-                    </div>
-                    <div class="form-field">
-                        <label for="endDate">End Date</label>
-                        <input type="date" id="endDate" value="2026-11-15">
-                    </div>
+                    <div class="form-field"><label for="endDate">End Date</label><input type="date" id="endDate"></div>
                     <button class="primary-button" id="generateReportButton" type="button">Generate Report</button>
                 </div>
-
-                <div class="no-data-notice hidden" id="reportNotice">
-                    No data available for the selected period
-                </div>
-
+                <div class="no-data-notice hidden" id="reportNotice"></div>
                 <div class="kpi-grid">
-                    <article class="kpi-card">
-                        <span id="kpiLabel1">Total Revenue</span>
-                        <strong id="totalRevenue">428,500,000 VND</strong>
-                    </article>
-                    <article class="kpi-card">
-                        <span id="kpiLabel2">Total Orders</span>
-                        <strong id="totalOrders">3,420</strong>
-                    </article>
-                    <article class="kpi-card">
-                        <span id="kpiLabel3">Avg. Delivery Time</span>
-                        <strong id="averageDelivery">24 mins</strong>
-                    </article>
+                    <article class="kpi-card"><span id="kpiLabel1">Total Revenue</span><strong
+                            id="totalRevenue">—</strong></article>
+                    <article class="kpi-card"><span id="kpiLabel2">Total Orders</span><strong
+                            id="totalOrders">—</strong></article>
+                    <article class="kpi-card"><span id="kpiLabel3">Avg. Delivery Time</span><strong
+                            id="averageDelivery">—</strong></article>
                 </div>
-
                 <div class="report-card chart-card">
                     <div class="card-header-row">
-                        <h2 id="chartTitle">Daily Sales Revenue</h2>
-                        <span class="chart-meta" id="chartMeta">VND million · 01–15 Nov 2026</span>
+                        <h2 id="chartTitle">Daily Sales Revenue</h2><span class="chart-meta" id="chartMeta"></span>
                     </div>
-
-                    <div class="chart-empty-state hidden" id="chartEmptyState">
-                        <strong>No Data Available</strong>
+                    <div class="chart-empty-state hidden" id="chartEmptyState"><strong>No Data Available</strong>
                         <p>Try a different date range to view your report.</p>
                     </div>
-
                     <div class="bar-chart-wrapper" id="barChartWrapper">
-                        <div class="y-axis" id="chartYAxis">
-                            <span>45m</span>
-                            <span>30m</span>
-                            <span>15m</span>
-                            <span>0m</span>
-                        </div>
+                        <div class="y-axis" id="chartYAxis"><span></span><span></span><span></span><span>0</span></div>
                         <div class="chart-plot-area">
-                            <div class="chart-gridlines">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
+                            <div class="chart-gridlines"><span></span><span></span><span></span><span></span></div>
                             <div class="bars-container" id="barsContainer"></div>
                         </div>
                     </div>
                 </div>
-
                 <div class="report-card breakdown-card">
                     <div class="breakdown-header">
                         <h2 id="breakdownTitle">Daily sales breakdown</h2>
@@ -130,24 +182,15 @@
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
-                                <tr id="reportTableHeader">
-                                    <th>Date</th>
-                                    <th>Orders</th>
-                                    <th>Revenue (VND)</th>
-                                    <th>Avg. delivery</th>
-                                </tr>
+                                <tr id="reportTableHeader"></tr>
                             </thead>
                             <tbody id="reportTableBody"></tbody>
                         </table>
                     </div>
                     <div class="table-footer" id="tableFooter">
-                        <div class="table-pagination">
-                            <span id="tablePaginationInfo">Showing 1–4 of 15 days</span>
-                            <button type="button" class="text-link-button" id="toggleRowsButton">Show all</button>
-                        </div>
-                        <div class="table-total" id="tableTotalSummary">
-                            Total: 428,500,000 VND · 3,420 orders
-                        </div>
+                        <div class="table-pagination"><span id="tablePaginationInfo"></span><button type="button"
+                                class="text-link-button" id="toggleRowsButton">Show all</button></div>
+                        <div class="table-total" id="tableTotalSummary"></div>
                     </div>
                 </div>
             </section>

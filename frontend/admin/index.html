@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#173d32">
     <title>SaigonBite | Manage Vouchers</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,49 +14,127 @@
 
 <body>
     <div class="portal-layout">
-        <aside class="sidebar">
-            <div class="brand-header">
-                <span class="brand-title">SaigonBite</span>
-                <span class="portal-label">ADMIN PORTAL</span>
-            </div>
 
-            <nav class="navigation">
-                <a href="#dashboard" class="nav-item" data-nav="dashboard">Dashboard</a>
-                <a href="#hubs-menu" class="nav-item" data-nav="hubs-menu">Hubs &amp; Menu</a>
-                <a href="#vouchers" class="nav-item active" data-nav="vouchers">Vouchers</a>
-                <a href="#users" class="nav-item" data-nav="users">Users</a>
+        <aside class="sidebar">
+            <a class="brand" href="#vouchers" aria-label="SaigonBite Admin">
+                <span class="brand-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                            d="M6 19h12M8 19v3h8v-3M5 11a4 4 0 0 1 2.4-7.2A5.5 5.5 0 0 1 17.8 5 3.5 3.5 0 0 1 19 12H5z" />
+                    </svg>
+                </span>
+                <strong>SaigonBite</strong>
+                <small>GOOD FOOD, CLOSE BY</small>
+            </a>
+
+            <nav class="side-nav" aria-label="Admin navigation">
+                <a href="#dashboard" class="nav-item" data-nav="dashboard">
+                    <span class="nav-icon">▦</span>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="#hubs-menu" class="nav-item" data-nav="hubs-menu">
+                    <span class="nav-icon">⌂</span>
+                    <span>Hubs &amp; Menu</span>
+                </a>
+
+                <a href="#users" class="nav-item" data-nav="users">
+                    <span class="nav-icon">♙</span>
+                    <span>Users</span>
+                </a>
+
+                <a href="#vouchers" class="nav-item active" data-nav="vouchers">
+                    <span class="nav-icon">%</span>
+                    <span>Vouchers</span>
+                </a>
+
+                <a href="#deliveries" class="nav-item" data-nav="deliveries">
+                    <span class="nav-icon">↗</span>
+                    <span>Mark as Delivered</span>
+                </a>
             </nav>
 
-            <div class="sidebar-footer">
-                <button class="logout-button" id="logoutButton" type="button">Log Out</button>
+            <div class="sidebar-bottom">
+                <button class="side-nav-logout" id="logoutButton" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7" />
+                    </svg>
+                    <span>Log out</span>
+                </button>
             </div>
         </aside>
 
         <main class="main-area">
             <header class="user-header">
-                <div class="user-info">
-                    <span class="user-name">Minh Nguyen</span>
-                    <span class="user-role">Admin</span>
+                <div class="user-info"><span class="user-name">Minh Nguyen</span><span class="user-role">Admin</span>
                 </div>
-                <div class="user-avatar" aria-hidden="true">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                </div>
+                <div class="user-avatar" aria-hidden="true">MN</div>
             </header>
+            <!-- Dashboard - Future Development -->
+            <section class="page-section hidden" id="dashboardPage">
+                <div class="page-heading">
+                    <h1>Admin Dashboard</h1>
+                    <p>Overview of SaigonBite system activities.</p>
+                </div>
 
+                <div class="coming-soon-card">
+                    <div class="coming-soon-icon">▦</div>
+                    <span class="coming-soon-badge">COMING SOON</span>
+                    <h2>Dashboard is under development</h2>
+                    <p>
+                        This section will provide an overview of orders, vouchers,
+                        users, hubs and other system activities in a future update.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Hubs & Menu - Future Development -->
+            <section class="page-section hidden" id="hubsMenuPage">
+                <div class="page-heading">
+                    <h1>Hubs &amp; Menu Management</h1>
+                    <p>Manage SaigonBite hubs and menu information.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <div class="coming-soon-icon">⌂</div>
+                    <span class="coming-soon-badge">COMING SOON</span>
+                    <h2>Hubs &amp; Menu is under development</h2>
+                    <p>
+                        This section will support hub management, menu items,
+                        food categories, pricing and availability in a future update.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Users - Future Development -->
+            <section class="page-section hidden" id="usersPage">
+                <div class="page-heading">
+                    <h1>User Management</h1>
+                    <p>Manage customer and staff accounts.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <div class="coming-soon-icon">♙</div>
+                    <span class="coming-soon-badge">COMING SOON</span>
+                    <h2>User Management is under development</h2>
+                    <p>
+                        This section will support viewing user accounts,
+                        managing account information and assigning roles
+                        in a future update.
+                    </p>
+                </div>
+            </section>
             <section class="page-section" id="vouchersPage">
                 <div class="page-heading-row">
                     <div>
                         <h1>Manage Vouchers</h1>
-                        <p>Create and manage promotions across your SaigonBite hubs.</p>
+                        <p>Create and manage promotional vouchers for SaigonBite.</p>
                     </div>
                     <button class="primary-button" id="openCreateModalButton" type="button">+ Create New
                         Voucher</button>
                 </div>
-
                 <div class="filter-toolbar">
                     <div class="status-tabs" id="statusTabs">
                         <button type="button" class="tab-pill active" data-status="ALL">All</button>
@@ -63,11 +142,10 @@
                         <button type="button" class="tab-pill" data-status="EXPIRED">EXPIRED</button>
                         <button type="button" class="tab-pill" data-status="ARCHIVED">ARCHIVED</button>
                     </div>
-                    <div class="search-box">
-                        <input type="text" id="voucherSearchInput" placeholder="Search by voucher code...">
+                    <div class="search-box"><input type="search" id="voucherSearchInput"
+                            placeholder="Search by voucher code...">
                     </div>
                 </div>
-
                 <div class="table-card">
                     <div class="table-responsive">
                         <table class="data-table">
@@ -84,73 +162,84 @@
                             <tbody id="voucherTableBody"></tbody>
                         </table>
                     </div>
+                    <div class="table-footer"><span id="voucherCountSummary">Loading vouchers...</span></div>
+                </div>
+                <p class="timezone-note">Voucher status follows the configured end date and current server time.</p>
+            </section>
+            <section class="page-section hidden" id="deliveriesPage">
+                <div class="page-heading-row">
+                    <div>
+                        <h1>Mark as Delivered</h1>
+                        <p>Confirm delivery for orders completed by the Kitchen.</p>
+                    </div>
+                    <button class="secondary-button" id="refreshReadyOrdersButton" type="button">
+                        ↻ Refresh
+                    </button>
+                </div>
 
+                <div class="table-card">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Hub</th>
+                                    <th>Delivery Address</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="readyOrdersTableBody">
+                                <tr>
+                                    <td colspan="7" class="empty-table-message">Loading orders...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                     <div class="table-footer">
-                        <span class="pagination-summary" id="voucherCountSummary">Showing 1–8 of 8 vouchers</span>
-                        <div class="pagination-controls" id="paginationControls">
-                            <button type="button" class="page-btn" id="prevPageBtn" disabled>Previous</button>
-                            <button type="button" class="page-btn active" id="pageNumberBtn">1</button>
-                            <button type="button" class="page-btn" id="nextPageBtn" disabled>Next</button>
-                        </div>
+                        <span id="readyOrdersCount">Loading orders...</span>
                     </div>
                 </div>
 
-                <p class="timezone-note">All dates use Vietnam time (GMT+7).</p>
+                <p class="timezone-note">
+                    Only orders with READY status can be marked as delivered.
+                </p>
             </section>
         </main>
     </div>
 
-    <!-- Modal Create New Voucher -->
     <div class="modal-backdrop hidden" id="createVoucherModal">
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div class="modal-header">
-                <h2 id="modalTitle">Create New Voucher</h2>
-                <button type="button" class="modal-close" id="closeModalButton" aria-label="Close">×</button>
+                <h2 id="modalTitle">Create New Voucher</h2><button type="button" class="modal-close"
+                    id="closeModalButton" aria-label="Close">×</button>
             </div>
             <form id="createVoucherForm" class="modal-form">
+                <input type="hidden" id="editingVoucherId">
                 <div class="form-grid-2">
-                    <div class="form-field">
-                        <label for="newCode">Voucher Code</label>
-                        <input type="text" id="newCode" placeholder="e.g. SAIGON25" required>
-                    </div>
-                    <div class="form-field">
-                        <label for="newHub">Applicable Hub</label>
-                        <select id="newHub">
-                            <option value="All hubs">All hubs</option>
-                            <option value="Bite Hub D1">Bite Hub D1</option>
-                            <option value="Bite Hub D7">Bite Hub D7</option>
-                            <option value="Bite Hub Thu Duc">Bite Hub Thu Duc</option>
-                        </select>
-                    </div>
+                    <div class="form-field"><label for="newCode">Voucher Code</label><input type="text" id="newCode"
+                            maxlength="32" required placeholder="e.g. SAIGON25"></div>
+                    <div class="form-field"><label for="newDiscount">Discount Value</label><input type="text"
+                            id="newDiscount" required placeholder="e.g. 20% or 30,000 VND"></div>
                 </div>
                 <div class="form-grid-2">
-                    <div class="form-field">
-                        <label for="newDiscount">Discount Value</label>
-                        <input type="text" id="newDiscount" placeholder="e.g. 20% or 30,000 VND" required>
-                    </div>
-                    <div class="form-field">
-                        <label for="newMinOrder">Minimum Order (VND)</label>
-                        <input type="number" id="newMinOrder" value="150000" min="0" step="10000" required>
-                    </div>
+                    <div class="form-field"><label for="newMinOrder">Minimum Order (VND)</label><input type="number"
+                            id="newMinOrder" min="0" step="1000" value="0" required></div>
+                    <div class="form-field"><label for="newStartDate">Valid From</label><input type="date"
+                            id="newStartDate" required></div>
                 </div>
                 <div class="form-grid-2">
-                    <div class="form-field">
-                        <label for="newStartDate">Valid From</label>
-                        <input type="date" id="newStartDate" value="2026-11-17" required>
-                    </div>
-                    <div class="form-field">
-                        <label for="newEndDate">Valid Until</label>
-                        <input type="date" id="newEndDate" value="2026-12-31" required>
-                    </div>
+                    <div class="form-field"><label for="newEndDate">Valid Until</label><input type="date"
+                            id="newEndDate" required></div>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="secondary-button" id="cancelModalButton">Cancel</button>
-                    <button type="submit" class="primary-button">Create Voucher</button>
-                </div>
+                <div class="modal-actions"><button type="button" class="secondary-button"
+                        id="cancelModalButton">Cancel</button><button type="submit" class="primary-button"
+                        id="saveVoucherButton">Create Voucher</button></div>
             </form>
         </div>
     </div>
-
     <script src="/admin/app.js"></script>
 </body>
 

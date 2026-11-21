@@ -5,8 +5,9 @@
 | Nội dung | Kết quả |
 |---|---|
 | Nhánh tích hợp | `integration/tv3-admin` |
-| HEAD rà soát | `ad9a85532b5877473af5cb665f314b31e2f745c3` (working tree có thay đổi chưa commit) |
-| Ngày rà soát | 20-11-2026 — cập nhật CUS-03 TV1; chạy 10 test service mock, chưa chạy toàn bộ suite |
+| HEAD cập nhật | a106c6eecc84621ecce7d6d61ca2f5083afbe587 (fix/tv1-customer; commit này chỉ sửa docs/API_CONTRACT.md) |
+| Ngày rà soát/cập nhật | 21-11-2026 — cập nhật tài liệu; kiểm thử mới được ghi riêng tại phần G |
+| Commit API Contract | a106c6e cập nhật docs/API_CONTRACT.md; chỉ thay đổi tài liệu, không sửa code |
 | Customer | TV1 — 524H0040 |
 | Kitchen | TV2 — 524H0130 |
 | Admin/Manager | TV3 — 524H0021 |
@@ -146,6 +147,8 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 
 ## G. Kết quả kiểm thử
 
+Các kết quả trong bảng đầu là log kiểm thử đã ghi nhận trước lần chạy mới ngày 21-11-2026. Bảng tiếp theo ghi riêng kết quả mới; các mục MySQL và trình duyệt vẫn chưa được kiểm thử.
+
 | Kiểm tra | Môi trường | Kết quả | Bằng chứng/ghi chú |
 |---|---|---|---|
 | `python -m compileall -q app tests` | Backend, Python 3.13 | PASS | Chạy sau sửa giới hạn địa chỉ |
@@ -166,6 +169,15 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | Manager API and Reports trên DB test | Chưa chạy riêng | NOT TESTED | Cần test Pending, API error, Delivery có cả pickup_at và delivered_at, duration và dữ liệu cùng order_id |
 | Toàn luồng Customer → Kitchen → Customer → Manager | Chưa chạy cùng một order_id | NOT TESTED | Các đoạn riêng có test SQLite, nhưng không phải end-to-end |
 
+### Lần chạy mới nhất — 21-11-2026, tại HEAD a106c6e
+
+| Kiểm tra | Kết quả | Bằng chứng/giới hạn |
+|---|---|---|
+| python -m compileall -q app tests | PASS | Chạy từ backend; exit code 0, không có output |
+| python -m pytest -q | PASS — 34 passed, 104 warnings | Chạy từ backend; test dùng SQLite fixtures riêng. Warnings gồm Starlette/httpx deprecation và SQLAlchemy datetime.utcnow deprecation |
+| MySQL E2E / ghi dữ liệu | NOT TESTED | Không dùng database nhóm; chưa có MySQL test database được cấp |
+| Browser E2E | NOT TESTED | Lần chạy này không kiểm tra giao diện, console hoặc network |
+
 ## H. Checklist trước khi tạo PR vào main
 
 | Điều kiện | Trạng thái | Ghi chú |
@@ -179,7 +191,7 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 | Luồng tạo và xử lý đơn hoàn chỉnh | NOT TESTED | Chưa chạy cùng order_id trên toàn hệ thống/MySQL test |
 | Không còn lỗi nghiêm trọng | NOT VERIFIED | Còn vấn đề báo cáo và phần chưa xác minh; nhóm cần đánh giá theo tiêu chí nghiệm thu |
 | Giới hạn demo đã được ghi rõ | PASS | Customer ID cứng đã bỏ; tài liệu ghi rõ ánh xạ email/mock auth, giới hạn geocode địa chỉ OSM và số liệu thời gian cố định |
-| Test đã chạy lại | PASS | Compile, 16 pytest và bốn lệnh Node syntax đã chạy sau sửa |
+| Test mới nhất | PASS | 21-11-2026: compileall và 34 pytest pass với SQLite; cảnh báo ghi ở phần G. MySQL E2E và Browser E2E vẫn NOT TESTED |
 
 ## Kết luận
 

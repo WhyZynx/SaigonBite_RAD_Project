@@ -1,8 +1,31 @@
 # SaigonBite RAD Project
 
-## Run locally
+## 1. Project Overview
 
-### Linux / macOS (Bash / Zsh / Fish)
+SaigonBite is a web-based food ordering and management system developed for the Rapid Application Development (RAD) project.
+
+The project is organized into role-based portals:
+
+| Role | Portal | Main Responsibilities |
+|---|---|---|
+| Customer | `/customer/` | Browse hubs and menu items, place orders, and view order information |
+| Kitchen Staff | `/kitchen/` | View incoming orders, confirm or reject orders, and update preparation status |
+| Admin | `/admin/` | Manage vouchers, simulate delivery completion, and access planned Dashboard, Hubs & Menu, and Users pages |
+| Manager | `/manager/` | Generate management reports and access planned Dashboard, Hub Operations, and Order History pages |
+
+The Admin module is documented in [docs/TV3_ADMIN_OVERVIEW.md](docs/TV3_ADMIN_OVERVIEW.md).
+
+## 2. Technology Stack
+
+- **Backend:** Python, FastAPI
+- **Database access:** SQLAlchemy ORM and Repository Pattern
+- **Database:** MySQL
+- **Frontend:** HTML, CSS, JavaScript
+- **API documentation:** FastAPI Swagger UI
+
+## 3. Run the Project Locally
+
+### Linux / macOS (Bash, Zsh, or Fish)
 
 ```bash
 cd backend
@@ -22,34 +45,180 @@ python -m pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-- Login: <http://localhost:8000/>
-- Customer Portal: <http://localhost:8000/customer/>
-- Kitchen Portal: <http://localhost:8000/kitchen/>
-- Admin Portal (Manage Vouchers): <http://localhost:8000/admin/>
-- Manager Portal (Management Reports): <http://localhost:8000/manager/>
-- FastAPI Swagger: <http://localhost:8000/docs>
+## 4. Available Portals
 
-### Temporary shared login
+After starting the backend, open:
 
-Authentication uses local demo accounts configured in `backend/app/auth.py` or overridden with environment variables. The server assigns roles and destinations; the browser does not choose a role. Successful sign-in routes `CUSTOMER` to the Customer Portal, `KITCHEN_STAFF` to the Kitchen Portal, `ADMIN` to the Admin Portal, and `MANAGER` to the Manager Portal. The separate demo-session endpoint remains available for development.
+| Page | URL |
+|---|---|
+| Shared Login | http://localhost:8000/ |
+| Customer Portal | http://localhost:8000/customer/ |
+| Kitchen Portal | http://localhost:8000/kitchen/ |
+| Admin Portal | http://localhost:8000/admin/ |
+| Manager Portal | http://localhost:8000/manager/ |
+| API Documentation | http://localhost:8000/docs |
 
-Override credentials with `SAIGONBITE_CUSTOMER_EMAIL`, `SAIGONBITE_CUSTOMER_PASSWORD`, `SAIGONBITE_DEMO_EMAIL`, `SAIGONBITE_DEMO_PASSWORD`, `SAIGONBITE_ADMIN_EMAIL`, `SAIGONBITE_ADMIN_PASSWORD`, `SAIGONBITE_MANAGER_EMAIL`, and `SAIGONBITE_MANAGER_PASSWORD` before starting Uvicorn. Credentials are checked by FastAPI and are not embedded in frontend JavaScript.
+Users should sign in through the shared login page. The backend assigns the role and redirects each account to its corresponding portal.
 
-Authentication uses random server-side session IDs stored in process memory and an `HttpOnly`, `SameSite=Lax` cookie named `saigonbite_session`, with an eight-hour lifetime. Logout invalidates the session and expires the cookie. Sessions are lost when the backend restarts. This mock has no user database, password hashing/reset, registration, CSRF token, or multi-process session store and is not production authentication. For HTTPS deployment, set `SAIGONBITE_COOKIE_SECURE=1` and configure non-demo credentials.
+## 5. Demo Authentication
 
-Proposed authentication endpoints, responses, and session behavior are documented in [docs/AUTHENTICATION_PROPOSAL.md](docs/AUTHENTICATION_PROPOSAL.md), and REST API specifications are documented in [docs/API_CONTRACT.md](docs/API_CONTRACT.md).
+The current project uses temporary mock accounts and in-memory sessions.
 
-## Database configuration
+Default demo credentials can be configured through environment variables:
 
-Copy `.env.example` to `.env` in the repository root and configure `DB_DRIVER`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, and `DB_NAME`. The backend also accepts `DATABASE_URL`; URL-encode reserved characters in its username and password. Real `.env` files are ignored by Git. Do not run `database/schema.sql` or `database/seed.sql` during normal startup; the schema script recreates the database.
+- `SAIGONBITE_CUSTOMER_EMAIL`
+- `SAIGONBITE_CUSTOMER_PASSWORD`
+- `SAIGONBITE_DEMO_EMAIL`
+- `SAIGONBITE_DEMO_PASSWORD`
+- `SAIGONBITE_ADMIN_EMAIL`
+- `SAIGONBITE_ADMIN_PASSWORD`
+- `SAIGONBITE_MANAGER_EMAIL`
+- `SAIGONBITE_MANAGER_PASSWORD`
 
-## Current integration boundaries
+The backend validates the credentials and assigns one of the supported roles:
 
-- Kitchen queue, decisions, and status transitions use `OrderRepository`; Customer and Kitchen share the database-backed order detail endpoint.
-- Voucher and report APIs use SQLAlchemy repositories, while their Admin/Manager frontends are integrated.
-- Customer hub/menu reads, order creation, order history, and order detail use SQLAlchemy repositories and the shared database models. Delivery distance (3.5 km) and fee (15,000 VND) are fixed demo values; Customer accounts currently map to demo customer ID 1. Voucher validation is supported by the backend when a code is submitted, but the current Customer UI does not send a voucher code. Admin’s voucher hub label is display-only because the shared schema has no hub association.
-- The schema has no separate customer-note or item-options fields. The Customer UI currently appends recipient, phone, and note text to the delivery address; Kitchen receives that address as stored.
-- Manager report totals are read from the database, but average preparation/delivery time labels currently use fixed demo values.
-- Authentication accounts and sessions remain in-memory demo implementations.
+- `CUSTOMER`
+- `KITCHEN_STAFF`
+- `ADMIN`
+- `MANAGER`
 
-Run automated checks from `backend` with `python -m compileall -q app tests` and `python -m pytest -q`. The intended database-dependent tests use isolated SQLite fixtures; confirm each test result in the current checkout before relying on it.
+The session uses a server-side random session ID stored in process memory and an `HttpOnly`, `SameSite=Lax` cookie named `saigonbite_session`. The session lifetime is eight hours.
+
+**Limitations:** Sessions are cleared when the backend restarts. The current mock authentication does not provide database-backed user accounts, password hashing, password reset, registration, or persistent multi-process sessions. It is intended for local demonstration, not production deployment.
+
+For HTTPS deployment, configure `SAIGONBITE_COOKIE_SECURE=1` and use non-demo credentials.
+
+## 6. Database Configuration
+
+1. Copy `.env.example` to `.env` in the repository root.
+2. Configure the database connection using:
+   - `DB_DRIVER`
+   - `DB_USER`
+   - `DB_PASSWORD`
+   - `DB_HOST`
+   - `DB_PORT`
+   - `DB_NAME`
+3. Alternatively, configure `DATABASE_URL`. Reserved characters in the username and password must be URL-encoded.
+4. Start the backend from the `backend/` directory.
+
+**Important:** Do not run `database/schema.sql` or `database/seed.sql` during normal application startup. The schema script recreates the database and may overwrite existing data.
+
+Do not commit real `.env` files or database credentials to Git.
+
+## 7. Current Implementation Scope and Limitations
+
+### Customer
+
+- Reads hubs and menu items.
+- Creates orders and views order information.
+- The current demo implementation maps Customer accounts to customer ID `1`.
+- Delivery distance (`3.5 km`) and delivery fee (`15,000 VND`) are fixed demo values.
+- The current Customer UI does not submit a voucher code.
+- Recipient, phone, and note information are currently included in the delivery address string because the shared schema does not provide separate fields for them.
+
+### Kitchen Staff
+
+- Views orders in the Kitchen queue.
+- Filters orders by selected hub and status.
+- Confirms or rejects pending orders.
+- Updates confirmed orders to `PREPARING` and then `READY`.
+- Successful status transitions are recorded in order status history.
+
+### Admin
+
+**Implemented features:**
+
+- Views, searches, and filters vouchers.
+- Creates and edits vouchers.
+- Archives eligible vouchers.
+- Views orders that have reached `READY`.
+- Provides a demo action to mark a `READY` order as `DELIVERED`.
+
+**Future development pages (Coming Soon):**
+
+- Dashboard: Overview of system activities and key statistics.
+- Hubs & Menu: Hub and menu management.
+- Users: Customer and staff account management.
+
+The three future development pages are currently UI placeholders. They do not call backend APIs or modify database records.
+
+The Admin delivery action is a simulation for the project demonstration. It does not represent a complete real-world shipper or delivery-management workflow.
+
+### Manager
+
+**Implemented features:**
+
+- Generates Sales Reports.
+- Generates Hub Workload Reports.
+- Generates Delivery Performance Reports.
+- Selects a start date and end date for each report.
+- Views report KPIs, charts, and detail tables.
+
+**Future development pages (Coming Soon):**
+
+- Dashboard: Overview of business performance and key statistics.
+- Hub Operations: Hub monitoring and operational management.
+- Order History: Historical order search and review.
+
+The three future development pages are currently UI placeholders. They do not call backend APIs or modify database records.
+
+Report values are calculated from the current database records. Some reports may show `—` when the required delivery timestamps are not available.
+
+## 8. Order Status Flow
+
+The main order preparation flow is:
+
+```text
+PENDING
+   |
+   +----> REJECTED
+   |
+   v
+CONFIRMED
+   |
+   v
+PREPARING
+   |
+   v
+READY
+   |
+   v
+DELIVERED
+```
+
+Kitchen Staff handles the order up to `READY`. The current Admin demo action can then change an eligible order from `READY` to `DELIVERED`.
+
+## 9. Run Automated Tests
+
+Run the following commands from the `backend/` directory:
+
+```bash
+python -m compileall -q app tests
+python -m pytest -q
+```
+
+The automated tests include isolated database fixtures. Check the test output in the current checkout before reporting a test result.
+
+JavaScript syntax checks can be run with:
+
+```bash
+node --check ../frontend/admin/app.js
+node --check ../frontend/manager/app.js
+```
+
+## 10. Documentation
+
+| Document | Description |
+|---|---|
+| `docs/RAD_REPORT.docx` | Original RAD project report |
+| `docs/TV3_ADMIN_OVERVIEW.md` | Admin implementation and planned future pages |
+| `docs/TV3_MANAGER_OVERVIEW.md` | Manager reports and planned future pages |
+| `docs/API_CONTRACT.md` | Shared API contract |
+
+The authentication document describes the current temporary mock authentication behavior and should be read together with the actual backend implementation.
+
+## 11. Project Status
+
+The project contains integrated Customer, Kitchen, Admin, and Manager portals. The current implementation supports the main demonstration flows, but some features remain demo-level or depend on shared integration decisions.
+
+Do not interpret a successful local run or isolated automated test as proof that the complete system has passed end-to-end testing on the shared MySQL database.

@@ -284,6 +284,18 @@ def test_delivery_report_separates_total_completed_and_duration(api_environment)
             )
         )
 
+        # Completed late: LATE must still count as completed.
+        # No pickup timestamp means it does not affect average duration.
+        add_order(db, 605, 2, "DELIVERED", created_at)
+        db.add(
+            Delivery(
+                order_id=605,
+                outcome="LATE",
+                pickup_at=None,
+                delivered_at=created_at + timedelta(minutes=60),
+            )
+        )
+
         db.commit()
 
     manager = make_client("MANAGER")
@@ -293,16 +305,18 @@ def test_delivery_report_separates_total_completed_and_duration(api_environment)
 
     data = response.json()
 
-    assert data["kpis"][0]["value"] == "4"
-    assert data["kpis"][1]["value"] == "3"
+    assert data["kpis"][0]["value"] == "5"
+    assert data["kpis"][1]["value"] == "4"
 
     # Only the valid 30-minute interval contributes to the average.
     assert data["kpis"][2]["value"] == "30 mins"
 
     assert len(data["rows"]) == 1
-    assert data["rows"][0]["col2"] == "4"
+    assert data["rows"][0]["col2"] == "5"
     assert data["rows"][0]["col3"] == "30 mins"
-    assert data["rows"][0]["chartVal"] == 3
+    assert data["rows"][0]["chartVal"] == 4
+
+    
 
 
 def test_hub_workload_counts_orders_by_hub_and_status(api_environment):

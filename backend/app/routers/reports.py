@@ -27,14 +27,17 @@ def _minutes(value: float | None) -> str:
 
 def _is_completed_delivery(delivery) -> bool:
     """
-    A delivery is completed when the delivery outcome is DELIVERED
+    A delivery is completed when its outcome is DELIVERED or LATE
     and the completion timestamp exists.
+
+    LATE means the delivery was successfully completed, but later
+    than the expected delivery time.
 
     pickup_at is intentionally NOT required because this project
     does not implement a real shipper/pickup workflow.
     """
     return (
-        delivery.outcome == "DELIVERED"
+        delivery.outcome in {"DELIVERED", "LATE"}
         and delivery.delivered_at is not None
     )
 

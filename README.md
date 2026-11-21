@@ -67,6 +67,7 @@ The current project uses temporary mock accounts and in-memory sessions.
 Default demo credentials can be configured through environment variables:
 
 - `SAIGONBITE_CUSTOMER_EMAIL`
+- `SAIGONBITE_CUSTOMER_EMAILS`
 - `SAIGONBITE_CUSTOMER_PASSWORD`
 - `SAIGONBITE_DEMO_EMAIL`
 - `SAIGONBITE_DEMO_PASSWORD`
@@ -75,12 +76,19 @@ Default demo credentials can be configured through environment variables:
 - `SAIGONBITE_MANAGER_EMAIL`
 - `SAIGONBITE_MANAGER_PASSWORD`
 
-The backend validates the credentials and assigns one of the supported roles:
+The backend validates credentials and assigns one of the supported roles: CUSTOMER, KITCHEN_STAFF, ADMIN, or MANAGER.
 
-- `CUSTOMER`
-- `KITCHEN_STAFF`
-- `ADMIN`
-- `MANAGER`
+## Current integration boundaries
+
+- Kitchen queue, decisions, and status transitions use OrderRepository; Customer and Kitchen share the database-backed order detail endpoint.
+- Voucher and report APIs use SQLAlchemy repositories, with integrated Admin and Manager pages for the implemented functions.
+- Customer hub/menu reads, order creation, order history, and order detail use SQLAlchemy repositories and the shared database models. The signed-in Customer email must match exactly one Customer profile in the database.
+- Customer delivery addresses are geocoded through Nominatim and routed through OSRM. The backend recalculates the route quote and order totals. Admin's voucher hub label is display-only because the shared schema has no voucher-to-hub relationship.
+- The schema has no separate recipient, delivery-phone, special-note, or item-options fields. Customer currently stores recipient, phone, note, and address together in the order's delivery_address; Kitchen receives that stored string.
+- Admin's demo delivery action creates or updates a Delivery record and sets delivered_at; it does not set pickup_at. Manager delivery-time calculations require both timestamps, so those report values need verification against the intended workflow and data.
+- Authentication accounts and sessions remain in-memory demo implementations.
+
+
 
 The session uses a server-side random session ID stored in process memory and an `HttpOnly`, `SameSite=Lax` cookie named `saigonbite_session`. The session lifetime is eight hours.
 
@@ -109,12 +117,12 @@ Do not commit real `.env` files or database credentials to Git.
 
 ### Customer
 
-- Reads hubs and menu items.
-- Creates orders and views order information.
-- The current demo implementation maps Customer accounts to customer ID `1`.
-- Delivery distance (`3.5 km`) and delivery fee (`15,000 VND`) are fixed demo values.
-- The current Customer UI does not submit a voucher code.
-- Recipient, phone, and note information are currently included in the delivery address string because the shared schema does not provide separate fields for them.
+- Reads hubs and menu items from the database, creates orders, and views order history and details.
+- The signed-in Customer is matched to exactly one database Customer profile by session email; the frontend does not send a fixed Customer ID. The demo login/session mechanism is still in-memory.
+- Checkout geocodes the selected Hub and typed delivery address with Nominatim, then requests a driving route from OSRM. The backend calculates the delivery fee as 10,000 VND + 2,500 VND/km, rounded up to the nearest 1,000 VND, and adds a 3,000 VND surcharge for routes over 5 km. Routes over 10 km are rejected. Delivery quotes and final order totals are recalculated by the backend.
+- Nominatim and OSRM are public OpenStreetMap services; the current implementation uses no API key. Nominatim requests use an identifying SaigonBite User-Agent, are paced, and successful geocodes are cached. Checkout displays OpenStreetMap attribution. Geocoding may identify a street segment rather than the exact building entrance, depending on OpenStreetMap coverage.
+- Customers can load available vouchers, apply a code for a backend-calculated preview, and submit the selected code with the order. The backend validates the voucher and recalculates the final discount and total when creating the order.
+- The shared schema has no separate recipient, delivery-phone, or special-note columns. Customer stores these values with the delivery address as labeled text; Order Detail returns that string for Kitchen to parse. The schema also has no item-options field.
 
 ### Kitchen Staff
 

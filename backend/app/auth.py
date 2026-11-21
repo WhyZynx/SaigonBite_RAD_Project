@@ -16,18 +16,21 @@ ROLE_HOME = {
     "MANAGER": "/manager/",
 }
 
-MOCK_ACCOUNTS = (
-    {
-        "email": os.getenv(
-            "SAIGONBITE_CUSTOMER_EMAIL",
-            "customer@saigonbite.com"
-        ).strip().lower(),
-        "password": os.getenv(
-            "SAIGONBITE_CUSTOMER_PASSWORD",
-            "password123"
-        ),
-        "role": "CUSTOMER",
-    },
+_customer_email_values = [
+    *os.getenv("SAIGONBITE_CUSTOMER_EMAILS", "").split(","),
+    os.getenv("SAIGONBITE_CUSTOMER_EMAIL", "customer@saigonbite.com"),
+]
+_customer_emails = tuple(dict.fromkeys(
+    email.strip().lower() for email in _customer_email_values if email.strip()
+))
+_customer_password = os.getenv("SAIGONBITE_CUSTOMER_PASSWORD", "password123")
+
+MOCK_ACCOUNTS = tuple(
+    [
+        {"email": email, "password": _customer_password, "role": "CUSTOMER"}
+        for email in _customer_emails
+    ]
+    + [
     {
         "email": os.getenv(
             "SAIGONBITE_DEMO_EMAIL",
@@ -61,10 +64,12 @@ MOCK_ACCOUNTS = (
         ),
         "role": "MANAGER",
     },
+    ]
 )
 
-DEMO_EMAIL = MOCK_ACCOUNTS[1]["email"]
-DEMO_PASSWORD = MOCK_ACCOUNTS[1]["password"]
+_kitchen_account = next(account for account in MOCK_ACCOUNTS if account["role"] == "KITCHEN_STAFF")
+DEMO_EMAIL = _kitchen_account["email"]
+DEMO_PASSWORD = _kitchen_account["password"]
 
 _sessions: dict[str, dict] = {}
 _sessions_lock = threading.Lock()

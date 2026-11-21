@@ -2,7 +2,6 @@
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const money = (amount) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(amount || 0);
-  const MOCK_DELIVERY_DISTANCE_KM = 3.5;
   const iconPaths = {
     chef: '<path d="M6 19h12M8 19v3h8v-3M5 11a4 4 0 0 1 2.4-7.2A5.5 5.5 0 0 1 17.8 5 3.5 3.5 0 0 1 19 12H5z"/>',
     home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
@@ -40,7 +39,7 @@
   };
   let language = "en";
   const t = (key) => copy[language][key] || copy.en[key] || key;
-  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customerOrders: [] };
+  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customer: null, customerOrders: [], appliedVoucher: null, voucherQuoteRequestId: 0, voucherQuotePending: false, deliveryQuote: null, deliveryQuoteRequestId: 0, deliveryQuoteTimer: null, deliveryQuotePending: false };
   const savedCart = sessionStorage.getItem("saigonbite-cart");
   if (savedCart) {
     try { Object.assign(state.cart, JSON.parse(savedCart)); } catch { sessionStorage.removeItem("saigonbite-cart"); }
@@ -244,43 +243,152 @@
     else renderCart();
   }
 
-  function renderCheckout() {
+  async function renderCheckout() {
     const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
     if (!group) { renderCart(); showNotice(t("empty_cart_short"), "info"); return; }
     const groupSubtotal = group.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     $("#checkout-hub-name").textContent = group.hub_name;
     $("#checkout-subtotal").textContent = money(groupSubtotal);
+    $("#delivery-origin").textContent = state.hubs.find((hub) => hub.id === group.hub_id)?.address || group.hub_name;
+    state.deliveryQuote = null;
+    state.deliveryQuotePending = false;
+    $("#address").value = "";
+    $("#delivery-details").value = "";
+    $("#delivery-quote-status").textContent = "Enter your address to calculate the distance and delivery fee.";
+    state.appliedVoucher = null;
+    state.voucherQuoteRequestId += 1;
+    state.voucherQuotePending = false;
+    $("#apply-voucher").disabled = false;
+    $("#voucher").value = "";
+    $("#place-order").disabled = true;
     updateCheckoutTotals();
     toggleScreen("checkout");
   }
 
   function updateCheckoutTotals() {
-    const fee = 15000;
-    $("#checkout-delivery-fee").textContent = money(fee);
+    const quote = state.deliveryQuote;
+    const voucher = state.appliedVoucher;
+    const fee = quote?.delivery_fee ?? 0;
+    const surcharge = quote?.surcharge ?? 0;
+    $("#delivery-route-card").classList.toggle("d-none", !quote);
+    const distanceText = quote
+      ? new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(quote.delivery_distance_km)
+      : "—";
+    $("#delivery-route-distance").textContent = quote ? `${distanceText} km` : "—";
+    $("#checkout-delivery-fee").textContent = quote ? money(fee) : "—";
+    $("#checkout-surcharge").textContent = quote ? money(surcharge) : "—";
     const groupSubtotal = cartGroups().find((group) => group.hub_id === state.selectedCartHubId)?.items.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
-    $("#checkout-total").textContent = money(groupSubtotal + fee);
+    const subtotal = voucher?.subtotal ?? groupSubtotal;
+    const discount = voucher?.discount ?? 0;
+    $("#checkout-subtotal").textContent = money(subtotal);
+    $("#checkout-discount").textContent = `−${money(discount)}`;
+    $("#checkout-total").textContent = money(voucher?.total ?? subtotal + fee + surcharge - discount);
+    $("#place-order").disabled = !quote || state.voucherQuotePending || state.deliveryQuotePending;
+  }
+
+  async function calculateDeliveryQuote() {
+    const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
+    const address = $("#address").value.trim();
+    const requestId = ++state.deliveryQuoteRequestId;
+    state.deliveryQuote = null;
+    state.appliedVoucher = null;
+    state.deliveryQuotePending = false;
+    if (!address || address.length < 5 || !group) {
+      $("#delivery-quote-status").textContent = "Enter your address to calculate the distance and delivery fee.";
+      updateCheckoutTotals();
+      return;
+    }
+    state.deliveryQuotePending = true;
+    $("#delivery-quote-status").textContent = "Calculating driving distance and delivery fee…";
+    updateCheckoutTotals();
+    try {
+      const quote = await api("/api/delivery-quote", { method: "POST", body: JSON.stringify({ hub_id: group.hub_id, delivery_address: address }) });
+      if (requestId !== state.deliveryQuoteRequestId || address !== $("#address").value.trim()) return;
+      state.deliveryQuote = quote;
+      $("#delivery-quote-status").textContent = "Delivery distance and fee calculated.";
+    } catch (error) {
+      if (requestId !== state.deliveryQuoteRequestId) return;
+      $("#delivery-quote-status").textContent = error.message;
+    } finally {
+      if (requestId === state.deliveryQuoteRequestId) {
+        state.deliveryQuotePending = false;
+        updateCheckoutTotals();
+      }
+    }
+  }
+
+  async function applyVoucher() {
+    const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
+    const code = $("#voucher").value.trim().toUpperCase();
+    if (!group) return;
+    if (!state.deliveryQuote) { showNotice("Enter a valid delivery address before applying a voucher.", "warning"); return; }
+    if (!code) {
+      state.voucherQuoteRequestId += 1;
+      state.voucherQuotePending = false;
+      state.appliedVoucher = null;
+      updateCheckoutTotals();
+      showNotice("Enter a voucher code first.", "warning");
+      return;
+    }
+    const button = $("#apply-voucher");
+    const requestId = ++state.voucherQuoteRequestId;
+    const destinationAddress = $("#address").value.trim();
+    state.voucherQuotePending = true;
+    button.disabled = true;
+    updateCheckoutTotals();
+    try {
+      const quote = await api("/api/customer/vouchers/validate", {
+        method: "POST", body: JSON.stringify({
+          code, hub_id: group.hub_id,
+          destination_address: destinationAddress,
+          items: group.items.map((item) => ({ menu_item_id: item.id, quantity: item.quantity }))
+        })
+      });
+      if (requestId !== state.voucherQuoteRequestId || destinationAddress !== $("#address").value.trim() || code !== $("#voucher").value.trim().toUpperCase()) return;
+      state.appliedVoucher = quote;
+      $("#voucher").value = state.appliedVoucher.code;
+      showNotice(`Voucher applied. You save ${money(state.appliedVoucher.discount)}.`, "success");
+    } catch (error) {
+      if (requestId !== state.voucherQuoteRequestId) return;
+      state.appliedVoucher = null;
+      showNotice(error.message, "danger");
+    } finally {
+      if (requestId === state.voucherQuoteRequestId) {
+        state.voucherQuotePending = false;
+        button.disabled = false;
+        updateCheckoutTotals();
+      }
+    }
   }
 
   async function placeOrder(event) {
     event.preventDefault();
     clearNotice();
+    if (state.voucherQuotePending) { showNotice("Wait for the voucher total to finish updating.", "warning"); return; }
     const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
     if (!group) { showNotice(t("choose_items")); return; }
+    if (!state.deliveryQuote) { showNotice("Enter a valid address within the 10 km delivery range.", "warning"); return; }
+    if (!$("#phone").value.trim()) {
+      $("#phone").focus();
+      showNotice("Enter a phone number so the restaurant can contact you.", "warning");
+      return;
+    }
     const submit = $("#place-order");
     submit.disabled = true; submit.textContent = t("placing");
     try {
+      const destinationAddress = $("#address").value.trim();
       const address = [
-        $("#address").value.trim(),
+        $("#delivery-details").value.trim(),
         `Recipient: ${$("#recipient").value.trim()}`,
         `Phone: ${$("#phone").value.trim()}`,
         $("#note").value.trim() ? `Note: ${$("#note").value.trim()}` : ""
       ].filter(Boolean).join("\n");
       const response = await api("/api/orders", { method: "POST", body: JSON.stringify({
-        customer_id: 1,
         hub_id: group.hub_id,
+        destination_address: destinationAddress,
         items: group.items.map((item) => ({ menu_item_id: item.id, quantity: item.quantity })),
         delivery_address: address,
-        delivery_distance_km: MOCK_DELIVERY_DISTANCE_KM,
+        voucher_code: state.appliedVoucher?.code || null,
         payment_method: "COD"
       }) });
       state.lastOrder = response;
@@ -288,15 +396,21 @@
       $("#success-hub").textContent = group.hub_name;
       $("#success-total").textContent = money(response.total);
       group.items.forEach((item) => { delete state.cart[item.id]; delete state.cartCatalog[item.id]; });
+      state.appliedVoucher = null;
       saveCart(); updateCartBar();
       toggleScreen("success");
     } catch (error) { showNotice(error.message, "danger"); }
-    finally { submit.disabled = false; submit.innerHTML = `<span data-i18n="place_order">${t("place_order")}</span> ${icon("arrow-right")}`; }
+    finally { submit.innerHTML = `<span data-i18n="place_order">${t("place_order")}</span> ${icon("arrow-right")}`; updateCheckoutTotals(); }
   }
 
   const statusLabel = { PENDING: "Pending", CONFIRMED: "Confirmed", PREPARING: "Preparing", READY: "Ready for Pickup", DELIVERED: "Delivered", REJECTED: "Rejected", FAILED: "Delivery failed", CANCELLED: "Cancelled" };
   const orderCode = (id) => `#SB${String(id).padStart(7, "0")}`;
-  const orderDate = (value) => new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  const parseApiTimestamp = (value) => {
+    const timestamp = String(value);
+    return new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(timestamp) ? timestamp : `${timestamp}Z`);
+  };
+  const orderDate = (value) => new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }).format(parseApiTimestamp(value));
+  const completedDate = (value) => value ? orderDate(value) : "—";
   const hubName = (id) => state.hubs.find((hub) => hub.id === id)?.name || `Hub ${id}`;
   const statusClass = (status) => String(status || "pending").toLowerCase();
 
@@ -304,8 +418,7 @@
     const errorNode = $("#orders-error");
     errorNode.classList.add("d-none");
     try {
-      // Current mock auth maps the signed-in customer to demo customer 1.
-      state.customerOrders = await api("/api/customers/1/orders");
+      state.customerOrders = await api("/api/customer/orders");
       renderCustomerOrders();
     } catch (error) {
       errorNode.textContent = `${error.message} Please try loading your order history again.`;
@@ -315,9 +428,33 @@
     }
   }
 
+  async function loadCustomerVouchers() {
+    const list = $("#customer-voucher-list");
+    list.innerHTML = '<div class="empty-state">Loading available vouchers…</div>';
+    try {
+      const vouchers = await api("/api/customer/vouchers");
+      if (!vouchers.length) {
+        list.innerHTML = '<div class="voucher-empty-state"><strong>No active vouchers right now</strong><span>Please check back later for new offers.</span></div>';
+        return;
+      }
+      const displayDate = (value) => {
+        const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+        return new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(year, month - 1, day));
+      };
+      list.innerHTML = vouchers.map((voucher) => {
+        const discount = voucher.discount_type === "PERCENT"
+          ? `${voucher.discount_value}% off`
+          : `${money(voucher.discount_value)} off`;
+        return `<article class="customer-voucher-card"><div class="customer-voucher-head"><span class="voucher-status-chip">Available</span><code>${escapeHtml(voucher.code)}</code></div><h2>${escapeHtml(discount)}</h2><div class="customer-voucher-rule"><span>Minimum item subtotal</span><strong>${money(voucher.min_order)}</strong></div><div class="customer-voucher-date"><span>Valid</span><strong>${displayDate(voucher.valid_from)} – ${displayDate(voucher.valid_until)}</strong></div><p>Enter this code at checkout. Delivery fee does not count toward the minimum order.</p></article>`;
+      }).join("");
+    } catch (error) {
+      list.innerHTML = `<div class="voucher-empty-state"><strong>Could not load vouchers</strong><span>${escapeHtml(error.message)}</span></div>`;
+    }
+  }
+
   async function loadHome() {
     try {
-      const [orders, hubs] = await Promise.all([api("/api/customers/1/orders"), api("/api/hubs")]);
+      const [orders, hubs] = await Promise.all([api("/api/customer/orders"), api("/api/hubs")]);
       state.customerOrders = orders;
       state.hubs = hubs;
       $("#home-order-count").textContent = orders.length;
@@ -339,13 +476,29 @@
     const visible = all.filter((order) => filter === "ALL" || (filter === "DELIVERING" ? ["CONFIRMED", "PREPARING", "READY"].includes(order.status) : filter === "COMPLETED" ? ["DELIVERED", "REJECTED", "FAILED", "CANCELLED"].includes(order.status) : order.status === filter));
     $("#order-count").textContent = `${visible.length} ${visible.length === 1 ? "order" : "orders"}`;
     $("#orders-empty").classList.toggle("d-none", visible.length > 0);
-    $("#orders-table-body").innerHTML = visible.map((order) => `<tr><td><strong>${orderCode(order.id)}</strong></td><td>${escapeHtml(hubName(order.hub_id))}</td><td>${orderDate(order.created_at)}</td><td><strong>${money(order.total)}</strong></td><td><span class="order-status ${statusClass(order.status)}">${escapeHtml(statusLabel[order.status] || order.status)}</span></td><td><button class="btn btn-outline-brand btn-sm" data-order-detail="${order.id}">View details</button></td></tr>`).join("");
+    $("#orders-table-body").innerHTML = visible.map((order) => {
+      const cancelButton = order.status === "PENDING"
+        ? `<button class="btn btn-outline-danger btn-sm" data-cancel-order="${order.id}">Cancel</button>`
+        : "";
+      return `<tr><td><strong>${orderCode(order.id)}</strong></td><td>${escapeHtml(hubName(order.hub_id))}</td><td>${orderDate(order.created_at)}</td><td><strong>${money(order.total)}</strong></td><td><span class="order-status ${statusClass(order.status)}">${escapeHtml(statusLabel[order.status] || order.status)}</span></td><td>${completedDate(order.completed_at)}</td><td><div class="order-row-actions"><button class="btn btn-outline-brand btn-sm" data-order-detail="${order.id}">View details</button>${cancelButton}</div></td></tr>`;
+    }).join("");
     const active = all.find((order) => ["PENDING", "CONFIRMED", "PREPARING", "READY"].includes(order.status));
     const featured = $("#featured-order");
     featured.classList.toggle("d-none", !active || filter !== "ALL");
-    if (active && filter === "ALL") featured.innerHTML = `<div><span class="featured-kicker">${escapeHtml(statusLabel[active.status] || active.status)}</span><h2>${escapeHtml(hubName(active.hub_id))}</h2><p>${orderCode(active.id)} · ${money(active.total)}</p></div><div class="featured-total"><small>Current status</small><strong>${escapeHtml(statusLabel[active.status] || active.status)}</strong></div><button class="btn btn-brand" data-order-track="${active.id}">Track order ${icon("arrow-right")}</button>`;
-    $$("[data-order-detail]").forEach((button) => button.addEventListener("click", () => openOrder(Number(button.dataset.orderDetail), "detail")));
-    $$("[data-order-track]").forEach((button) => button.addEventListener("click", () => openOrder(Number(button.dataset.orderTrack), "track")));
+    if (active && filter === "ALL") featured.innerHTML = `<div><span class="featured-kicker">${escapeHtml(statusLabel[active.status] || active.status)}</span><h2>${escapeHtml(hubName(active.hub_id))}</h2><p>${orderCode(active.id)} · ${money(active.total)}</p></div><div class="featured-total"><small>Current status</small><strong>${escapeHtml(statusLabel[active.status] || active.status)}</strong></div><button class="btn btn-brand" data-order-track="${active.id}">Track order ${icon("arrow-right")}</button>${active.status === "PENDING" ? `<button class="btn btn-outline-danger" data-cancel-order="${active.id}">Cancel order</button>` : ""}`;
+    $$('[data-order-detail]').forEach((button) => button.addEventListener("click", () => openOrder(Number(button.dataset.orderDetail), "detail")));
+    $$('[data-order-track]').forEach((button) => button.addEventListener("click", () => openOrder(Number(button.dataset.orderTrack), "track")));
+    $$('[data-cancel-order]').forEach((button) => button.addEventListener("click", () => cancelOrder(Number(button.dataset.cancelOrder))));
+  }
+
+  async function cancelOrder(orderId) {
+    if (!window.confirm("Cancel this pending order? This cannot be undone.")) return;
+    try {
+      await api(`/api/customer/orders/${orderId}/cancel`, { method: "POST" });
+      await loadCustomerOrders();
+      await openOrder(orderId, "detail");
+      showNotice("Order cancelled.", "success");
+    } catch (error) { showNotice(error.message, "danger"); }
   }
 
   async function openOrder(orderId, screen = "detail") {
@@ -370,28 +523,35 @@
   function showView(name) {
     const views = { order: "view-order", orders: "view-orders", home: "view-home", vouchers: "view-vouchers", profile: "view-profile" };
     Object.entries(views).forEach(([key, id]) => $(`#${id}`).classList.toggle("d-none", key !== name));
-    $("#customer-footer").classList.toggle("d-none", !["order", "home"].includes(name));
     $$(".side-nav a").forEach((link) => link.classList.toggle("active", link.dataset.view === name));
   }
   function orderHeader(order, title) { return `<button class="text-back" data-orders-back>← &nbsp; My Orders</button><div class="order-title-row"><div><span class="eyebrow">${orderCode(order.id)}</span><h1>${title}</h1><p>${escapeHtml(hubName(order.hub_id))} · ${orderDate(order.created_at)}</p></div><span class="order-status ${statusClass(order.status)}">${escapeHtml(statusLabel[order.status] || order.status)}</span></div>`; }
   function orderItemsMarkup(order) { return (order.items || []).map((item) => `<div class="detail-item"><span class="detail-thumb">${foodImage(item)}</span><div><strong>${escapeHtml(item.name)}</strong><small>${item.quantity} × ${money(item.unit_price)}</small></div><strong>${money(item.line_total)}</strong></div>`).join(""); }
   function statusHistoryMarkup(order) {
     const history = order.status_history || [];
-    return history.map((entry) => `<div class="timeline-entry"><span class="timeline-dot ${entry.status === order.status ? "current" : ""}"></span><div><strong>${escapeHtml(statusLabel[entry.status] || entry.status)}</strong>${entry.note ? `<p>${escapeHtml(entry.note)}</p>` : ""}</div><time>${new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(entry.changed_at))}</time></div>`).join("") || `<p class="muted-copy">Status updates will appear here.</p>`;
+    return history.map((entry) => `<div class="timeline-entry"><span class="timeline-dot ${entry.status === order.status ? "current" : ""}"></span><div><strong>${escapeHtml(statusLabel[entry.status] || entry.status)}</strong>${entry.note ? `<p>${escapeHtml(entry.note)}</p>` : ""}</div><time>${new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }).format(parseApiTimestamp(entry.changed_at))}</time></div>`).join("") || `<p class="muted-copy">Status updates will appear here.</p>`;
   }
   function renderOrderDetail(order) {
-    $("#order-detail-screen").innerHTML = `${orderHeader(order, "Order Details")}<div class="detail-layout"><div><section class="order-card"><div class="card-heading"><div><h2>${escapeHtml(hubName(order.hub_id))}</h2><p>${(order.items || []).length} items · Freshly made for you</p></div></div>${orderItemsMarkup(order)}</section><section class="order-card"><h2>Delivery information</h2><p>${escapeHtml(order.delivery_address || "Address not provided").replace(/\n/g, "<br>")}</p></section></div><aside class="summary-card"><h2>Order Summary</h2><div class="summary-row"><span>Payment method</span><strong>${escapeHtml(order.payment_method || "—")}</strong></div><div class="summary-row"><span>Payment status</span><strong>${escapeHtml(order.payment_status || "—")}</strong></div><div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div><div class="summary-row"><span>Delivery fee</span><strong>${money(order.delivery_fee)}</strong></div><div class="summary-row"><span>Discount</span><strong>−${money(order.discount)}</strong></div><div class="summary-row total-row"><span>Total</span><strong>${money(order.total)}</strong></div><button class="btn btn-brand w-100 mt-3" data-open-track="${order.id}">Track order ${icon("arrow-right")}</button><button class="btn btn-outline-brand w-100 mt-2" data-open-history="${order.id}">View status history</button></aside></div>`;
+    const cancelButton = order.status === "PENDING"
+      ? `<button class="btn btn-outline-danger w-100 mt-3" data-cancel-order="${order.id}">Cancel this order</button>`
+      : "";
+    $("#order-detail-screen").innerHTML = `${orderHeader(order, "Order Details")}<div class="detail-layout"><div><section class="order-card"><div class="card-heading"><div><h2>${escapeHtml(hubName(order.hub_id))}</h2><p>${(order.items || []).length} items · Freshly made for you</p></div></div>${orderItemsMarkup(order)}</section><section class="order-card"><h2>Delivery information</h2><p>${escapeHtml(order.delivery_address || "Address not provided").replace(/\n/g, "<br>")}</p></section></div><aside class="summary-card"><h2>Order Summary</h2><div class="summary-row"><span>Payment method</span><strong>${escapeHtml(order.payment_method || "—")}</strong></div><div class="summary-row"><span>Payment status</span><strong>${escapeHtml(order.payment_status || "—")}</strong></div><div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div><div class="summary-row"><span>Delivery fee</span><strong>${money(order.delivery_fee)}</strong></div><div class="summary-row"><span>Discount</span><strong>−${money(order.discount)}</strong></div><div class="summary-row total-row"><span>Total</span><strong>${money(order.total)}</strong></div>${cancelButton}<button class="btn btn-brand w-100 mt-3" data-open-track="${order.id}">Track order ${icon("arrow-right")}</button><button class="btn btn-outline-brand w-100 mt-2" data-open-history="${order.id}">View status history</button></aside></div>`;
     bindOrderNavigation("detail");
+    $("#order-detail-screen").querySelectorAll("[data-cancel-order]").forEach((button) => button.addEventListener("click", () => cancelOrder(Number(button.dataset.cancelOrder))));
   }
   function renderOrderTrack(order) {
     const steps = ["PENDING", "CONFIRMED", "PREPARING", "READY", "DELIVERED"];
     const terminal = ["REJECTED", "FAILED", "CANCELLED"].includes(order.status);
     const activeIndex = steps.indexOf(order.status);
-    $("#order-track-screen").innerHTML = `${orderHeader(order, "Track Current Order")}<section class="eta-card"><div><small>Estimated delivery</small><strong>${terminal ? "Update unavailable" : "We'll update you as your order progresses"}</strong></div><button class="btn btn-outline-brand" data-open-history="${order.id}">View status history →</button></section><section class="order-card"><h2>From our kitchen to your doorstep</h2><div class="progress-steps ${terminal ? "terminal" : ""}">${steps.map((step, index) => `<div class="progress-step ${index <= activeIndex && !terminal ? "done" : ""} ${step === order.status ? "active" : ""}"><span>${index < activeIndex && !terminal ? "✓" : index + 1}</span><strong>${escapeHtml(statusLabel[step])}</strong></div>`).join("")}</div></section><div class="detail-layout"><section class="order-card"><h2>Your order hub</h2><strong>${escapeHtml(hubName(order.hub_id))}</strong><p>${escapeHtml(order.delivery_address || "")}</p><button class="text-back" data-open-detail="${order.id}">View order details →</button></section><section class="order-card"><h2>Latest updates</h2>${statusHistoryMarkup(order)}</section></div>`;
+    const delivered = order.status === "DELIVERED";
+    const trackingMessage = delivered
+      ? `Delivered${order.completed_at ? ` on ${completedDate(order.completed_at)}` : ""}`
+      : terminal ? "Update unavailable" : "We'll update you as your order progresses";
+    $("#order-track-screen").innerHTML = `${orderHeader(order, "Track Current Order")}<section class="eta-card"><div><small>${delivered ? "Order complete" : "Estimated delivery"}</small><strong>${trackingMessage}</strong></div><button class="btn btn-outline-brand" data-open-history="${order.id}">View status history →</button></section><section class="order-card"><h2>From our kitchen to your doorstep</h2><div class="progress-steps ${terminal ? "terminal" : ""}">${steps.map((step, index) => `<div class="progress-step ${index <= activeIndex && !terminal ? "done" : ""} ${step === order.status ? "active" : ""}"><span>${index < activeIndex && !terminal ? "✓" : index + 1}</span><strong>${escapeHtml(statusLabel[step])}</strong></div>`).join("")}</div></section><div class="detail-layout"><section class="order-card"><h2>Your order hub</h2><strong>${escapeHtml(hubName(order.hub_id))}</strong><p>${escapeHtml(order.delivery_address || "")}</p><button class="text-back" data-open-detail="${order.id}">View order details →</button></section><section class="order-card"><h2>Latest updates</h2>${statusHistoryMarkup(order)}</section></div>`;
     bindOrderNavigation("track");
   }
   function renderOrderHistory(order) {
-    $("#order-history-screen").innerHTML = `${orderHeader(order, "Order Status History")}<div class="detail-layout"><section class="order-card"><h2>Every step of your order</h2><p class="muted-copy">A complete record of updates, from first to latest.</p><div class="timeline">${statusHistoryMarkup(order)}</div></section><aside class="summary-card"><h2>Order at a glance</h2><p><strong>${orderCode(order.id)}</strong></p><hr><small>Hub</small><p><strong>${escapeHtml(hubName(order.hub_id))}</strong></p><small>Current status</small><p><span class="order-status ${statusClass(order.status)}">${escapeHtml(statusLabel[order.status] || order.status)}</span></p><button class="btn btn-brand w-100" data-open-track="${order.id}">Track order ${icon("arrow-right")}</button><button class="btn btn-outline-brand w-100 mt-2" data-open-detail="${order.id}">View order details</button></aside></div>`;
+    $("#order-history-screen").innerHTML = `${orderHeader(order, "Order Status History")}<div class="detail-layout"><section class="order-card"><h2>Every step of your order</h2><p class="muted-copy">A complete record of updates, from first to latest.</p><div class="timeline">${statusHistoryMarkup(order)}</div></section><aside class="summary-card"><h2>Order at a glance</h2><p><strong>${orderCode(order.id)}</strong></p><hr><small>Hub</small><p><strong>${escapeHtml(hubName(order.hub_id))}</strong></p><small>Current status</small><p><span class="order-status ${statusClass(order.status)}">${escapeHtml(statusLabel[order.status] || order.status)}</span></p>${order.status === "DELIVERED" ? `<small>Completed</small><p><strong>${completedDate(order.completed_at)}</strong></p>` : ""}<button class="btn btn-brand w-100" data-open-track="${order.id}">Track order ${icon("arrow-right")}</button><button class="btn btn-outline-brand w-100 mt-2" data-open-detail="${order.id}">View order details</button></aside></div>`;
     bindOrderNavigation("history");
   }
   function bindOrderNavigation(screen) {
@@ -407,13 +567,20 @@
       const user = await api("/api/auth/me", { headers: { "Content-Type": "application/json" } });
       if (user.role !== "CUSTOMER") { location.assign(user.redirect_url); return; }
       state.user = user;
-      const displayName = user.email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+      state.customer = await api("/api/customer/profile");
+      const displayName = state.customer.name || user.email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+      $("#recipient").value = state.customer.name || "";
+      $("#phone").value = state.customer.phone || "";
       $("#customer-name").textContent = displayName;
       $("#home-customer-name").textContent = displayName;
       $("#profile-customer-name").textContent = displayName;
       $("#profile-name-field").textContent = displayName;
       $("#profile-customer-email").textContent = user.email;
       $("#profile-email-field").textContent = user.email;
+      $("#profile-phone-field").textContent = state.customer.phone || "—";
+      $("#profile-customer-type").textContent = state.customer.customer_type
+        ? state.customer.customer_type.toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase())
+        : "—";
     } catch { return; }
     applyLanguage();
     await loadHubs();
@@ -458,11 +625,28 @@
     $("#global-cart").addEventListener("click", () => { showView("order"); renderCart(); });
     $("#proceed-checkout").addEventListener("click", renderCheckout);
     $("#checkout-form").addEventListener("submit", placeOrder);
-    $("#apply-voucher").addEventListener("click", () => showNotice(t("demo_error"), "info"));
+    $("#apply-voucher").addEventListener("click", applyVoucher);
+    $("#address").addEventListener("input", () => {
+      state.deliveryQuoteRequestId += 1;
+      clearTimeout(state.deliveryQuoteTimer);
+      state.deliveryQuoteTimer = setTimeout(calculateDeliveryQuote, 600);
+      state.deliveryQuote = null;
+      state.appliedVoucher = null;
+      $("#delivery-quote-status").textContent = "Address changed. Recalculating delivery distance…";
+      updateCheckoutTotals();
+    });
+    $("#voucher").addEventListener("input", () => {
+      if (state.appliedVoucher && $("#voucher").value.trim().toUpperCase() !== state.appliedVoucher.code) {
+        state.voucherQuoteRequestId += 1;
+        state.voucherQuotePending = false;
+        state.appliedVoucher = null;
+        $("#apply-voucher").disabled = false;
+        updateCheckoutTotals();
+      }
+    });
     $("#track-order").addEventListener("click", () => state.lastOrder && openOrder(state.lastOrder.id, "track"));
     $("#order-again").addEventListener("click", () => { toggleScreen("hub"); renderHubs(); });
     $("#logout").addEventListener("click", logout);
-    $$('[data-logout]').forEach((button) => button.addEventListener("click", logout));
     document.addEventListener("click", (event) => {
       const action = event.target.closest("[data-open-view]");
       if (!action) return;
@@ -470,6 +654,7 @@
       showView(target);
       if (target === "orders") showOrdersScreen("list");
       if (target === "home") loadHome();
+      if (target === "vouchers") loadCustomerVouchers();
     });
     $$(".side-nav a").forEach((link) => link.addEventListener("click", (event) => {
       event.preventDefault(); $$(".side-nav a").forEach((item) => item.classList.toggle("active", item === link));
@@ -477,12 +662,13 @@
       showView(target);
       if (target === "orders") showOrdersScreen("list");
       if (target === "home") loadHome();
+      if (target === "vouchers") loadCustomerVouchers();
     }));
     hydrateIcons();
   }
 
   async function logout() {
-    const buttons = $$('[data-logout], #logout');
+    const buttons = $$("#logout");
     buttons.forEach((button) => { button.disabled = true; });
     try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }
     finally { location.assign("/"); }

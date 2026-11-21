@@ -28,7 +28,8 @@
     minus: '<path d="M5 12h14"/>',
     close: '<path d="m6 6 12 12M18 6 6 18"/>',
     food: '<path d="M3 11h18a9 9 0 0 1-18 0zM5 7a8 8 0 0 1 14 0M12 3v2"/>',
-    cart: '<path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 9H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>'
+    cart: '<path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 9H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>'
   };
   function icon(name, className = "icon") { return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPaths[name] || iconPaths.food}</svg>`; }
   function hydrateIcons(root = document) { root.querySelectorAll("[data-icon]").forEach((node) => { node.innerHTML = icon(node.dataset.icon, "icon"); }); }
@@ -39,7 +40,7 @@
   };
   let language = "en";
   const t = (key) => copy[language][key] || copy.en[key] || key;
-  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customer: null, customerOrders: [], appliedVoucher: null, voucherQuoteRequestId: 0, voucherQuotePending: false, deliveryQuote: null, deliveryQuoteRequestId: 0, deliveryQuoteTimer: null, deliveryQuotePending: false };
+  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customer: null, customerOrders: [], notifications: [], notificationLoading: false, appliedVoucher: null, voucherQuoteRequestId: 0, voucherQuotePending: false, deliveryQuote: null, deliveryQuoteRequestId: 0, deliveryQuoteTimer: null, deliveryQuotePending: false };
   const savedCart = sessionStorage.getItem("saigonbite-cart");
   if (savedCart) {
     try { Object.assign(state.cart, JSON.parse(savedCart)); } catch { sessionStorage.removeItem("saigonbite-cart"); }
@@ -512,6 +513,63 @@
     } catch (error) { showNotice(error.message, "danger"); }
   }
 
+  function updateNotificationBadge(count) {
+    const badge = $("#notification-unread-count");
+    const unreadCount = Math.max(0, Number(count) || 0);
+    badge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
+    badge.hidden = unreadCount === 0;
+    $("#notification-bell").setAttribute("aria-label", unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications");
+  }
+
+  async function loadNotificationCount() {
+    try {
+      const result = await api("/api/customer/notifications/unread-count");
+      updateNotificationBadge(result.unread_count);
+    } catch { /* Keep the page usable when notification loading is temporarily unavailable. */ }
+  }
+
+  function renderNotifications() {
+    const list = $("#notification-list");
+    if (state.notificationLoading) {
+      list.innerHTML = '<p class="notification-state">Loading notifications…</p>';
+      return;
+    }
+    if (!state.notifications.length) {
+      list.innerHTML = '<p class="notification-state">You’re all caught up.</p>';
+      return;
+    }
+    list.innerHTML = state.notifications.map((item) => `<button class="notification-item ${item.is_read ? "" : "unread"}" type="button" data-notification-id="${Number(item.id)}" data-order-id="${Number(item.order_id)}"><span class="notification-item-title">${escapeHtml(item.title)}</span><span class="notification-item-message">${escapeHtml(item.message)}</span><time>${escapeHtml(new Date(item.created_at).toLocaleString())}</time></button>`).join("");
+    list.querySelectorAll("[data-notification-id]").forEach((button) => button.addEventListener("click", () => openNotification(button)));
+  }
+
+  async function loadNotifications() {
+    state.notificationLoading = true;
+    renderNotifications();
+    try {
+      state.notifications = await api("/api/customer/notifications");
+      state.notificationLoading = false;
+      renderNotifications();
+    } catch (error) {
+      state.notificationLoading = false;
+      $("#notification-list").innerHTML = `<div class="notification-state notification-error"><p>${escapeHtml(error.message)}</p><button type="button" id="notification-retry">Try again</button></div>`;
+      $("#notification-retry").addEventListener("click", loadNotifications);
+    }
+  }
+
+  async function openNotification(button) {
+    const notificationId = Number(button.dataset.notificationId);
+    const orderId = Number(button.dataset.orderId);
+    try {
+      await api(`/api/customer/notifications/${notificationId}/read`, { method: "PATCH" });
+      await Promise.all([loadNotificationCount(), loadNotifications()]);
+    } catch (error) {
+      showNotice(error.message, "warning");
+    }
+    $("#notification-panel").hidden = true;
+    $("#notification-bell").setAttribute("aria-expanded", "false");
+    await openOrder(orderId, "detail");
+  }
+
   function showOrdersScreen(screen) {
     showView("orders");
     ["list", "detail", "track", "history"].forEach((name) => {
@@ -582,6 +640,7 @@
         ? state.customer.customer_type.toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase())
         : "—";
     } catch { return; }
+    loadNotificationCount();
     applyLanguage();
     await loadHubs();
     if (cartCount() && !Object.keys(state.cartCatalog).length && state.cartHubId) {
@@ -623,6 +682,29 @@
       else renderCart();
     });
     $("#global-cart").addEventListener("click", () => { showView("order"); renderCart(); });
+    $("#notification-bell").addEventListener("click", async () => {
+      const panel = $("#notification-panel");
+      const opening = panel.hidden;
+      panel.hidden = !opening;
+      $("#notification-bell").setAttribute("aria-expanded", String(opening));
+      if (opening) await Promise.all([loadNotifications(), loadNotificationCount()]);
+    });
+    $("#notification-close").addEventListener("click", () => {
+      $("#notification-panel").hidden = true;
+      $("#notification-bell").setAttribute("aria-expanded", "false");
+    });
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("#notification-menu")) {
+        $("#notification-panel").hidden = true;
+        $("#notification-bell").setAttribute("aria-expanded", "false");
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        $("#notification-panel").hidden = true;
+        $("#notification-bell").setAttribute("aria-expanded", "false");
+      }
+    });
     $("#proceed-checkout").addEventListener("click", renderCheckout);
     $("#checkout-form").addEventListener("submit", placeOrder);
     $("#apply-voucher").addEventListener("click", applyVoucher);

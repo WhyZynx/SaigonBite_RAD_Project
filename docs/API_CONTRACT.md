@@ -565,3 +565,89 @@ Requires an authenticated `MANAGER` session (`401` if unauthenticated, `403` for
 - [ ] **TV1:** Confirm `POST /api/orders` request/response, hub/menu fields, and UC02 history shape.
 - [ ] **TV2:** Confirm kitchen `decision`/`status` bodies and allowed transitions.
 - [ ] **All:** Confirm IDs, timestamps, VND representation, error format, and access-control policy before freezing the shared contract.
+
+## 10. TV2 In-app Notifications (Kitchen Rejection - Customer)
+
+This contract is implemented on `feature/tv2-notification`, based on integration commit `b4db250`. It is not available on the integration branch until reviewed and merged, and requires the additive notifications migration before MySQL use.
+
+All three endpoints require a signed-in Customer session. The backend resolves the Customer profile from the session email; clients must not submit a `customer_id`.
+
+### 10.1 `GET /api/customer/notifications`
+
+Returns the current Customer's notifications, newest first:
+
+```json
+[
+  {
+    "id": 1,
+    "order_id": 501,
+    "notification_type": "ORDER_REJECTED",
+    "title": "Order #501 was rejected",
+    "message": "Your order was rejected. Reason: Unavailable ingredients",
+    "is_read": false,
+    "created_at": "2026-11-21T09:30:00+00:00"
+  }
+]
+```
+
+`created_at` is serialized as an ISO 8601 UTC timestamp with an explicit offset. The response does not expose `customer_id`.
+
+### 10.2 `GET /api/customer/notifications/unread-count`
+
+```json
+{"unread_count": 1}
+```
+
+### 10.3 `PATCH /api/customer/notifications/{notification_id}/read`
+
+No request body is required. The endpoint only updates a notification owned by the session Customer.
+
+```json
+{"id": 1, "is_read": true}
+```
+
+Returns `401` without a valid session, `403` when the session role/profile is not a valid Customer, and `404` for a missing notification or one owned by another Customer.
+
+### 10.4 Persistence and migration
+
+The `notifications` table is defined in `database/schema.sql`, the SQLAlchemy `Notification` model, and `database/migrations/20261121_create_notifications.sql`. It stores `notification_id`, `customer_id`, `order_id`, `notification_type`, `title`, `message`, `is_read`, and `created_at`. Foreign keys point to `customers` and `orders`; `(order_id, notification_type)` is unique to prevent duplicate notifications of the same type for one order. Customer/time and Customer/read indexes support list and unread-count queries. The migration declares server-side defaults; the ORM currently declares equivalent Python-side defaults rather than `server_default`, so direct SQL inserts rely on the migration's defaults.
+
+For a **new or disposable database**, initialize with `database/schema.sql` and then `database/seed.sql`. The schema script begins with `DROP DATABASE IF EXISTS SaigonBiteDB`; do not run it on an existing/shared database. An existing database should be upgraded with the additive notifications migration only, after selecting and verifying the intended database. That migration currently contains `USE SaigonBiteDB;`, so for isolated testing use a temporary copy with `USE` changed to the disposable database name and verify it with `SELECT DATABASE()` before execution. Neither path has been run for this feature.
+
+### 10.5 Kitchen rejection notification flow
+
+```mermaid
+sequenceDiagram
+    participant K as Kitchen UI
+    participant KR as Kitchen Router
+    participant OR as Order Repository
+    participant DB as MySQL
+    participant NS as Notification Service
+    participant NR as Notification Repository
+    participant C as Customer UI
+    participant CR as Customer Router
+    participant OD as Order Detail API
+
+    K->>KR: PATCH decision REJECT + reason
+    KR->>OR: decide(order_id, REJECT, reason)
+    OR->>DB: Commit REJECTED status + status history
+    OR-->>KR: Successful rejection
+    KR->>NS: Best-effort notify_order_rejected
+    NS->>NR: create_order_rejected
+    NR->>DB: Insert notification (unique order/type)
+    KR-->>K: Successful rejection response
+    C->>CR: GET list / unread count
+    CR->>NR: Query for session Customer
+    NR->>DB: Query notifications for session Customer
+    C->>CR: PATCH notification as read
+    CR->>NR: Mark read for session Customer
+    NR->>DB: Update owned notification
+    C->>OD: GET /api/orders/{order_id}
+    OD-->>C: Order detail
+```
+
+Order status/history and notification are separate transactions by design: notification storage failure is logged and does not fail or undo the successful rejection. This best-effort behavior can leave a rejected order without a notification if storage fails; a retry of the rejection is an invalid status transition and does not repair that missing notification.
+
+### 10.6 Review and verification status
+
+TV1 confirmation is pending for the Customer bell, dropdown, read interaction, and order-detail navigation. The unread count refreshes at page initialization, when opening the panel, and after marking an item read; no live refresh occurs while the panel is closed because polling is not part of this feature. TV3 confirmation is pending for the shared database schema/migration and integration architecture. MySQL migration/E2E, browser E2E, and concurrent MySQL insert/transition tests have not been completed. See `docs/INTEGRATION_ISSUES.md` for current test evidence and remaining work.

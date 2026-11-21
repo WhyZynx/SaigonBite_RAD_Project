@@ -200,3 +200,20 @@ Các kết quả trong bảng đầu là log kiểm thử đã ghi nhận trư�
 ## Kết luận
 
 **PARTIALLY WORKING.** Sau merge PR #4, toàn bộ 34 backend tests, compile check, bốn frontend syntax checks và Kitchen parser probe đạt trong lần review này. Không có file Kitchen thay đổi trong merge PR #4 và không tái hiện được lỗi Kitchen mới. Vẫn chưa có MySQL E2E, concurrency trên MySQL, browser E2E, hoặc một order_id chạy xuyên Customer → Kitchen → Customer → Manager. INT-CUS-KIT-01 vẫn chưa được tái hiện trên đơn người dùng báo; INT-REPORT-01 vẫn cần TV3 xác minh với đủ timestamp. Các giới hạn demo và issue mở khác vẫn giữ trạng thái, owner như các bảng trên.
+
+## Notification feature status - TV2 feature branch
+
+This is a feature-branch update, not a claim that Notification has been merged into `integration/tv3-admin`. The code is on `feature/tv2-notification`, based on `b4db250`.
+
+| Area | Current evidence | Owner / next action | Status |
+|---|---|---|---|
+| Kitchen rejection to notification | Kitchen commits `REJECTED` and status history first, then calls NotificationService best-effort. Notification persistence failure is logged and does not reverse/fail the rejection. A storage failure can leave a rejected order without a notification; retrying the rejection does not recreate it. | TV2: decide whether this documented best-effort tradeoff meets demo acceptance. | Implemented; MySQL behavior not verified |
+| Customer session ownership and badge refresh | Customer endpoints derive identity from the active session email and query/update only rows matching that Customer. Cross-Customer mark-read returns 404. The unread count now loads at page initialization, when opening the bell, and after mark-read; no live refresh occurs while the panel is closed because polling is not used. | TV1: confirm bell, dropdown, read state, count refresh, and opening order detail in a browser. | Backend covered by SQLite tests; browser/UI confirmation pending |
+| Database and migration | `database/schema.sql`, SQLAlchemy model and additive migration define the notification columns, FKs, indexes, and unique `(order_id, notification_type)` rule. Fresh database setup creates the table through `schema.sql`; existing databases require the additive migration. The migration selects `SaigonBiteDB` explicitly. | TV3: confirm shared database schema/migration and model integration. For testing, use a disposable DB and a temporary migration copy with `USE` changed; verify `SELECT DATABASE()` before executing. Do not run the checked-in migration against the team database. | Migration not run |
+| UTC timestamps | Notification API now emits ISO 8601 timestamps with an explicit `+00:00` UTC offset; a response-level SQLite regression test covers it. | TV2; TV1 to confirm displayed local time in browser. | SQLite verified |
+
+### Tests and verification
+
+After adding the UTC timestamp and duplicate-insert regression tests, `python -m pytest -q` on the backend reports **41 passed** (including existing tests); the seven focused notification tests pass on SQLite. The tests cover rejection, ownership, unread count, mark-read, unauthenticated/wrong-role access, invalid reason, duplicate insertion fallback, and best-effort failure handling.
+
+Not completed: MySQL migration or E2E, browser E2E, and concurrent MySQL transition/insert testing. SQLite tests do not establish MySQL locking, transaction, or migration behavior. The checked-in migration has not been executed.

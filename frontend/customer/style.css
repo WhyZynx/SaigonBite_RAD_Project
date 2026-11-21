@@ -74,3 +74,28 @@
 .order-table th:last-child,.order-table td:last-child{text-align:center}
 .order-row-actions{display:flex;justify-content:center;align-items:center;gap:7px}
 @media(max-width:560px){.order-table{min-width:0;table-layout:auto}.order-table th,.order-table td{white-space:normal}.order-table td:last-child{text-align:right}.order-row-actions{justify-content:flex-end}}
+
+.notification-menu{position:relative;display:flex;align-items:center}
+.notification-bell{position:relative;display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--forest);cursor:pointer;transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}
+.notification-bell:hover,.notification-bell[aria-expanded="true"]{background:#f2f4ed;border-color:#cbd5c9}
+.notification-bell:focus-visible,.notification-panel button:focus-visible{outline:2px solid #638c72;outline-offset:2px}
+.notification-bell .icon{width:18px;height:18px}
+.notification-badge{position:absolute;top:-6px;right:-6px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border:2px solid var(--paper);border-radius:20px;background:#c9583f;color:#fff;font-size:9px;line-height:1}
+.notification-panel{position:absolute;z-index:50;top:45px;right:0;width:min(350px,calc(100vw - 32px));max-height:min(440px,calc(100vh - 100px));overflow:auto;border:1px solid var(--line);border-radius:11px;background:#fff;box-shadow:0 14px 36px #173d3220}
+.notification-panel[hidden]{display:none}
+.notification-panel-heading{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--line);background:#fff;color:var(--forest);font-size:13px}
+.notification-panel-heading button{width:27px;height:27px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.notification-panel-heading button:hover{background:#f2f4ed;color:var(--forest)}
+.notification-list{display:grid}
+.notification-item{display:grid;gap:5px;width:100%;padding:13px 15px;border:0;border-bottom:1px solid #edf0e9;background:#fff;color:var(--ink);text-align:left;cursor:pointer;transition:background-color .15s ease}
+.notification-item:hover{background:#f8f9f5}
+.notification-item.unread{background:#f5f8f1}
+.notification-item-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--forest)}
+.notification-item.unread .notification-item-title:before{content:"";flex:0 0 7px;width:7px;height:7px;border-radius:50%;background:#c9583f}
+.notification-item-message{font-size:10px;line-height:1.4;color:#56645a}
+.notification-item time{font-size:9px;color:var(--muted)}
+.notification-state{margin:0;padding:22px 16px;color:var(--muted);font-size:11px;text-align:center}
+.notification-error{display:grid;gap:8px}
+.notification-error p{margin:0}
+.notification-error button{justify-self:center;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--forest);font:inherit;font-size:10px;cursor:pointer}
+@media(max-width:650px){.notification-panel{position:fixed;top:66px;right:12px;width:min(350px,calc(100vw - 24px));max-height:calc(100vh - 90px)}.notification-bell{width:33px;height:33px}.topbar-actions{gap:8px}}

@@ -9,6 +9,7 @@ from app.auth import SESSION_COOKIE, get_session
 from app.delivery_fee_service import DeliveryFeeService
 from app.database import get_db
 from app.repositories import customer_repository
+from app.repositories.notification import NotificationRepository
 from app.schemas import CreateOrderItem, CreateOrderRequest, CreateOrderResponse
 from app.models import Customer, Hub, MenuItem, Order, Voucher
 from app.voucher_rules import calculate_voucher_discount
@@ -179,6 +180,28 @@ def get_customer_profile(request: Request, db: Session = Depends(get_db)):
     return {"id": customer.customer_id, "name": customer.name,
             "email": customer.email, "phone": customer.phone,
             "customer_type": customer.customer_type}
+
+
+@router.get("/api/customer/notifications")
+def list_customer_notifications(request: Request, db: Session = Depends(get_db)):
+    customer = current_customer(request, db)
+    return NotificationRepository(db).list_for_customer(customer.customer_id)
+
+
+@router.get("/api/customer/notifications/unread-count")
+def get_customer_notification_unread_count(request: Request, db: Session = Depends(get_db)):
+    customer = current_customer(request, db)
+    return {"unread_count": NotificationRepository(db).unread_count(customer.customer_id)}
+
+
+@router.patch("/api/customer/notifications/{notification_id}/read")
+def mark_customer_notification_read(
+    notification_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    customer = current_customer(request, db)
+    return NotificationRepository(db).mark_read(customer.customer_id, notification_id)
 
 
 @router.get("/api/customer/orders")

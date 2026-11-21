@@ -2,7 +2,8 @@
 
 **Version:** 1.3 (Customer address-based delivery pricing) | **Backend:** Python + FastAPI | **Database:** MySQL 8 | **Architecture:** MVC-inspired Layered Monolith + Repository Pattern
 
-> **Status:** Reflects the current implementation on fix/tv1-customer, pending final integration review. This does not state that PR #4 has been merged into integration/tv3-admin or main. Customer order APIs use SQLAlchemy repositories and shared models; Kitchen, Admin, and Manager APIs are documented from their current implementation. Authentication accounts and sessions remain local in-memory demo implementations.
+> **Status:** Describes the API implementation currently documented in this repository. Customer, Kitchen, Admin, and Manager endpoints are documented according to their implemented code. Authentication accounts and sessions remain temporary in-memory demo implementations. Check the current Git branch and commit before using this document as evidence of a specific PR merge or deployment.
+
 
 ---
 
@@ -116,6 +117,7 @@ Invalidates the server-side session and expires the `saigonbite_session` cookie.
 - **HTTP status codes:** `200` GET/PATCH/PUT success; `201` POST created; `204` DELETE/archive success; `400` invalid business input; `401` authentication required; `403` forbidden role; `404` missing resource; `409` illegal state transition/conflict; `422` invalid request format; `500` unexpected server failure.
 - **Normalized Order Status Codes:** `PENDING`, `CONFIRMED`, `REJECTED`, `PREPARING`, `READY`, `DELIVERED`, `FAILED`, `CANCELLED` (`READY` displays as “Ready for Pickup” in UI).
 
+
 ### 3.2 API Inventory
 
 | UC | Method | Endpoint | Owner | Purpose |
@@ -126,24 +128,28 @@ Invalidates the server-side session and expires the `saigonbite_session` cookie.
 | Auth | POST | `/api/auth/logout` | Shared | Clear session and expire cookie |
 | UC01 | GET | `/api/hubs` | TV1 | List hubs |
 | UC01 | GET | `/api/menu-items?hub_id={id}` | TV1 | List menu items for a hub |
-| UC01 | GET | /api/delivery-options?hub_id={id} | TV1 | Get the selected hub name and address for delivery checkout |
-| UC01 | POST | /api/delivery-quote | TV1 | Calculate driving distance, delivery fee, and surcharge for an address |
+| UC01 | GET | `/api/delivery-options?hub_id={id}` | TV1 | Get selected hub name and address for delivery checkout |
+| UC01 | POST | `/api/delivery-quote` | TV1 | Calculate driving distance, delivery fee, and surcharge |
 | UC01 | POST | `/api/orders` | TV1 | Place order for the customer bound to the active session |
-| UC01 | POST | `/api/customer/vouchers/validate` | TV1 | Validate a global voucher and preview the discount/total |
-| UC02 | GET | `/api/customer/profile` | TV1 | Resolve current customer profile from the active session |
+| UC01 | POST | `/api/customer/vouchers/validate` | TV1 | Validate a global voucher and preview discount/total |
+| UC02 | GET | `/api/customer/profile` | TV1 | Resolve current customer profile from active session |
 | UC02 | GET | `/api/customer/orders` | TV1 | List current customer's orders |
-| UC02 | POST | `/api/customer/orders/{id}/cancel` | TV1 | Cancel an owned order while it is still pending |
-| UC01 | GET | `/api/customer/vouchers` | TV1 | List active vouchers that are currently within their validity dates |
+| UC02 | POST | `/api/customer/orders/{id}/cancel` | TV1 | Cancel an owned order while it is pending |
+| UC01 | GET | `/api/customer/vouchers` | TV1 | List active vouchers within their validity dates |
 | UC02 | GET | `/api/orders/{id}` | TV1 | Get order detail and current status |
 | UC03/04 | GET | `/api/kitchen/orders?hub_id={id}` | TV2 | Kitchen order queue |
-| UC03 | PATCH | `/api/kitchen/orders/{id}/decision` | TV2 | Confirm/reject incoming order |
-| UC04 | PATCH | `/api/kitchen/orders/{id}/status` | TV2 | Start preparation / mark ready |
-| UC05 | GET | `/api/vouchers` | TV3 | List, filter, and search vouchers (Admin Portal) |
-| UC05 | POST | `/api/vouchers` | TV3 | Create new voucher (Admin Portal) |
-| UC05 | PATCH | `/api/vouchers/{id}/archive` | TV3 | Soft-archive an active voucher |
-| UC06 | GET | `/api/reports/sales` | TV3 | Daily sales revenue report (Manager Portal) |
-| UC06 | GET | `/api/reports/hub-workload` | TV3 | Hub workload distribution report (Manager Portal) |
-| UC06 | GET | `/api/reports/delivery` | TV3 | Delivery performance report (Manager Portal) |
+| UC03 | PATCH | `/api/kitchen/orders/{id}/decision` | TV2 | Confirm or reject incoming order |
+| UC04 | PATCH | `/api/kitchen/orders/{id}/status` | TV2 | Start preparation or mark order ready |
+| UC05 | GET | `/api/vouchers` | TV3 | List, filter, and search vouchers |
+| UC05 | POST | `/api/vouchers` | TV3 | Create a voucher |
+| UC05 | PUT | `/api/vouchers/{id}` | TV3 | Update an existing voucher |
+| UC05 | PATCH | `/api/vouchers/{id}/archive` | TV3 | Archive an eligible voucher |
+| Admin Delivery | GET | `/api/admin/orders/ready` | TV3 | List orders ready for simulated delivery completion |
+| Admin Delivery | PATCH | `/api/admin/orders/{order_id}/deliver` | TV3 | Simulate delivery completion for a READY order |
+| UC06 | GET | `/api/reports/sales` | TV3 | Generate Sales Report |
+| UC06 | GET | `/api/reports/hub-workload` | TV3 | Generate Hub Workload Report |
+| UC06 | GET | `/api/reports/delivery` | TV3 | Generate Delivery Performance Report |
+
 
 ---
 

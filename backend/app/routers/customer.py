@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
@@ -22,6 +23,7 @@ class VoucherPreviewRequest(BaseModel):
     hub_id: int = Field(gt=0)
     destination_address: str = Field(min_length=5, max_length=255)
     items: list[CreateOrderItem] = Field(min_length=1)
+    demo_delivery: bool = False
 
 
 def customer_session(request: Request):
@@ -57,6 +59,17 @@ def _has_nonblank_contact_line(address: str, label: str) -> bool:
     return False
 
 
+def _valid_delivery_phone(address: str) -> bool:
+    for line in address.splitlines():
+        key, separator, value = line.partition(":")
+        if not separator or key.strip().casefold() != "phone":
+            continue
+        phone = value.strip()
+        digits = re.sub(r"\D", "", phone)
+        return bool(re.fullmatch(r"\+?[0-9().\s-]+", phone) and 9 <= len(digits) <= 15)
+    return False
+
+
 def _utc_timestamp(value: datetime) -> str:
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
@@ -73,7 +86,8 @@ def _order_completed_at(order: Order) -> str | None:
 @router.post("/api/customer/vouchers/validate")
 def validate_voucher(payload: VoucherPreviewRequest, request: Request, db: Session = Depends(get_db)):
     customer = current_customer(request, db)
-    route = DeliveryFeeService(db).calculate(payload.hub_id, payload.destination_address)
+    route = DeliveryFeeService(db).calculate(payload.hub_id, payload.destination_address,
+                                             demo=payload.demo_delivery)
     hub = db.query(Hub).filter(Hub.hub_id == payload.hub_id).first()
     if hub is None or hub.status != "OPEN":
         raise HTTPException(status_code=400, detail="This hub is not accepting orders")
@@ -140,25 +154,30 @@ def delivery_options(request: Request, hub_id: int = Query(gt=0), db: Session = 
 class DeliveryQuoteRequest(BaseModel):
     hub_id: int = Field(gt=0)
     delivery_address: str = Field(min_length=5, max_length=255)
+    demo_delivery: bool = False
 
 
 @router.post("/api/delivery-quote")
 def delivery_quote(payload: DeliveryQuoteRequest, request: Request, db: Session = Depends(get_db)):
     current_customer(request, db)
-    return DeliveryFeeService(db).calculate(payload.hub_id, payload.delivery_address)
+    return DeliveryFeeService(db).calculate(payload.hub_id, payload.delivery_address,
+                                            demo=payload.demo_delivery)
 
 
 @router.post("/api/orders", response_model=CreateOrderResponse, status_code=201)
 def create_order(payload: CreateOrderRequest, request: Request, db: Session = Depends(get_db)):
     customer = current_customer(request, db)
+    address = f"{payload.destination_address.strip()}\n{payload.delivery_address.strip()}"
+    if len(address) > 255:
+        raise HTTPException(status_code=422, detail="Delivery address details are too long (maximum 255 characters including recipient details)")
     if not _has_nonblank_contact_line(payload.delivery_address, "Recipient"):
         raise HTTPException(status_code=422, detail="Recipient name is required")
     if not _has_nonblank_contact_line(payload.delivery_address, "Phone"):
         raise HTTPException(status_code=422, detail="Delivery phone number is required")
-    route = DeliveryFeeService(db).calculate(payload.hub_id, payload.destination_address)
-    address = f"{payload.destination_address}\n{payload.delivery_address}"
-    if len(address) > 255:
-        raise HTTPException(status_code=422, detail="Delivery address details are too long")
+    if not _valid_delivery_phone(payload.delivery_address):
+        raise HTTPException(status_code=422, detail="Enter a valid delivery phone number with 9 to 15 digits")
+    route = DeliveryFeeService(db).calculate(payload.hub_id, payload.destination_address,
+                                             demo=payload.demo_delivery)
     payload.delivery_address = address
     order = customer_repository.create_order(
         db,

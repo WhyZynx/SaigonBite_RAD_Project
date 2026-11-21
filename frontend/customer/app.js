@@ -40,7 +40,7 @@
   };
   let language = "en";
   const t = (key) => copy[language][key] || copy.en[key] || key;
-  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customer: null, customerOrders: [], notifications: [], notificationLoading: false, appliedVoucher: null, voucherQuoteRequestId: 0, voucherQuotePending: false, deliveryQuote: null, deliveryQuoteRequestId: 0, deliveryQuoteTimer: null, deliveryQuotePending: false };
+  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customer: null, customerOrders: [], notifications: [], notificationLoading: false, appliedVoucher: null, voucherQuoteRequestId: 0, voucherQuotePending: false, deliveryQuote: null, demoDelivery: false, deliveryQuoteRequestId: 0, deliveryQuoteTimer: null, deliveryQuotePending: false };
   const savedCart = sessionStorage.getItem("saigonbite-cart");
   if (savedCart) {
     try { Object.assign(state.cart, JSON.parse(savedCart)); } catch { sessionStorage.removeItem("saigonbite-cart"); }
@@ -55,7 +55,9 @@
     const data = response.status === 204 ? null : await response.json().catch(() => null);
     if (!response.ok) {
       if (response.status === 401) location.assign("/");
-      throw new Error(data?.detail || "Something went wrong. Please try again.");
+      const error = new Error(data?.detail || "Something went wrong. Please try again.");
+      error.status = response.status;
+      throw error;
     }
     return data;
   }
@@ -252,6 +254,10 @@
     $("#checkout-subtotal").textContent = money(groupSubtotal);
     $("#delivery-origin").textContent = state.hubs.find((hub) => hub.id === group.hub_id)?.address || group.hub_name;
     state.deliveryQuote = null;
+    state.demoDelivery = false;
+    $("#use-demo-delivery").classList.add("d-none");
+    $("#demo-delivery-help").classList.add("d-none");
+    $("#checkout-delivery-note").textContent = "Distance and fees are calculated by the server using OpenStreetMap driving routes.";
     state.deliveryQuotePending = false;
     $("#address").value = "";
     $("#delivery-details").value = "";
@@ -287,12 +293,14 @@
     $("#place-order").disabled = !quote || state.voucherQuotePending || state.deliveryQuotePending;
   }
 
-  async function calculateDeliveryQuote() {
+  async function calculateDeliveryQuote(useDemo = false) {
     const group = cartGroups().find((item) => item.hub_id === state.selectedCartHubId);
     const address = $("#address").value.trim();
     const requestId = ++state.deliveryQuoteRequestId;
     state.deliveryQuote = null;
     state.appliedVoucher = null;
+    state.demoDelivery = useDemo;
+    $("#use-demo-delivery").classList.add("d-none");
     state.deliveryQuotePending = false;
     if (!address || address.length < 5 || !group) {
       $("#delivery-quote-status").textContent = "Enter your address to calculate the distance and delivery fee.";
@@ -303,13 +311,27 @@
     $("#delivery-quote-status").textContent = "Calculating driving distance and delivery fee…";
     updateCheckoutTotals();
     try {
-      const quote = await api("/api/delivery-quote", { method: "POST", body: JSON.stringify({ hub_id: group.hub_id, delivery_address: address }) });
+      const quote = await api("/api/delivery-quote", { method: "POST", body: JSON.stringify({ hub_id: group.hub_id, delivery_address: address, demo_delivery: useDemo }) });
       if (requestId !== state.deliveryQuoteRequestId || address !== $("#address").value.trim()) return;
       state.deliveryQuote = quote;
-      $("#delivery-quote-status").textContent = "Delivery distance and fee calculated.";
+      $("#delivery-quote-status").textContent = quote.is_demo
+        ? "DEMO ESTIMATE SELECTED. This is sample data, not a measured route. Review the distance and fee below."
+        : "Driving distance and delivery fee calculated from the map route.";
+      $("#delivery-route-label").textContent = quote.is_demo ? "CONFIGURED DEMO ESTIMATE" : "OPENSTREETMAP DRIVING ROUTE";
+      $("#demo-delivery-help").classList.toggle("d-none", !quote.is_demo);
+      $("#checkout-delivery-note").textContent = quote.is_demo
+        ? "DEMO ORDER: the sample distance and fee shown above will be used in the voucher total and saved order."
+        : "Distance and fees are calculated by the server using OpenStreetMap driving routes.";
     } catch (error) {
       if (requestId !== state.deliveryQuoteRequestId) return;
       $("#delivery-quote-status").textContent = error.message;
+      const addressNotFound = error.status === 400 && error.message.includes("Nominatim found no result");
+      if (!useDemo && (error.status === 502 || addressNotFound)) {
+        $("#delivery-quote-status").textContent = addressNotFound
+          ? "Nominatim could not find this address. Check the spelling or continue with the configured Demo estimate. Demo does not verify the address or represent a real route."
+          : "The map service is unavailable. You may retry, or continue with the configured Demo estimate. Demo is sample data, not a real route.";
+        $("#use-demo-delivery").classList.remove("d-none");
+      }
     } finally {
       if (requestId === state.deliveryQuoteRequestId) {
         state.deliveryQuotePending = false;
@@ -342,6 +364,7 @@
         method: "POST", body: JSON.stringify({
           code, hub_id: group.hub_id,
           destination_address: destinationAddress,
+          demo_delivery: state.demoDelivery,
           items: group.items.map((item) => ({ menu_item_id: item.id, quantity: item.quantity }))
         })
       });
@@ -390,6 +413,7 @@
         items: group.items.map((item) => ({ menu_item_id: item.id, quantity: item.quantity })),
         delivery_address: address,
         voucher_code: state.appliedVoucher?.code || null,
+        demo_delivery: state.demoDelivery,
         payment_method: "COD"
       }) });
       state.lastOrder = response;
@@ -712,12 +736,17 @@
     $("#proceed-checkout").addEventListener("click", renderCheckout);
     $("#checkout-form").addEventListener("submit", placeOrder);
     $("#apply-voucher").addEventListener("click", applyVoucher);
+    $("#use-demo-delivery").addEventListener("click", () => calculateDeliveryQuote(true));
     $("#address").addEventListener("input", () => {
       state.deliveryQuoteRequestId += 1;
       clearTimeout(state.deliveryQuoteTimer);
       state.deliveryQuoteTimer = setTimeout(calculateDeliveryQuote, 600);
       state.deliveryQuote = null;
+      state.demoDelivery = false;
       state.appliedVoucher = null;
+      $("#use-demo-delivery").classList.add("d-none");
+      $("#demo-delivery-help").classList.add("d-none");
+      $("#checkout-delivery-note").textContent = "Distance and fees are calculated by the server using OpenStreetMap driving routes.";
       $("#delivery-quote-status").textContent = "Address changed. Recalculating delivery distance…";
       updateCheckoutTotals();
     });

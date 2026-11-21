@@ -5,9 +5,9 @@
 | Nội dung | Kết quả |
 |---|---|
 | Nhánh tích hợp | `integration/tv3-admin` |
-| HEAD cập nhật | a106c6eecc84621ecce7d6d61ca2f5083afbe587 (fix/tv1-customer; commit này chỉ sửa docs/API_CONTRACT.md) |
-| Ngày rà soát/cập nhật | 21-11-2026 — cập nhật tài liệu; kiểm thử mới được ghi riêng tại phần G |
-| Commit API Contract | a106c6e cập nhật docs/API_CONTRACT.md; chỉ thay đổi tài liệu, không sửa code |
+| HEAD rà soát | `cd12cbb94c7916c04e1b6989497f6f631f2da0a2` (`integration/tv3-admin`; merge PR #4 Customer) |
+| Ngày rà soát/cập nhật | 21-11-2026 — rà soát sau merge PR #4; kiểm thử lần này ghi tại phần G |
+| Commit API Contract | `a106c6e` cập nhật `docs/API_CONTRACT.md`; commit tài liệu nằm trong lịch sử tích hợp |
 | Customer | TV1 — 524H0040 |
 | Kitchen | TV2 — 524H0130 |
 | Admin/Manager | TV3 — 524H0021 |
@@ -18,7 +18,7 @@
 | Giới hạn demo còn mở | 2 |
 | Chưa xác minh còn mở | 5 |
 | Cần nhóm thống nhất | 9 chủ đề; liệt kê tại phần F |
-| Kết luận | **PARTIALLY WORKING** — có kiểm thử SQLite cho một số API/luồng Kitchen; chưa kiểm tra MySQL ghi dữ liệu, trình duyệt đầy đủ hoặc toàn bộ luồng liên module trên cùng một đơn |
+| Kết luận | **PARTIALLY WORKING** — các test Backend/SQLite hiện tại đạt; chưa kiểm tra MySQL ghi dữ liệu, trình duyệt đầy đủ hoặc toàn bộ luồng liên module trên cùng một đơn |
 
 | Module | Code/API hiện có theo mã nguồn | Giới hạn được ghi nhận |
 |---|---|---|
@@ -37,7 +37,7 @@ Các con số là mã vấn đề duy nhất, không tính lặp các mục liê
 | Backend/Dùng chung | 6 | 1 | INT-DATA-01, INT-AUTH-01, DATA-DB-01, VER-DB-01, VER-UI-01, INT-REPORT-01; INT-DATA-02 đã sửa |
 | Phối hợp liên module | 1 | 0 | INT-CUS-KIT-01; tính một lần trong tổng 18 mã còn mở |
 
-Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ parent `d575ee3`; parser giao hàng được thêm sau trong `1216ca1`. Merge TV1 `4c64205` giữ nguyên `frontend/customer/app.js` và `customer_repository.py` so với parent TV1; thay đổi liên quan là bổ sung `customer_name`/`customer_phone` vào Order Detail. Không thấy merge tráo dữ liệu giao hàng.
+Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ parent `d575ee3`; parser giao hàng được thêm sau trong `1216ca1`. Merge TV1 `4c64205` giữ nguyên `frontend/customer/app.js` và `customer_repository.py` so với parent TV1; thay đổi liên quan là bổ sung `customer_name`/`customer_phone` vào Order Detail. Merge PR #4 hiện tại là `cd12cbb`; diff của merge không thay đổi file Kitchen. Không thấy merge tráo dữ liệu giao hàng.
 
 ## B. Bảng tổng hợp theo module
 
@@ -91,10 +91,10 @@ Lịch sử merge đã đối chiếu: merge TV2 `07bf1d1` lấy code từ paren
 
 | Bước truy vết | Bằng chứng trong mã/kiểm thử | Kết quả |
 |---|---|---|
-| Customer Form | `frontend/customer/index.html` có ID riêng `address`, `recipient`, `phone`, `note`; `placeOrder()` đọc riêng rồi ghép nhãn | Mã nguồn cho thấy ý định tách trường; chưa chạy trình duyệt để xác nhận giá trị DOM thực |
+| Customer Form | `frontend/customer/index.html` có ID riêng `address`, `recipient`, `phone`, `note`; `placeOrder()` đọc riêng rồi ghép nhãn `Recipient`, `Phone`, `Note` sau địa chỉ | Đã đối chiếu code hiện tại sau PR #4; chưa chạy trình duyệt để xác nhận giá trị DOM thực |
 | Request Payload | POST gửi `delivery_address` dạng nhiều dòng; không gửi từng trường riêng | Đã đọc code; không thu payload của đơn người dùng báo |
 | SQLite API | Kiểm thử mới POST chuỗi chứa đúng Recipient/Phone/Note, rồi GET Order Detail | PASS: API trả chuỗi giống hệt, không hoán đổi |
-| Kitchen parser | Chạy trực tiếp hàm `parseDeliveryDetails()` hiện tại với cùng dữ liệu tổng hợp | PASS: Recipient `Customer Test12334`, Phone `324324`, Note `1111111`, Address `Test street 12` |
+| Kitchen parser | Chạy hàm hiện tại với payload nhiều dòng theo định dạng Customer | PASS trong lần rà soát 21-11-2026: Recipient, Phone, Note và Address được tách đúng; không phải browser test |
 | Customer UI và Kitchen UI trên trình duyệt | Chưa có công cụ/browser evidence trong lượt này | NOT TESTED |
 | Bản ghi thật bị báo | Không truy cập MySQL nhóm, không có request/response của đơn đó | CHƯA XÁC MINH |
 
@@ -169,14 +169,18 @@ Các kết quả trong bảng đầu là log kiểm thử đã ghi nhận trư�
 | Manager API and Reports trên DB test | Chưa chạy riêng | NOT TESTED | Cần test Pending, API error, Delivery có cả pickup_at và delivered_at, duration và dữ liệu cùng order_id |
 | Toàn luồng Customer → Kitchen → Customer → Manager | Chưa chạy cùng một order_id | NOT TESTED | Các đoạn riêng có test SQLite, nhưng không phải end-to-end |
 
-### Lần chạy mới nhất — 21-11-2026, tại HEAD a106c6e
+### Lần chạy mới nhất — 21-11-2026, tại HEAD `cd12cbb94c7916c04e1b6989497f6f631f2da0a2`
 
 | Kiểm tra | Kết quả | Bằng chứng/giới hạn |
 |---|---|---|
-| python -m compileall -q app tests | PASS | Chạy từ backend; exit code 0, không có output |
-| python -m pytest -q | PASS — 34 passed, 104 warnings | Chạy từ backend; test dùng SQLite fixtures riêng. Warnings gồm Starlette/httpx deprecation và SQLAlchemy datetime.utcnow deprecation |
-| MySQL E2E / ghi dữ liệu | NOT TESTED | Không dùng database nhóm; chưa có MySQL test database được cấp |
-| Browser E2E | NOT TESTED | Lần chạy này không kiểm tra giao diện, console hoặc network |
+| `python -m compileall -q app tests` | PASS | Chạy trong `backend`; exit code 0, không có output |
+| `python -m pytest -q` | PASS — 34 passed, 104 warnings in 4.99s | Chạy trong `backend`; fixtures SQLite. Warnings: Starlette/httpx deprecation và SQLAlchemy `datetime.utcnow()` deprecation |
+| `node --check` cho kitchen, customer, admin, manager | PASS | Cả bốn lệnh kết thúc exit code 0 |
+| Kitchen parser với payload định dạng Customer | PASS | Parser trích Recipient `Test Recipient`, Phone `0900000000`, Note `Leave at reception`, Address `12 Nguyen Hue, District 1` |
+| Kitchen status/history và Customer API tests | PASS trong pytest | Test suite hiện tại có coverage list/filter, confirm/reject, PREPARING/READY, history, Customer POST → detail và auth; đây là test SQLite, không phải E2E MySQL |
+| MySQL E2E / ghi dữ liệu / concurrency | NOT TESTED | Không kết nối hoặc ghi database nhóm; chưa có MySQL test database được cấp |
+| Browser E2E | NOT TESTED | Không kiểm tra render, thao tác thực, console hoặc network trong trình duyệt |
+| `git diff --check` | PASS | Chạy sau khi cập nhật tài liệu; không báo lỗi whitespace |
 
 ## H. Checklist trước khi tạo PR vào main
 
@@ -191,8 +195,8 @@ Các kết quả trong bảng đầu là log kiểm thử đã ghi nhận trư�
 | Luồng tạo và xử lý đơn hoàn chỉnh | NOT TESTED | Chưa chạy cùng order_id trên toàn hệ thống/MySQL test |
 | Không còn lỗi nghiêm trọng | NOT VERIFIED | Còn vấn đề báo cáo và phần chưa xác minh; nhóm cần đánh giá theo tiêu chí nghiệm thu |
 | Giới hạn demo đã được ghi rõ | PASS | Customer ID cứng đã bỏ; tài liệu ghi rõ ánh xạ email/mock auth, giới hạn geocode địa chỉ OSM và số liệu thời gian cố định |
-| Test mới nhất | PASS | 21-11-2026: compileall và 34 pytest pass với SQLite; cảnh báo ghi ở phần G. MySQL E2E và Browser E2E vẫn NOT TESTED |
+| Test mới nhất | PASS | 21-11-2026 tại `cd12cbb`: compileall, 34 pytest và bốn Node syntax checks đạt; Kitchen parser probe đạt. MySQL E2E và Browser E2E vẫn NOT TESTED |
 
 ## Kết luận
 
-**PARTIALLY WORKING.** Có bằng chứng SQLite rằng Customer API giữ nguyên Recipient/Phone/Note qua tạo đơn và Order Detail; parser Kitchen tách đúng chuỗi mẫu; Kitchen state transitions và history đạt trong SQLite. Chưa tái hiện được dữ liệu của đơn người dùng báo, chưa kiểm tra trình duyệt hoặc MySQL ghi dữ liệu. Không có bằng chứng cho thấy merge đã tráo Phone/Note. Sai lệch contract (một chuỗi so với trường Note riêng) có từ trước tích hợp; nguyên nhân của giá trị bị tráo vẫn chưa xác định.
+**PARTIALLY WORKING.** Sau merge PR #4, toàn bộ 34 backend tests, compile check, bốn frontend syntax checks và Kitchen parser probe đạt trong lần review này. Không có file Kitchen thay đổi trong merge PR #4 và không tái hiện được lỗi Kitchen mới. Vẫn chưa có MySQL E2E, concurrency trên MySQL, browser E2E, hoặc một order_id chạy xuyên Customer → Kitchen → Customer → Manager. INT-CUS-KIT-01 vẫn chưa được tái hiện trên đơn người dùng báo; INT-REPORT-01 vẫn cần TV3 xác minh với đủ timestamp. Các giới hạn demo và issue mở khác vẫn giữ trạng thái, owner như các bảng trên.

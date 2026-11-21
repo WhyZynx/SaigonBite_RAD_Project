@@ -44,6 +44,7 @@ class CreateOrderRequest(BaseModel):
     delivery_address: str = Field(min_length=5, max_length=255)
     destination_address: str = Field(min_length=5, max_length=255)
     voucher_code: str | None = None
+    demo_delivery: bool = False
     payment_method: str = Field(default="COD", pattern="^COD$")
 
 

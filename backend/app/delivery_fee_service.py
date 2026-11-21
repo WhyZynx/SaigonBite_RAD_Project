@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
 import re
 import socket
 import threading
@@ -30,6 +31,9 @@ MAX_DELIVERY_DISTANCE_KM = 10.0
 BASE_FEE_VND = 10_000
 PRICE_PER_KM_VND = 2_500
 DISTANCE_SURCHARGE_VND = 3_000
+DEMO_DELIVERY_DISTANCE_KM = float(os.getenv("DELIVERY_DEMO_DISTANCE_KM", "3.0"))
+DEMO_DELIVERY_FEE_VND = int(os.getenv("DELIVERY_DEMO_FEE_VND", "18_000"))
+DEMO_DELIVERY_SURCHARGE_VND = int(os.getenv("DELIVERY_DEMO_SURCHARGE_VND", "0"))
 NOMINATIM_MIN_INTERVAL_SECONDS = 1.0
 OSRM_MIN_INTERVAL_SECONDS = 1.0
 
@@ -219,7 +223,7 @@ class DeliveryFeeService:
     def __init__(self, db: Session):
         self.db = db
 
-    def calculate(self, hub_id: int, destination_address: str) -> dict:
+    def calculate(self, hub_id: int, destination_address: str, *, demo: bool = False) -> dict:
         hub = self.db.query(Hub).filter(Hub.hub_id == hub_id).first()
         if hub is None:
             raise HTTPException(status_code=404, detail="Hub not found")
@@ -228,6 +232,16 @@ class DeliveryFeeService:
         destination_address = destination_address.strip()
         if not destination_address:
             raise HTTPException(status_code=422, detail="Delivery address is required")
+
+        if demo:
+            if not math.isfinite(DEMO_DELIVERY_DISTANCE_KM) or not 0 <= DEMO_DELIVERY_DISTANCE_KM <= MAX_DELIVERY_DISTANCE_KM:
+                raise HTTPException(status_code=500, detail="Demo delivery distance must be between 0 and 10 km")
+            if DEMO_DELIVERY_FEE_VND < 0 or DEMO_DELIVERY_SURCHARGE_VND < 0:
+                raise HTTPException(status_code=500, detail="Demo delivery fees cannot be negative")
+            return {"delivery_distance_km": DEMO_DELIVERY_DISTANCE_KM,
+                    "delivery_fee": DEMO_DELIVERY_FEE_VND,
+                    "surcharge": DEMO_DELIVERY_SURCHARGE_VND,
+                    "is_demo": True}
 
         try:
             hub_coordinates = _hub_coordinates(hub.address)

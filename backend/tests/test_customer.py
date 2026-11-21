@@ -100,7 +100,7 @@ def test_delivery_contact_string_round_trips_to_order_detail(customer_client):
     delivery_address = (
         "Test street 12\n"
         "Recipient: Customer Test12334\n"
-        "Phone: 324324\n"
+        "Phone: 0903243240\n"
         "Note: 1111111"
     )
     response = customer_client.post(
@@ -176,6 +176,130 @@ def test_customer_can_validate_and_apply_voucher(customer_client):
     })
     assert reuse_preview.status_code == 400
     assert reuse_preview.json()["detail"] == "You have already used this voucher on a previous order"
+
+
+def test_demo_delivery_survives_map_failure_for_quote_voucher_and_order(customer_client, monkeypatch):
+    def map_unavailable(*_args, **_kwargs):
+        raise delivery_fee_service.ProviderRequestError("Could not connect to Nominatim")
+
+    monkeypatch.setattr(delivery_fee_service, "_hub_coordinates", map_unavailable)
+    quote = customer_client.post("/api/delivery-quote", json={
+        "hub_id": 1, "delivery_address": "19 Nguyen Huu Tho, District 7",
+    })
+    assert quote.status_code == 502
+
+    demo_quote = customer_client.post("/api/delivery-quote", json={
+        "hub_id": 1, "delivery_address": "19 Nguyen Huu Tho, District 7",
+        "demo_delivery": True,
+    })
+    assert demo_quote.status_code == 200
+    assert demo_quote.json() == {
+        "delivery_distance_km": delivery_fee_service.DEMO_DELIVERY_DISTANCE_KM,
+        "delivery_fee": delivery_fee_service.DEMO_DELIVERY_FEE_VND,
+        "surcharge": delivery_fee_service.DEMO_DELIVERY_SURCHARGE_VND,
+        "is_demo": True,
+    }
+
+    db_generator = app.dependency_overrides[get_db]()
+    db = next(db_generator)
+    try:
+        now = datetime.now()
+        db.add(Voucher(code="DEMO10", discount_type="PERCENT", discount_value=10,
+                       min_order=80000, start_date=now - timedelta(days=1),
+                       end_date=now + timedelta(days=1), status="ACTIVE"))
+        db.commit()
+    finally:
+        db.close()
+        db_generator.close()
+
+    voucher = customer_client.post("/api/customer/vouchers/validate", json={
+        "code": "DEMO10", "hub_id": 1,
+        "destination_address": "19 Nguyen Huu Tho, District 7",
+        "demo_delivery": True,
+        "items": [{"menu_item_id": 1, "quantity": 2}],
+    })
+    assert voucher.status_code == 200
+    assert voucher.json()["is_demo"] is True
+    assert voucher.json()["delivery_distance_km"] == delivery_fee_service.DEMO_DELIVERY_DISTANCE_KM
+    assert voucher.json()["delivery_fee"] == delivery_fee_service.DEMO_DELIVERY_FEE_VND
+
+    order = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_address": "19 Nguyen Huu Tho, District 7",
+        "items": [{"menu_item_id": 1, "quantity": 2}],
+        "delivery_address": "Recipient: Customer Test12334\nPhone: 0900000001",
+        "voucher_code": "DEMO10", "demo_delivery": True,
+    })
+    assert order.status_code == 201
+    assert order.json()["delivery_distance_km"] == delivery_fee_service.DEMO_DELIVERY_DISTANCE_KM
+    assert order.json()["delivery_fee"] == delivery_fee_service.DEMO_DELIVERY_FEE_VND
+    assert order.json()["total"] == (
+        100_000 + delivery_fee_service.DEMO_DELIVERY_FEE_VND
+        + delivery_fee_service.DEMO_DELIVERY_SURCHARGE_VND - 10_000
+    )
+
+
+def test_demo_delivery_can_be_chosen_when_nominatim_does_not_find_address(customer_client, monkeypatch):
+    def no_address(*_args, **_kwargs):
+        raise delivery_fee_service.NoGeocodingResult("no matching address")
+
+    monkeypatch.setattr(delivery_fee_service, "_geocode_customer_address", no_address)
+    actual_quote = customer_client.post("/api/delivery-quote", json={
+        "hub_id": 1, "delivery_address": "20/15/1 Me Coc",
+    })
+    assert actual_quote.status_code == 400
+
+    demo_quote = customer_client.post("/api/delivery-quote", json={
+        "hub_id": 1, "delivery_address": "20/15/1 Me Coc", "demo_delivery": True,
+    })
+    assert demo_quote.status_code == 200
+    assert demo_quote.json()["is_demo"] is True
+
+
+@pytest.mark.parametrize(("details", "message"), [
+    ("Phone: 0900000001", "Recipient name is required"),
+    ("Recipient: Customer Test12334", "Delivery phone number is required"),
+])
+def test_order_rejects_missing_recipient_or_phone_before_quote(customer_client, monkeypatch, details, message):
+    def quote_must_not_run(*_args, **_kwargs):
+        pytest.fail("delivery quote must not run for invalid contact details")
+
+    monkeypatch.setattr(delivery_fee_service.DeliveryFeeService, "calculate", quote_must_not_run)
+    response = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+        "delivery_address": details,
+    })
+    assert response.status_code == 422
+    assert response.json()["detail"] == message
+
+
+def test_order_rejects_combined_address_over_255_before_quote(customer_client, monkeypatch):
+    def quote_must_not_run(*_args, **_kwargs):
+        pytest.fail("delivery quote must not run for an overlong combined address")
+
+    monkeypatch.setattr(delivery_fee_service.DeliveryFeeService, "calculate", quote_must_not_run)
+    response = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_address": "A" * 230,
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+        "delivery_address": "Recipient: Customer Test12334\nPhone: 0900000001",
+    })
+    assert response.status_code == 422
+    assert "maximum 255 characters" in response.json()["detail"]
+
+
+@pytest.mark.parametrize("phone", ["1234567890123456", "090abc1234"])
+def test_order_rejects_overlong_or_malformed_phone_before_quote(customer_client, monkeypatch, phone):
+    def quote_must_not_run(*_args, **_kwargs):
+        pytest.fail("delivery quote must not run for an invalid phone number")
+
+    monkeypatch.setattr(delivery_fee_service.DeliveryFeeService, "calculate", quote_must_not_run)
+    response = customer_client.post("/api/orders", json={
+        "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+        "delivery_address": f"Recipient: Customer Test12334\nPhone: {phone}",
+    })
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Enter a valid delivery phone number with 9 to 15 digits"
 
 
 def test_customer_voucher_page_lists_only_currently_available_codes(customer_client):

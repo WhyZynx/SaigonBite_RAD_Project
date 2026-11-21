@@ -124,6 +124,9 @@ def test_delivery_contact_string_round_trips_to_order_detail(customer_client):
     assert detail["customer_name"] == "Customer Test12334"
     assert detail["customer_phone"] == "0900000001"
     assert detail["delivery_distance_km"] == 1.0
+    assert detail["payment_method"] == "COD"
+    assert detail["status"] == "PENDING"
+    assert [entry["status"] for entry in detail["status_history"]] == ["PENDING"]
 
 
 def test_customer_can_validate_and_apply_voucher(customer_client):
@@ -353,6 +356,9 @@ def test_customer_can_cancel_only_own_pending_order(customer_client):
 
     detail = customer_client.get(f"/api/orders/{order_id}").json()
     assert detail["status"] == "CANCELLED"
+    assert [entry["status"] for entry in detail["status_history"]] == ["PENDING", "CANCELLED"]
+    history_timestamps = [entry["changed_at"] for entry in detail["status_history"]]
+    assert history_timestamps == sorted(history_timestamps)
     assert detail["status_history"][-1]["status"] == "CANCELLED"
     assert detail["status_history"][-1]["note"] == "Cancelled by customer"
 
@@ -393,6 +399,9 @@ def test_customer_identity_maps_from_session_email(customer_client):
         assert second_profile.json()["customer_type"] == "TOURIST"
         assert customer_client.get("/api/customer/orders").json() == []
         assert customer_client.get(f"/api/orders/{first_order.json()['id']}").status_code == 404
+        missing_order = customer_client.get("/api/orders/999999")
+        assert missing_order.status_code == 404
+        assert missing_order.json()["detail"] == "Order not found"
 
         second_order = customer_client.post("/api/orders", json={
             "hub_id": 1, "destination_address": "18 Nguyen Hue Street, District 1",

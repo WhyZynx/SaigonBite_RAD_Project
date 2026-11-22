@@ -94,3 +94,94 @@ def test_uc05_expire_and_archive_expired_voucher(admin_client):
     archived = client.patch(f"/api/vouchers/{voucher_id}/archive")
     assert archived.status_code == 200
     assert archived.json()["status"] == "ARCHIVED"
+
+
+def test_uc05_reject_duplicate_voucher_code(admin_client):
+    client, _ = admin_client
+
+    first = client.post("/api/vouchers", json=voucher_payload("DUP20"))
+    second = client.post("/api/vouchers", json=voucher_payload("DUP20"))
+
+    assert first.status_code == 201
+    assert second.status_code == 409
+
+
+@pytest.mark.parametrize("discount", ["0%", "101%", "abc", "0"])
+def test_uc05_reject_invalid_discount(admin_client, discount):
+    client, _ = admin_client
+
+    payload = {
+        **voucher_payload("INVALID"),
+        "discount": discount,
+    }
+
+    response = client.post("/api/vouchers", json=payload)
+
+    assert response.status_code == 400
+
+
+def test_uc05_reject_invalid_date_range(admin_client):
+    client, _ = admin_client
+
+    payload = {
+        **voucher_payload("BADDATE"),
+        "start_date": (date.today() + timedelta(days=7)).isoformat(),
+        "end_date": date.today().isoformat(),
+    }
+
+    response = client.post("/api/vouchers", json=payload)
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid time range"
+
+
+def test_uc05_reject_negative_min_order(admin_client):
+    client, _ = admin_client
+
+    payload = {
+        **voucher_payload("NEGATIVE"),
+        "min_order": -1,
+    }
+
+    response = client.post("/api/vouchers", json=payload)
+
+    assert response.status_code == 422
+
+
+def test_uc05_reject_update_with_duplicate_code(admin_client):
+    client, _ = admin_client
+
+    first = client.post("/api/vouchers", json=voucher_payload("FIRST20"))
+    second = client.post("/api/vouchers", json=voucher_payload("SECOND20"))
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+
+    second_id = second.json()["id"]
+
+    update = client.put(
+        f"/api/vouchers/{second_id}",
+        json=voucher_payload("FIRST20"),
+    )
+
+    assert update.status_code == 409
+
+
+def test_uc05_update_nonexistent_voucher(admin_client):
+    client, _ = admin_client
+
+    response = client.put(
+        "/api/vouchers/99999",
+        json=voucher_payload("MISSING"),
+    )
+
+    assert response.status_code == 404
+
+
+def test_uc05_archive_nonexistent_voucher(admin_client):
+    client, _ = admin_client
+
+    response = client.patch("/api/vouchers/99999/archive")
+
+    assert response.status_code == 404
+

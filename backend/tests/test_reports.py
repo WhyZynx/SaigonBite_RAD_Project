@@ -175,7 +175,6 @@ def test_admin_delivered_is_counted_without_shipper_pickup(api_environment):
     assert delivered.json()["previous_status"] == "READY"
     assert delivered.json()["status"] == "DELIVERED"
 
-    # A second delivery attempt must be rejected.
     repeated = admin.patch("/api/admin/orders/501/deliver")
     assert repeated.status_code == 409
 
@@ -193,7 +192,6 @@ def test_admin_delivered_is_counted_without_shipper_pickup(api_environment):
         assert delivery.outcome == "DELIVERED"
         assert delivery.delivered_at is not None
 
-        # No real shipper/pickup workflow is implemented.
         assert delivery.pickup_at is None
 
         delivered_history = [
@@ -219,8 +217,6 @@ def test_admin_delivered_is_counted_without_shipper_pickup(api_environment):
         "value": "1",
     }
 
-    # Completion is known, but delivery duration cannot be measured
-    # because there is no pickup_at timestamp.
     assert data["kpis"][2] == {
         "label": "Avg. Delivery Time",
         "value": "—",
@@ -239,7 +235,6 @@ def test_delivery_report_separates_total_completed_and_duration(api_environment)
     with factory() as db:
         seed_base_data(db)
 
-        # Completed, but no pickup timestamp (Admin demo).
         add_order(db, 601, 1, "DELIVERED", created_at)
         db.add(
             Delivery(
@@ -250,7 +245,6 @@ def test_delivery_report_separates_total_completed_and_duration(api_environment)
             )
         )
 
-        # Completed with both timestamps: duration is measurable.
         add_order(db, 602, 1, "DELIVERED", created_at)
         db.add(
             Delivery(
@@ -261,7 +255,6 @@ def test_delivery_report_separates_total_completed_and_duration(api_environment)
             )
         )
 
-        # Not completed.
         add_order(db, 603, 2, "PREPARING", created_at)
         db.add(
             Delivery(
@@ -272,8 +265,6 @@ def test_delivery_report_separates_total_completed_and_duration(api_environment)
             )
         )
 
-        # Invalid negative duration: completed outcome is still counted,
-        # but this record must not affect average delivery time.
         add_order(db, 604, 2, "DELIVERED", created_at)
         db.add(
             Delivery(
@@ -284,8 +275,6 @@ def test_delivery_report_separates_total_completed_and_duration(api_environment)
             )
         )
 
-        # Completed late: LATE must still count as completed.
-        # No pickup timestamp means it does not affect average duration.
         add_order(db, 605, 2, "DELIVERED", created_at)
         db.add(
             Delivery(
@@ -308,7 +297,6 @@ def test_delivery_report_separates_total_completed_and_duration(api_environment)
     assert data["kpis"][0]["value"] == "5"
     assert data["kpis"][1]["value"] == "4"
 
-    # Only the valid 30-minute interval contributes to the average.
     assert data["kpis"][2]["value"] == "30 mins"
 
     assert len(data["rows"]) == 1
@@ -397,13 +385,101 @@ def test_admin_and_manager_roles_are_enforced(api_environment):
     admin = make_client("ADMIN")
     manager = make_client("MANAGER")
 
-    # Admin cannot access Manager reports.
     assert admin.get(
         "/api/reports/delivery"
         "?start_date=2026-11-21&end_date=2026-11-21"
     ).status_code == 403
 
-    # Manager cannot execute Admin delivery actions.
     assert manager.patch(
         "/api/admin/orders/501/deliver"
     ).status_code == 403
+
+
+def test_sales_report_counts_only_delivered_revenue(api_environment):
+    make_client, factory = api_environment
+    report_day = date.today()
+
+    start_of_day = datetime.combine(report_day, time.min)
+    end_of_day = datetime.combine(report_day, time.max)
+
+    with factory() as db:
+        seed_base_data(db)
+
+        # Delivered order: revenue must be counted.
+        delivered = add_order(
+            db, 801, 1, "DELIVERED", start_of_day
+        )
+        delivered.total = 200000
+
+        # Non-delivered order: count as an order, not revenue.
+        pending = add_order(
+            db, 802, 1, "READY", end_of_day
+        )
+        pending.total = 100000
+
+        db.commit()
+
+    manager = make_client("MANAGER")
+    response = manager.get(report_url("sales", report_day))
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["kpis"] == [
+        {"label": "Total Revenue", "value": "200,000 VND"},
+        {"label": "Total Orders", "value": "2"},
+        {"label": "Avg. Delivery Time", "value": "—"},
+    ]
+
+    assert len(data["rows"]) == 1
+    assert data["rows"][0]["orders"] == 2
+    assert data["rows"][0]["revenue"] == 200000
+
+
+def test_sales_report_returns_empty_data(api_environment):
+    make_client, factory = api_environment
+    report_day = date.today()
+
+    with factory() as db:
+        seed_base_data(db)
+
+    manager = make_client("MANAGER")
+    response = manager.get(report_url("sales", report_day))
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["kpis"] == [
+        {"label": "Total Revenue", "value": "0 VND"},
+        {"label": "Total Orders", "value": "0"},
+        {"label": "Avg. Delivery Time", "value": "—"},
+    ]
+
+    assert data["rows"] == []
+    assert data["totalSummary"] == "Total: 0 VND · 0 orders"
+
+
+def test_hub_workload_returns_empty_data(api_environment):
+    make_client, factory = api_environment
+    report_day = date.today()
+
+    with factory() as db:
+        seed_base_data(db)
+
+    manager = make_client("MANAGER")
+    response = manager.get(report_url("hub-workload", report_day))
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["kpis"] == [
+        {"label": "Total Hub Orders", "value": "0"},
+        {"label": "Completed Orders", "value": "0"},
+        {"label": "Hubs with Orders", "value": "0"},
+    ]
+
+    assert data["rows"] == []
+    assert data["statusHistoryRecords"] == 0

@@ -129,6 +129,53 @@ def test_delivery_contact_string_round_trips_to_order_detail(customer_client):
     assert [entry["status"] for entry in detail["status_history"]] == ["PENDING"]
 
 
+def test_customer_can_list_order_and_view_chronological_status_history(customer_client):
+    created = customer_client.post("/api/orders", json={
+        "hub_id": 1,
+        "destination_address": "18 Nguyen Hue Street, District 1",
+        "items": [{"menu_item_id": 1, "quantity": 1}],
+        "delivery_address": "House 12\nRecipient: Customer Test12334\nPhone: 0900000001",
+        "payment_method": "COD",
+    })
+    assert created.status_code == 201
+    order_id = created.json()["id"]
+
+    order_list = customer_client.get("/api/customer/orders")
+    assert order_list.status_code == 200
+    listed_order = next(order for order in order_list.json() if order["id"] == order_id)
+    assert listed_order["customer_id"] == 1
+    assert listed_order["hub_id"] == 1
+    assert listed_order["status"] == "PENDING"
+    assert listed_order["total"] == created.json()["total"]
+
+    initial_detail = customer_client.get(f"/api/orders/{order_id}")
+    assert initial_detail.status_code == 200
+    detail = initial_detail.json()
+    assert detail["id"] == order_id
+    assert detail["hub_id"] == 1
+    assert detail["payment_method"] == "COD"
+    assert detail["items"] == [{
+        "menu_item_id": 1,
+        "name": "Test item",
+        "quantity": 1,
+        "unit_price": 50000,
+        "line_total": 50000,
+    }]
+    assert detail["status"] == "PENDING"
+    assert [entry["status"] for entry in detail["status_history"]] == ["PENDING"]
+
+    cancelled = customer_client.post(f"/api/customer/orders/{order_id}/cancel")
+    assert cancelled.status_code == 200
+
+    updated_detail = customer_client.get(f"/api/orders/{order_id}")
+    assert updated_detail.status_code == 200
+    updated_order = updated_detail.json()
+    assert updated_order["status"] == "CANCELLED"
+    assert [entry["status"] for entry in updated_order["status_history"]] == ["PENDING", "CANCELLED"]
+    timestamps = [entry["changed_at"] for entry in updated_order["status_history"]]
+    assert timestamps == sorted(timestamps)
+
+
 def test_customer_can_validate_and_apply_voucher(customer_client):
     # The fixture's database is reached through the overridden session factory; seed
     # through the same dependency so the endpoint sees this voucher.

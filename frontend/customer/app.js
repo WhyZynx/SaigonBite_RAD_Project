@@ -664,8 +664,8 @@
     }).join("");
     const active = all.find((order) => ["PENDING", "CONFIRMED", "PREPARING", "READY"].includes(order.status));
     const featured = $("#featured-order");
-    featured.classList.toggle("d-none", !active || filter !== "ALL");
-    if (active && filter === "ALL") featured.innerHTML = `<div><span class="featured-kicker">${escapeHtml(statusLabel[active.status] || active.status)}</span><h2>${escapeHtml(hubName(active.hub_id))}</h2><p>${orderCode(active.id)} · ${money(active.total)}</p></div><div class="featured-total"><small>Current status</small><strong>${escapeHtml(statusLabel[active.status] || active.status)}</strong></div><button class="btn btn-brand" data-order-track="${active.id}">Track order ${icon("arrow-right")}</button>${active.status === "PENDING" ? `<button class="btn btn-outline-danger" data-cancel-order="${active.id}">Cancel order</button>` : ""}`;
+    featured.classList.toggle("d-none", !active);
+    if (active) featured.innerHTML = `<div><span class="featured-kicker">${escapeHtml(statusLabel[active.status] || active.status)}</span><h2>${escapeHtml(hubName(active.hub_id))}</h2><p>${orderCode(active.id)} · ${money(active.total)}</p></div><div class="featured-total"><small>Current status</small><strong>${escapeHtml(statusLabel[active.status] || active.status)}</strong></div><button class="btn btn-brand" data-order-track="${active.id}">Track order ${icon("arrow-right")}</button>${active.status === "PENDING" ? `<button class="btn btn-outline-danger" data-cancel-order="${active.id}">Cancel order</button>` : ""}`;
     $$('[data-order-detail]').forEach((button) => button.addEventListener("click", () => openOrder(Number(button.dataset.orderDetail), "detail")));
     $$('[data-order-track]').forEach((button) => button.addEventListener("click", () => openOrder(Number(button.dataset.orderTrack), "track")));
     $$('[data-cancel-order]').forEach((button) => button.addEventListener("click", () => cancelOrder(Number(button.dataset.cancelOrder))));

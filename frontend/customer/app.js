@@ -205,6 +205,17 @@
     "Com Tam Suon Trung": "suon_trung.jpeg",
     "Tra Sua Tran Chau Duong Den": "tran_chau_duong_den.jpeg"
   };
+
+  const drinkMenuItems = new Set([
+    "Tra Dao Cam Sa",
+    "Tra Sua Tran Chau Duong Den"
+  ]);
+
+  function menuCategory(item) {
+    if (item.category) return item.category;
+    return drinkMenuItems.has(item.name) ? "Thức uống" : "Món chính";
+  }
+
   function foodImage(item, className = "food-thumb-image") {
     const filename = menuImage[item.name];
     return filename
@@ -262,13 +273,16 @@
   }
 
   function renderCategories() {
-    const categories = ["All", ...new Set(state.menu.map((item) => item.category).filter(Boolean))];
+    const categories = [
+      "All",
+      ...new Set(state.menu.map(menuCategory).filter(Boolean))
+    ];
     $("#category-tabs").innerHTML = categories.map((category) => `<button class="${category === state.category ? "active" : ""}" data-category="${escapeHtml(category)}">${escapeHtml(categoryName(category))}</button>`).join("");
     $$("[data-category]").forEach((button) => button.addEventListener("click", () => { state.category = button.dataset.category; renderCategories(); renderMenu(); }));
   }
 
   function renderMenu() {
-    const visible = state.menu.filter((item) => state.category === "All" || item.category === state.category);
+    const visible = state.menu.filter((item) => state.category === "All" || menuCategory(item) === state.category);
     $("#menu-grid").innerHTML = visible.length ? visible.map((item, index) => {
       const image = menuImage[item.name];
       const visual = image
@@ -574,15 +588,32 @@
         return;
       }
       const displayDate = (value) => {
-        const [year, month, day] = value.slice(0, 10).split("-").map(Number);
-        return new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(year, month - 1, day));
+        if (!value) return "—";
+        const [year, month, day] = String(value).slice(0, 10).split("-").map(Number);
+        if (!year || !month || !day) return "—";
+        const date = new Date(year, month - 1, day);
+        if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return "—";
+        return new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(date);
       };
       list.innerHTML = vouchers.map((voucher) => {
         const discount = voucher.discount_type === "PERCENT"
           ? `${voucher.discount_value}% off`
           : `${money(voucher.discount_value)} off`;
-        return `<article class="customer-voucher-card"><div class="customer-voucher-head"><span class="voucher-status-chip">Available</span><code>${escapeHtml(voucher.code)}</code></div><h2>${escapeHtml(discount)}</h2><div class="customer-voucher-rule"><span>Minimum item subtotal</span><strong>${money(voucher.min_order)}</strong></div><div class="customer-voucher-date"><span>Valid</span><strong>${displayDate(voucher.valid_from)} – ${displayDate(voucher.valid_until)}</strong></div><p>Enter this code at checkout. Delivery fee does not count toward the minimum order.</p></article>`;
+        return `<article class="customer-voucher-card"><div class="customer-voucher-head"><span class="voucher-status-chip">Ready to use</span><div class="voucher-code-action"><code>${escapeHtml(voucher.code)}</code><button class="voucher-copy-button" type="button" data-copy-voucher="${escapeHtml(voucher.code)}" aria-live="polite">Copy</button></div></div><h2>${escapeHtml(discount)}</h2><div class="customer-voucher-rule"><span>Minimum item subtotal</span><strong>${money(voucher.min_order)}</strong></div><div class="customer-voucher-date"><span>Valid dates</span><strong>${displayDate(voucher.valid_from)} – ${displayDate(voucher.valid_until)}</strong></div><p>Enter this code at checkout. Delivery fees do not count toward the minimum.</p></article>`;
       }).join("");
+      $$('[data-copy-voucher]').forEach((button) => button.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(button.dataset.copyVoucher);
+          button.textContent = "Copied";
+          button.classList.add("copied");
+          window.setTimeout(() => {
+            button.textContent = "Copy";
+            button.classList.remove("copied");
+          }, 1400);
+        } catch {
+          showNotice("Could not copy the voucher code. Please select and copy it manually.", "warning");
+        }
+      }));
     } catch (error) {
       list.innerHTML = `<div class="voucher-empty-state"><strong>Could not load vouchers</strong><span>${escapeHtml(error.message)}</span></div>`;
     }

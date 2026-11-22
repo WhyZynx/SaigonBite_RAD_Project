@@ -1,12 +1,10 @@
 
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.models import Delivery, Order, OrderStatusHistory
+from app.models import Delivery, Order, OrderStatusHistory, utc_now
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Orders"])
 
@@ -61,7 +59,7 @@ def mark_order_as_delivered(
                 detail=f"Only READY orders can be delivered. Current status: {order.status}",
             )
 
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Conditional update protects against concurrent status changes.
         result = db.execute(

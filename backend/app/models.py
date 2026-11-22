@@ -1,7 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from .database import Base
+
+
+def utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Customer(Base):
@@ -113,7 +117,7 @@ class Order(Base):
     surcharge = Column(Integer, default=0, nullable=False)
     discount = Column(Integer, default=0, nullable=False)
     total = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     customer = relationship("Customer", back_populates="orders")
     hub = relationship("Hub", back_populates="orders")
@@ -162,7 +166,7 @@ class OrderStatusHistory(Base):
     old_status = Column(String(30), nullable=True)
     new_status = Column(String(30), nullable=False)
     reason = Column(String(255), nullable=True)
-    changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    changed_at = Column(DateTime, default=utc_now, nullable=False)
 
     order = relationship("Order", back_populates="status_history")
 
@@ -217,7 +221,7 @@ class Notification(Base):
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     customer = relationship("Customer", back_populates="notifications")
     order = relationship("Order", back_populates="notifications")

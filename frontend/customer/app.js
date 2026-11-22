@@ -333,16 +333,28 @@
 
   function renderCart() {
     const groups = cartGroups();
+    $("#cart-restaurant-count").textContent = `${groups.length} ${groups.length === 1 ? "restaurant" : "restaurants"}`;
     if (!groups.length) {
-      $("#cart-restaurants").innerHTML = `<div class="empty-state">${t("empty_cart_short")}</div>`;
+      $("#cart-overview-summary").classList.add("d-none");
+      $("#cart-restaurants").innerHTML = `<div class="cart-overview-empty"><span class="cart-empty-mark">${icon("cart")}</span><strong>${t("empty_cart_short")}</strong><span>Add a meal from a nearby restaurant to get started.</span><button class="btn btn-brand" type="button" data-cart-browse>Browse restaurants ${icon("arrow-right")}</button></div>`;
+      $("[data-cart-browse]").addEventListener("click", () => { showView("order"); toggleScreen("hub"); renderHubs(); });
       toggleScreen("cart");
       return;
     }
+    $("#cart-overview-summary").classList.remove("d-none");
     $("#cart-restaurants").innerHTML = groups.map((group) => {
       const count = group.items.reduce((sum, item) => sum + item.quantity, 0);
       const groupSubtotal = group.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      return `<button class="cart-restaurant-card" type="button" data-cart-hub="${group.hub_id}"><span class="cart-restaurant-photo">${foodImage(group.items[0])}</span><span class="cart-restaurant-copy"><strong>${escapeHtml(group.hub_name)}</strong><small>${count} ${count === 1 ? t("item") : t("items")} · ${money(groupSubtotal)}</small></span>${icon("arrow-right")}</button>`;
+      return `<button class="cart-restaurant-card" type="button" data-cart-hub="${group.hub_id}" aria-label="Review cart from ${escapeHtml(group.hub_name)}"><span class="cart-restaurant-photo">${foodImage(group.items[0])}</span><span class="cart-restaurant-copy"><strong>${escapeHtml(group.hub_name)}</strong><small>${count} ${count === 1 ? t("item") : t("items")} · ${money(groupSubtotal)}</small></span><span class="cart-restaurant-action">Review cart ${icon("arrow-right")}</span></button>`;
     }).join("");
+    const totalItems = cartCount();
+    const itemSubtotal = subtotal();
+    const primaryGroup = groups[0];
+    const subtotalLabel = groups.length === 1 ? "Item subtotal" : "Combined item subtotal";
+    const checkoutNote = groups.length === 1
+      ? "Delivery is calculated during checkout."
+      : "Each restaurant is checked out separately. Delivery is calculated during checkout.";
+    $("#cart-overview-summary").innerHTML = `<h2>Cart overview</h2><div class="summary-row"><span>Restaurants</span><strong>${groups.length}</strong></div><div class="summary-row"><span>Items</span><strong>${totalItems}</strong></div><div class="summary-row total-row"><span>${subtotalLabel}</span><strong>${money(itemSubtotal)}</strong></div><small>${checkoutNote}</small><button class="btn btn-brand w-100 mt-3" type="button" data-cart-hub="${primaryGroup.hub_id}">${groups.length === 1 ? "Review cart" : "Review first restaurant"} ${icon("arrow-right")}</button>`;
     $$('[data-cart-hub]').forEach((button) => button.addEventListener("click", () => renderRestaurantCart(Number(button.dataset.cartHub))));
     toggleScreen("cart");
   }

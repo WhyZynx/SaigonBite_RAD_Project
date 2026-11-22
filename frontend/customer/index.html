@@ -46,8 +46,14 @@
         </div>
 
         <div id="cart-screen" class="d-none">
-          <div class="page-heading with-back"><button class="btn btn-outline-light back-button" id="back-menu" aria-label="Back to restaurants"><span data-icon="arrow-left"></span></button><div><h1 data-i18n="your_cart">Your Cart</h1><p>Choose a restaurant to review its cart.</p></div></div>
-          <div id="cart-restaurants" class="cart-restaurants"></div>
+          <div class="page-heading with-back"><button class="btn btn-outline-light back-button" id="back-menu" aria-label="Back to restaurants"><span data-icon="arrow-left"></span></button><div><h1 data-i18n="your_cart">Your Cart</h1><p>Review your items by restaurant and continue when you’re ready.</p></div></div>
+          <div class="cart-overview-layout">
+            <section class="cart-overview-list">
+              <div class="cart-overview-heading"><strong>Your restaurants</strong><span id="cart-restaurant-count"></span></div>
+              <div id="cart-restaurants" class="cart-restaurants"></div>
+            </section>
+            <aside id="cart-overview-summary" class="summary-card cart-overview-summary"></aside>
+          </div>
         </div>
 
         <div id="restaurant-cart-screen" class="d-none">

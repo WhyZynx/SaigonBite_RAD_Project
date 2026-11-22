@@ -3752,6 +3752,157 @@ body {
   color: var(--forest);
 }
 
+.cart-overview-layout {
+  display: grid;
+  grid-template-columns: minmax(0,1.5fr) minmax(260px,.8fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.cart-overview-list {
+  min-width: 0;
+}
+
+.cart-overview-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.cart-overview-heading span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.cart-overview-summary h2 {
+  margin-bottom: 18px;
+}
+
+.cart-overview-summary .total-row {
+  margin-top: 12px;
+}
+
+.cart-overview-summary .btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-overview-summary .btn .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.cart-restaurant-card {
+  min-height: 92px;
+  padding: 12px;
+  border-radius: 12px;
+  gap: 14px;
+  transition: border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+
+.cart-restaurant-card:hover {
+  transform: translateY(-1px);
+  border-color: #cbd8c7;
+  box-shadow: 0 6px 18px #173d320c;
+}
+
+.cart-restaurant-photo {
+  flex-basis: 68px;
+  width: 68px;
+  height: 68px;
+  border-radius: 9px;
+}
+
+.cart-restaurant-copy strong {
+  font-size: 13px;
+}
+
+.cart-restaurant-copy small {
+  font-size: 10px;
+}
+
+.cart-restaurant-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  color: var(--forest);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.cart-restaurant-action .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.cart-overview-empty {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 26px;
+  border: 1px dashed #d9dfd5;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.cart-overview-empty strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.cart-overview-empty .cart-empty-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #edf2e8;
+  color: var(--forest);
+}
+
+.cart-overview-empty .btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+@media(max-width:760px) {
+  .cart-overview-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media(max-width:650px) {
+  .cart-restaurant-card {
+    gap: 10px;
+  }
+
+  .cart-restaurant-photo {
+    flex-basis: 56px;
+    width: 56px;
+    height: 56px;
+  }
+
+  .cart-restaurant-action {
+    gap: 4px;
+    font-size: 9px;
+  }
+
+  .cart-overview-empty {
+    padding: 20px;
+  }
+}
+
+
 .delivery-origin {
   margin: 0 0 13px;
   padding: 10px 12px;

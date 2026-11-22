@@ -3,8 +3,9 @@ const state = {activeStatus:'PENDING',selectedOrderId:null,selectedOrder:null,or
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = value => new Intl.NumberFormat('vi-VN').format(Number(value)||0)+' ₫';
-const dateText = value => value ? new Date(value).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Time unavailable';
-const ago = value => {if(!value)return 'Time unavailable';const m=Math.max(0,Math.floor((Date.now()-new Date(value))/60000));return m<1?'Just now':m<60?`${m} min ago`:`${Math.floor(m/60)} hr ago`;};
+const parseKitchenTimestamp = value => {if(!value)return null;const text=String(value);const timestamp=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(text)?text:`${text}Z`;const parsed=new Date(timestamp);return Number.isNaN(parsed.getTime())?null:parsed;};
+const dateText = value => {const date=parseKitchenTimestamp(value);return date?date.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Ho_Chi_Minh'}):'Time unavailable';};
+const ago = value => {const date=parseKitchenTimestamp(value);if(!date)return 'Time unavailable';const m=Math.max(0,Math.floor((Date.now()-date.getTime())/60000));return m<1?'Just now':m<60?`${m} min ago`:`${Math.floor(m/60)} hr ago`;};
 function showMessage(message,error=false){const box=$('alert');box.textContent=message;box.className=`alert-message ${error?'alert-error':'alert-success'}`;box.hidden=false;clearTimeout(showMessage.timer);showMessage.timer=setTimeout(()=>box.hidden=true,4500);}
 async function api(url,options={}){const response=await fetch(url,{headers:{'Content-Type':'application/json'},...options});let data={};try{data=await response.json()}catch{}if(!response.ok)throw new Error(data.detail||`Request failed (${response.status})`);return data;}
 function currentOrders(){return state.orders.filter(order=>order.status===state.activeStatus);}

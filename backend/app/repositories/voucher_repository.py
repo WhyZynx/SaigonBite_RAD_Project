@@ -4,7 +4,6 @@ from ..models import Voucher
 
 
 def expire_vouchers(db: Session, now: datetime | None = None) -> int:
-    """Apply the UC05 ACTIVE -> EXPIRED transition when current time exceeds end_date."""
     now = now or datetime.now()
     changed = (
         db.query(Voucher)

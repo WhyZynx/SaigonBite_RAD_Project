@@ -35,12 +35,113 @@
   function hydrateIcons(root = document) { root.querySelectorAll("[data-icon]").forEach((node) => { node.innerHTML = icon(node.dataset.icon, "icon"); }); }
   const copy = {
     en: {
-      tagline:"GOOD FOOD, CLOSE BY",home:"Home",order_food:"Order Food",my_orders:"My Orders",vouchers:"Vouchers",profile:"Profile",footer_tagline:"Freshly made.\nHappily delivered.",hello:"Hello,",customer_account:"Customer account",logout:"Log out",nearby_label:"NEARBY RESTAURANTS",hero_title:"What are you craving today?",hero_subtitle:"Choose a nearby restaurant and explore its menu.",search_placeholder:"Search restaurants...",search_hint:"Search by name or location",restaurants:"NEARBY RESTAURANTS",menu_demo_note:"Sample menu and prices for this demo. They may differ from the restaurant's current menu.",your_cart:"Your Cart",view_cart:"View cart",cart_subtitle:"Review your items before placing the order.",order_summary:"Order Summary",subtotal:"Subtotal",total:"Total",delivery_fee_not_included:"Delivery fee is not included.",continue_checkout:"Continue to Checkout",checkout_title:"Checkout",checkout_subtitle:"A few details and your restaurant will get cooking.",delivery_information:"Delivery Information",delivery_address:"Delivery address",address_placeholder:"Street, building, apartment...",recipient_name:"Recipient name",name_placeholder:"Your name",phone_number:"Phone number",note_optional:"Note (optional)",note_placeholder:"For example: call when you arrive",voucher:"Voucher",voucher_placeholder:"Enter voucher code",apply:"Apply",voucher_unavailable:"Voucher validation is not connected yet.",payment_method:"Payment Method",cod:"Cash on Delivery (COD)",delivery_fee:"Delivery fee",not_calculated:"Not calculated",discount:"Discount",delivery_fee_note:"Delivery fee is not included in this demo.",place_order:"Place Order",order_success_eyebrow:"ORDER PLACED SUCCESSFULLY",order_success_title:"Your order is on its way!",order_number:"Order number",order_success_message:"The restaurant will confirm and prepare your order.",restaurant:"Restaurant",order_total:"Order total",status:"Status",order_status_message:"Your order status will update when the restaurant confirms.",order_again:"Order Again",track_order:"Track Order",placeholder_prompt:"Choose",placeholder_suffix:"to browse nearby restaurants.",search_empty:"No restaurants match your search.",view_menu:"View menu",on_campus:"Nearby restaurant",menu_sample:"Sample menu",add:"Add",all:"All",items:"items",item:"item",placed_from:"ORDER FROM",empty_cart:"Your cart is empty. Add a dish to continue.",empty_cart_short:"Your cart is empty.",demo_error:"This feature is not connected yet.",cancel_hub_change:"Changing restaurants will clear the current cart. Continue?",choose_items:"Choose a restaurant and add at least one item.",placing:"Placing order...",track_pending:"Order {id} is PENDING. Order tracking is part of UC02.",load_error:"Unable to load restaurants",no_menu:"No sample menu is available for this restaurant.",main_dish:"Main dish",side_dish:"Side dish",drink:"Drinks"
+      tagline: "GOOD FOOD, CLOSE BY",
+      home: "Home",
+      order_food: "Order Food",
+      my_orders: "My Orders",
+      vouchers: "Vouchers",
+      profile: "Profile",
+      footer_tagline: "Freshly made.\nHappily delivered.",
+      hello: "Hello,",
+      customer_account: "Customer account",
+      logout: "Log out",
+      nearby_label: "NEARBY RESTAURANTS",
+      hero_title: "What are you craving today?",
+      hero_subtitle: "Choose a nearby restaurant and explore its menu.",
+      search_placeholder: "Search restaurants...",
+      search_hint: "Search by name or location",
+      restaurants: "NEARBY RESTAURANTS",
+      menu_demo_note: "Sample menu and prices for this demo. They may differ from the restaurant's current menu.",
+      your_cart: "Your Cart",
+      view_cart: "View cart",
+      cart_subtitle: "Review your items before placing the order.",
+      order_summary: "Order Summary",
+      subtotal: "Subtotal",
+      total: "Total",
+      delivery_fee_not_included: "Delivery fee is not included.",
+      continue_checkout: "Continue to Checkout",
+      checkout_title: "Checkout",
+      checkout_subtitle: "A few details and your restaurant will get cooking.",
+      delivery_information: "Delivery Information",
+      delivery_address: "Delivery address",
+      address_placeholder: "Street, building, apartment...",
+      recipient_name: "Recipient name",
+      name_placeholder: "Your name",
+      phone_number: "Phone number",
+      note_optional: "Note (optional)",
+      note_placeholder: "For example: call when you arrive",
+      voucher: "Voucher",
+      voucher_placeholder: "Enter voucher code",
+      apply: "Apply",
+      voucher_unavailable: "Voucher validation is not connected yet.",
+      payment_method: "Payment Method",
+      cod: "Cash on Delivery (COD)",
+      delivery_fee: "Delivery fee",
+      not_calculated: "Not calculated",
+      discount: "Discount",
+      delivery_fee_note: "Delivery fee is not included in this demo.",
+      place_order: "Place Order",
+      order_success_eyebrow: "ORDER PLACED SUCCESSFULLY",
+      order_success_title: "Your order is on its way!",
+      order_number: "Order number",
+      order_success_message: "The restaurant will confirm and prepare your order.",
+      restaurant: "Restaurant",
+      order_total: "Order total",
+      status: "Status",
+      order_status_message: "Your order status will update when the restaurant confirms.",
+      order_again: "Order Again",
+      track_order: "Track Order",
+      placeholder_prompt: "Choose",
+      placeholder_suffix: "to browse nearby restaurants.",
+      search_empty: "No restaurants match your search.",
+      view_menu: "View menu",
+      on_campus: "Nearby restaurant",
+      menu_sample: "Sample menu",
+      add: "Add",
+      all: "All",
+      items: "items",
+      item: "item",
+      placed_from: "ORDER FROM",
+      empty_cart: "Your cart is empty. Add a dish to continue.",
+      empty_cart_short: "Your cart is empty.",
+      demo_error: "This feature is not connected yet.",
+      cancel_hub_change: "Changing restaurants will clear the current cart. Continue?",
+      choose_items: "Choose a restaurant and add at least one item.",
+      placing: "Placing order...",
+      track_pending: "Order {id} is PENDING. Order tracking is part of UC02.",
+      load_error: "Unable to load restaurants",
+      no_menu: "No sample menu is available for this restaurant.",
+      main_dish: "Main dish",
+      side_dish: "Side dish",
+      drink: "Drinks"
     }
   };
   let language = "en";
   const t = (key) => copy[language][key] || copy.en[key] || key;
-  const state = { hubs: [], hub: null, menu: [], category: "All", cart: {}, cartCatalog: {}, cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null, lastOrder: null, screen: "hub", user: null, customer: null, customerOrders: [], notifications: [], notificationLoading: false, appliedVoucher: null, voucherQuoteRequestId: 0, voucherQuotePending: false, deliveryQuote: null, demoDelivery: false, deliveryQuoteRequestId: 0, deliveryQuoteTimer: null, deliveryQuotePending: false };
+  const state = {
+    hubs: [],
+    hub: null,
+    menu: [],
+    category: "All",
+    cart: {},
+    cartCatalog: {},
+    cartHubId: Number(sessionStorage.getItem("saigonbite-cart-hub")) || null,
+    lastOrder: null,
+    screen: "hub",
+    user: null,
+    customer: null,
+    customerOrders: [],
+    notifications: [],
+    notificationLoading: false,
+    appliedVoucher: null,
+    voucherQuoteRequestId: 0,
+    voucherQuotePending: false,
+    deliveryQuote: null,
+    demoDelivery: false,
+    deliveryQuoteRequestId: 0,
+    deliveryQuoteTimer: null,
+    deliveryQuotePending: false
+  };
   const savedCart = sessionStorage.getItem("saigonbite-cart");
   if (savedCart) {
     try { Object.assign(state.cart, JSON.parse(savedCart)); } catch { sessionStorage.removeItem("saigonbite-cart"); }
@@ -129,8 +230,18 @@
   function renderHubs(filter = "") {
     const hubs = state.hubs.filter((hub) => `${hub.name} ${hub.address}`.toLowerCase().includes(filter.toLowerCase()));
     $("#hub-count").textContent = `${hubs.length} restaurants`;
-    $("#hub-list").innerHTML = hubs.length ? hubs.map((hub) => `<article class="hub-card"><div class="hub-art ${escapeHtml(hub.icon || "restaurant")}" aria-hidden="true">${icon(hub.icon || "restaurant", "hub-icon")}</div><div class="hub-info"><span class="location-chip">${icon("map-pin")} ${t("on_campus")}</span><h2>${escapeHtml(hub.name)}</h2><a class="map-link" href="https://maps.google.com/?q=${encodeURIComponent(`${hub.name} ${hub.address}`)}" target="_blank" rel="noreferrer">${icon("map-pin")} ${escapeHtml(hub.address)}</a>${hub.description ? `<div class="hub-meta">${icon("utensils")}<span>${escapeHtml(hub.description)}</span></div>` : ""}</div><button class="btn btn-outline-light hub-action" data-hub="${hub.id}"><span>${t("view_menu")}</span>${icon("arrow-right")}</button></article>`).join("") : `<div class="empty-state">${t("search_empty")}</div>`;
+    $("#hub-list").innerHTML = hubs.length ? hubs.map((hub) => `<article class="hub-card"><img class="hub-art" src="${hubImagePath(hub)}" alt="${escapeHtml(hub.name)}" loading="lazy"><div class="hub-info"><span class="location-chip">${icon("map-pin")} ${t("on_campus")}</span><h2>${escapeHtml(hub.name)}</h2><a class="map-link" href="https://maps.google.com/?q=${encodeURIComponent(`${hub.name} ${hub.address}`)}" target="_blank" rel="noreferrer">${icon("map-pin")} ${escapeHtml(hub.address)}</a>${hub.description ? `<div class="hub-meta">${icon("utensils")}<span>${escapeHtml(hub.description)}</span></div>` : ""}</div><button class="btn btn-outline-light hub-action" data-hub="${hub.id}"><span>${t("view_menu")}</span>${icon("arrow-right")}</button></article>`).join("") : `<div class="empty-state">${t("search_empty")}</div>`;
     $$("[data-hub]").forEach((button) => button.addEventListener("click", () => selectHub(Number(button.dataset.hub))));
+  }
+
+  function hubImagePath(hub) {
+    const imageByHubId = {
+      1: "/img/restaurants/district-1-hub.jpg",
+      2: "/img/restaurants/district-3-hub.jpg",
+      3: "/img/restaurants/district-7-hub.jpg",
+      4: "/img/restaurants/thu-duc-hub.jpg"
+    };
+    return imageByHubId[hub.id] || "/img/restaurants/district-1-hub.jpg";
   }
 
   async function selectHub(hubId) {
@@ -487,7 +598,7 @@
       $("#home-hub-count").textContent = hubs.length;
       const recent = orders.slice(0, 3);
       $("#home-recent-orders").innerHTML = recent.length ? recent.map((order) => `<button class="home-order-row" data-home-order="${order.id}"><span class="home-order-mark" data-icon="receipt"></span><span class="home-order-copy"><strong>${escapeHtml(hubName(order.hub_id))}</strong><small>${orderCode(order.id)} · ${orderDate(order.created_at)}</small></span><span class="order-status ${statusClass(order.status)}">${escapeHtml(statusLabel[order.status] || order.status)}</span><strong class="home-order-total">${money(order.total)}</strong><span class="home-action-arrow" data-icon="arrow-right"></span></button>`).join("") : `<div class="home-empty-card"><span class="home-empty-icon" data-icon="food"></span><strong>No orders yet</strong><p>When you place an order, you can follow every update here.</p><button class="btn btn-brand" data-open-view="order">Browse restaurants</button></div>`;
-      $("#home-restaurants").innerHTML = hubs.slice(0, 3).map((hub) => `<button class="home-hub-card" data-home-hub="${hub.id}"><span class="home-hub-icon" data-icon="${escapeHtml(hub.icon || "restaurant")}"></span><span><strong>${escapeHtml(hub.name)}</strong><small>${escapeHtml(hub.description || "Nearby restaurant")}</small></span><span data-icon="arrow-right"></span></button>`).join("");
+      $("#home-restaurants").innerHTML = hubs.slice(0, 3).map((hub) => `<button class="home-hub-card" data-home-hub="${hub.id}"><img class="home-hub-icon" src="${hubImagePath(hub)}" alt="" loading="lazy"><span><strong>${escapeHtml(hub.name)}</strong><small>${escapeHtml(hub.description || "Nearby restaurant")}</small></span><span data-icon="arrow-right"></span></button>`).join("");
       hydrateIcons($("#view-home"));
       $$("[data-home-order]").forEach((button) => button.addEventListener("click", () => openOrder(Number(button.dataset.homeOrder), "detail")));
       $$("[data-home-hub]").forEach((button) => button.addEventListener("click", () => { showView("order"); selectHub(Number(button.dataset.homeHub)); }));

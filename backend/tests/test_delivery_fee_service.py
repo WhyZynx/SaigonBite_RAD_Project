@@ -52,10 +52,12 @@ def mock_osm(monkeypatch, meters=4_000, *, bad_address=None, route_code="Ok"):
     def fake_get_json(url, provider):
         requests.append(url)
         if url.startswith(delivery.NOMINATIM_URL):
-            address = parse_qs(urlparse(url).query)["q"][0]
+            params = parse_qs(urlparse(url).query)
+            address = params.get("q", [""])[0]
+            street = params.get("street", [""])[0]
             if address == bad_address:
                 data = []
-            elif address.startswith("Hub"):
+            elif address.startswith("Hub") or street.startswith("Hub"):
                 data = [{"lat": "10.0", "lon": "20.0"}]
             else:
                 data = [
@@ -73,7 +75,7 @@ def test_nominatim_then_osrm_uses_lon_lat_order_and_returns_fee(monkeypatch):
     requests = mock_osm(monkeypatch, meters=4_000)
     result = delivery.DeliveryFeeService(FakeDb()).calculate(1, "Customer address")
     assert result == {"delivery_distance_km": 4.0, "delivery_fee": 20_000, "surcharge": 0}
-    assert "q=Hub+origin%2C+Ho+Chi+Minh+City" in requests[0]
+    assert "street=Hub+origin" in requests[0]
     assert "q=Customer+address" in requests[1]
     assert "format=jsonv2" in requests[0] and "countrycodes=vn" in requests[0] and "limit=1" in requests[0]
     assert requests[2] == (
@@ -81,7 +83,7 @@ def test_nominatim_then_osrm_uses_lon_lat_order_and_returns_fee(monkeypatch):
     )
 
 
-def test_reported_addresses_retry_simpler_hub_query(monkeypatch):
+def test_reported_addresses_use_structured_lookups(monkeypatch):
     hub_address = "128 Nguyen Hue, District 1, Ho Chi Minh City"
     customer_address = "12 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
     requests = []
@@ -91,12 +93,13 @@ def test_reported_addresses_retry_simpler_hub_query(monkeypatch):
         if url.startswith(delivery.NOMINATIM_URL):
             params = parse_qs(urlparse(url).query)
             query = params.get("q", [None])[0]
-            if query in {hub_address, customer_address}:
-                data = []
-            elif query == "128 Nguyen Hue, Ho Chi Minh City, Vietnam":
+            street = params.get("street", [None])[0]
+            if street == "128 Nguyen Hue":
                 data = [{"lat": "10.7758856", "lon": "106.7014259"}]
-            elif params.get("street") == ["Nguyen Hue"] and params.get("house_number") == ["12"]:
+            elif street == "12 Nguyễn Huệ":
                 data = [{"lat": "10.7734610", "lon": "106.7040781"}]
+            elif query in {hub_address, customer_address}:
+                data = []
             else:
                 pytest.fail(f"Unexpected geocoding query: {params}")
             return delivery.JsonResponse(200, json.dumps(data), data)
@@ -107,16 +110,12 @@ def test_reported_addresses_retry_simpler_hub_query(monkeypatch):
     hub = SimpleNamespace(address=hub_address, status="OPEN")
     result = delivery.DeliveryFeeService(FakeDb(hub)).calculate(1, customer_address)
     assert result == {"delivery_distance_km": 0.395, "delivery_fee": 11_000, "surcharge": 0}
-    assert [parse_qs(urlparse(url).query).get("q", [None])[0] for url in requests[:3]] == [
-        hub_address,
-        "128 Nguyen Hue, Ho Chi Minh City, Vietnam",
-        customer_address,
-    ]
-    customer_structured = parse_qs(urlparse(requests[3]).query)
-    assert customer_structured["street"] == ["Nguyen Hue"]
-    assert customer_structured["house_number"] == ["12"]
+    hub_structured = parse_qs(urlparse(requests[0]).query)
+    customer_structured = parse_qs(urlparse(requests[1]).query)
+    assert hub_structured["street"] == ["128 Nguyen Hue"]
+    assert customer_structured["street"] == ["12 Nguyễn Huệ"]
     assert customer_structured["countrycodes"] == ["vn"]
-    assert requests[4] == f"{delivery.OSRM_URL}/106.7014259,10.7758856;106.7040781,10.773461?overview=false"
+    assert requests[2] == f"{delivery.OSRM_URL}/106.7014259,10.7758856;106.7040781,10.773461?overview=false"
     request_count = len(requests)
     assert delivery._hub_coordinates(hub_address) == (10.7758856, 106.7014259)
     assert len(requests) == request_count

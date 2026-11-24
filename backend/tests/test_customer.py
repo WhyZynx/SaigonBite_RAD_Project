@@ -22,6 +22,7 @@ from app.schemas import CreateOrderRequest
 @pytest.fixture
 def customer_client(monkeypatch):
     monkeypatch.setattr(delivery_fee_service, "_geocode", lambda address: (10.0, 20.0))
+    monkeypatch.setattr(delivery_fee_service, "_geocode_params", lambda params: (10.0, 20.0))
     monkeypatch.setattr(delivery_fee_service, "_route_distance_meters", lambda *coords: 1_000.0)
     engine = create_engine(
         "sqlite://",

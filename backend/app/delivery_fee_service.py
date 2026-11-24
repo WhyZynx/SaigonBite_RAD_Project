@@ -6,11 +6,9 @@ import json
 import logging
 import math
 import os
-import re
 import socket
 import threading
 import time
-import unicodedata
 from dataclasses import dataclass
 from functools import lru_cache
 from urllib.error import HTTPError, URLError
@@ -141,52 +139,32 @@ def _geocode(address: str) -> tuple[float, float]:
     return _geocode_params({"q": address})
 
 
-def _strip_accents(value: str) -> str:
-    value = value.replace("đ", "d").replace("Đ", "D")
-    return "".join(char for char in unicodedata.normalize("NFKD", value)
-                   if not unicodedata.combining(char))
-
-
-@lru_cache(maxsize=512)
-def _geocode_customer_address(address: str) -> tuple[float, float]:
-    try:
-        return _geocode(address)
-    except NoGeocodingResult:
-        # For HCMC addresses, retry a structured house-number/street lookup that
-        # omits ward/district abbreviations often absent from OSM's address index.
-        first_part = _strip_accents(address.split(",", 1)[0]).strip()
-        match = re.match(r"^(\d+[A-Za-z]?)\s+(.+)$", first_part)
-        if not match or "ho chi minh" not in _strip_accents(address).lower():
-            raise
-        house_number, street = match.groups()
-        try:
-            return _geocode_params({
-                "street": street.strip(),
-                "house_number": house_number,
-                "city": "Ho Chi Minh City",
-                "country": "Vietnam",
-            })
-        except NoGeocodingResult as exc:
-            raise NoGeocodingResult(
-                f"Nominatim found no result for delivery address '{address}' or its simplified street query"
-            ) from exc
+def _geocode_address(address: str) -> tuple[float, float]:
+    """Try the street and locality from the supplied address before free-form lookup."""
+    parts = [part.strip() for part in address.split(",") if part.strip()]
+    if len(parts) > 1:
+        street = parts[0]
+        localities = list(dict.fromkeys((parts[-1], ", ".join(parts[1:]))))
+        for locality in localities:
+            try:
+                return _geocode_params({
+                    "street": street,
+                    "city": locality,
+                    "country": "Vietnam",
+                })
+            except NoGeocodingResult:
+                continue
+    return _geocode(address)
 
 
 @lru_cache(maxsize=256)
 def _hub_coordinates(address: str) -> tuple[float, float]:
-    try:
-        return _geocode(address)
-    except NoGeocodingResult:
-        simpler_address = "128 Nguyen Hue, Ho Chi Minh City, Vietnam" if address.strip() == "128 Nguyen Hue, District 1, Ho Chi Minh City" else address
-        if simpler_address == address:
-            raise
-        logger.info("Retrying Hub geocoding with simpler query: %s", simpler_address)
-        try:
-            return _geocode(simpler_address)
-        except NoGeocodingResult as exc:
-            raise NoGeocodingResult(
-                f"Nominatim found no result for Hub address '{address}' or fallback '{simpler_address}'"
-            ) from exc
+    return _geocode_address(address)
+
+
+@lru_cache(maxsize=512)
+def _geocode_customer_address(address: str) -> tuple[float, float]:
+    return _geocode_address(address)
 
 
 @lru_cache(maxsize=512)

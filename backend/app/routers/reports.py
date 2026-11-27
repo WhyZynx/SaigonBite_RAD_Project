@@ -26,16 +26,6 @@ def _minutes(value: float | None) -> str:
 
 
 def _is_completed_delivery(delivery) -> bool:
-    """
-    A delivery is completed when its outcome is DELIVERED or LATE
-    and the completion timestamp exists.
-
-    LATE means the delivery was successfully completed, but later
-    than the expected delivery time.
-
-    pickup_at is intentionally NOT required because this project
-    does not implement a real shipper/pickup workflow.
-    """
     return (
         delivery.outcome in {"DELIVERED", "LATE"}
         and delivery.delivered_at is not None
@@ -55,9 +45,14 @@ def get_sales_report(
         db, start_dt, end_dt
     )
 
-    avg_delivery = report_repository.average_delivery_minutes(deliveries)
+    completed_deliveries = [
+        delivery for delivery in deliveries
+        if _is_completed_delivery(delivery)
+    ]
 
-    # Existing project rule: only DELIVERED orders contribute to revenue.
+    avg_delivery = report_repository.average_delivery_minutes(
+        completed_deliveries
+)
     revenue = sum(
         order.total for order in orders
         if order.status == "DELIVERED"
@@ -77,8 +72,8 @@ def get_sales_report(
     for day, values in sorted(daily.items()):
         day_deliveries = [
             delivery for delivery in deliveries
-            if delivery.delivered_at
-            and delivery.delivered_at.date() == day
+            if delivery.order.created_at.date() == day
+            and _is_completed_delivery(delivery)
         ]
 
         rows.append({
@@ -170,25 +165,22 @@ def get_delivery_report(
 ):
     start_dt, end_dt = _period(start_date, end_date)
 
-    deliveries = report_repository.get_deliveries_by_order_range(
+    deliveries = report_repository.get_deliveries_by_completion_range(
         db, start_dt, end_dt
     )
 
-    # Completion does not depend on pickup_at.
-    # Admin's demo action records DELIVERED + delivered_at.
     completed = [
         delivery for delivery in deliveries
         if _is_completed_delivery(delivery)
     ]
 
-    # Duration is only measurable when both timestamps are valid.
     avg_delivery = report_repository.average_delivery_minutes(completed)
 
     daily = defaultdict(list)
 
     for delivery in deliveries:
-        # Report period is based on order creation date.
-        daily[delivery.order.created_at.date()].append(delivery)
+        day = delivery.delivered_at.date()
+        daily[day].append(delivery)
 
     rows = []
 

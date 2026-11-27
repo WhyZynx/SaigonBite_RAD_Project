@@ -22,6 +22,20 @@ def get_deliveries_by_order_range(db: Session, start_dt: datetime, end_dt: datet
             .filter(Order.created_at.between(start_dt, end_dt))
             .all())
 
+def get_deliveries_by_completion_range(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime
+) -> list[Delivery]:
+    return (
+        db.query(Delivery)
+        .join(Order)
+        .filter(
+            Delivery.delivered_at.isnot(None),
+            Delivery.delivered_at.between(start_dt, end_dt)
+        )
+        .all()
+    )
 
 def get_status_history_in_range(
     db: Session, start_dt: datetime, end_dt: datetime
@@ -41,3 +55,4 @@ def average_delivery_minutes(deliveries: list[Delivery]) -> float | None:
         and row.delivered_at >= row.pickup_at
     ]
     return sum(durations) / len(durations) if durations else None
+
